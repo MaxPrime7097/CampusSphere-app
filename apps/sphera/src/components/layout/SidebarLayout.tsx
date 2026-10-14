@@ -7,7 +7,7 @@ import { getMyQuizSessions, getSessions, getAnnales } from '../../services/spher
 import { QuotaIndicator } from '../app/QuotaIndicator'
 import { SearchModal } from '../app/SearchModal'
 import { SpheraSettingsModal } from '../settings/SpheraSettingsModal'
-import { useSessionsQuery, useAnnalesQuery, useQuizSessionsQuery, invalidateSpheraSessions } from '../../hooks/useSpheraQueries'
+import { useSessionsQuery, useAnnalesQuery, useQuizSessionsQuery, useChatThreadsQuery, invalidateSpheraSessions } from '../../hooks/useSpheraQueries'
 import { encodeHashId } from '../../lib/hashids'
 
 interface UserProfileMenuProps {
@@ -155,23 +155,25 @@ export function SidebarLayout() {
   const { data: rawSessions = [], isLoading: isLoadingSessions } = useSessionsQuery()
   const { data: rawAnnales = [], isLoading: isLoadingAnnales } = useAnnalesQuery()
   const { data: rawQuiz = [], isLoading: isLoadingQuiz } = useQuizSessionsQuery()
+  const { data: rawChats = [], isLoading: isLoadingChats } = useChatThreadsQuery()
 
-  const isLoadingRecent = isLivePage ? isLoadingQuiz : (isLoadingSessions || isLoadingAnnales)
+  const isLoadingRecent = isLivePage ? isLoadingQuiz : (isLoadingSessions || isLoadingAnnales || isLoadingChats)
 
   const { recentSessions, allSearchItems } = React.useMemo(() => {
     const sess = (rawSessions || []).map((s: any) => ({ ...s, _type: 'session' }))
     const ann = (rawAnnales || []).map((a: any) => ({ ...a, _type: 'annale' }))
     const quiz = (rawQuiz || []).map((q: any) => ({ ...q, _type: 'quiz' }))
+    const chats = (rawChats || []).map((c: any) => ({ ...c, _type: 'chat' }))
 
-    const combined = [...sess, ...ann, ...quiz].sort((a, b) => {
-      const da = new Date(a.created_at || a.createdAt || 0).getTime()
-      const db = new Date(b.created_at || b.createdAt || 0).getTime()
+    const combined = [...sess, ...ann, ...chats, ...quiz].sort((a, b) => {
+      const da = new Date(a.updatedAt || a.updated_at || a.created_at || a.createdAt || 0).getTime()
+      const db = new Date(b.updatedAt || b.updated_at || b.created_at || b.createdAt || 0).getTime()
       return db - da
     })
 
-    const standard = [...sess, ...ann].sort((a, b) => {
-      const da = new Date(a.created_at || 0).getTime()
-      const db = new Date(b.created_at || 0).getTime()
+    const standard = [...sess, ...ann, ...chats].sort((a, b) => {
+      const da = new Date(a.updatedAt || a.updated_at || a.created_at || a.createdAt || 0).getTime()
+      const db = new Date(b.updatedAt || b.updated_at || b.created_at || b.createdAt || 0).getTime()
       return db - da
     })
 
@@ -179,7 +181,7 @@ export function SidebarLayout() {
       recentSessions: isLivePage ? quiz : standard,
       allSearchItems: combined,
     }
-  }, [rawSessions, rawAnnales, rawQuiz, isLivePage])
+  }, [rawSessions, rawAnnales, rawQuiz, rawChats, isLivePage])
 
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -326,7 +328,7 @@ export function SidebarLayout() {
             className="flex items-center gap-2.5 w-full px-3.5 py-2 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-white transition-all text-xs font-medium"
           >
             <ChatCircle className="w-4 h-4 shrink-0 text-sphera-green" />
-            <span>Discussion IA</span>
+            <span>Chat</span>
           </Link>
           <QuotaIndicator className="w-full justify-center" align="left" />
         </div>
@@ -373,9 +375,12 @@ export function SidebarLayout() {
                     </Link>
                   )
                 } else {
+                  const isChat = session._type === 'chat'
+                  const isAnnale = session._type === 'annale'
                   const encodedId = encodeHashId(session.id) || session.id
-                  const sessionPath = `/${session._type === 'annale' ? 'annales' : 'sessions'}/${encodedId}`
-                  const isActive = location.pathname === sessionPath || location.pathname === `/${session._type === 'annale' ? 'annales' : 'sessions'}/${session.id}`
+                  const sessionPath = isChat ? `/chat/${encodedId}` : `/${isAnnale ? 'annales' : 'sessions'}/${encodedId}`
+                  const legacyPath = isChat ? `/chat/${session.id}` : `/${isAnnale ? 'annales' : 'sessions'}/${session.id}`
+                  const isActive = location.pathname === sessionPath || location.pathname === legacyPath
                   return (
                     <Link
                       key={`sess-m-${session._type}-${session.id}`}
@@ -386,7 +391,9 @@ export function SidebarLayout() {
                           : 'text-sphera-text-muted hover:bg-sphera-surface hover:text-white'
                       }`}
                     >
-                      {session._type === 'annale' ? (
+                      {isChat ? (
+                        <ChatCircle className="w-3.5 h-3.5 shrink-0 text-sky-400" />
+                      ) : isAnnale ? (
                         <Exam className="w-3.5 h-3.5 shrink-0 text-orange-400" />
                       ) : (
                         <BookOpen className="w-3.5 h-3.5 shrink-0 text-sphera-green" />
@@ -542,7 +549,7 @@ export function SidebarLayout() {
                 }`}
               >
                 <ChatCircle className="w-3.5 h-3.5 shrink-0 text-sphera-green" />
-                <span>Discussion IA</span>
+                <span>Chat</span>
               </Link>
 
               <QuotaIndicator className="w-full" align="left" />
@@ -573,7 +580,7 @@ export function SidebarLayout() {
                     ? 'border-sphera-green/50 bg-sphera-surface text-white'
                     : 'border-sphera-border text-sphera-text-muted hover:text-white hover:bg-sphera-surface'
                 }`}
-                title="Discussion IA"
+                title="Chat"
               >
                 <ChatCircle className="w-4 h-4 text-sphera-green" />
               </Link>
@@ -634,9 +641,12 @@ export function SidebarLayout() {
                         </Link>
                       )
                     } else {
+                      const isChat = session._type === 'chat'
+                      const isAnnale = session._type === 'annale'
                       const encodedId = encodeHashId(session.id) || session.id
-                      const sessionPath = `/${session._type === 'annale' ? 'annales' : 'sessions'}/${encodedId}`
-                      const isActive = location.pathname === sessionPath || location.pathname === `/${session._type === 'annale' ? 'annales' : 'sessions'}/${session.id}`
+                      const sessionPath = isChat ? `/chat/${encodedId}` : `/${isAnnale ? 'annales' : 'sessions'}/${encodedId}`
+                      const legacyPath = isChat ? `/chat/${session.id}` : `/${isAnnale ? 'annales' : 'sessions'}/${session.id}`
+                      const isActive = location.pathname === sessionPath || location.pathname === legacyPath
                       return (
                         <Link
                           key={`${session._type}-${session.id}`}
@@ -648,7 +658,9 @@ export function SidebarLayout() {
                           }`}
                           title={title}
                         >
-                          {session._type === 'annale' ? (
+                          {isChat ? (
+                            <ChatCircle className="w-3.5 h-3.5 shrink-0 text-sky-400" />
+                          ) : isAnnale ? (
                             <Exam className="w-3.5 h-3.5 shrink-0 text-orange-400" />
                           ) : (
                             <BookOpen className="w-3.5 h-3.5 shrink-0 text-sphera-green" />
@@ -669,11 +681,14 @@ export function SidebarLayout() {
                 ))
               ) : (
                 recentSessions.slice(0, 10).map(session => {
+                  const isChat = session._type === 'chat'
+                  const isAnnale = session._type === 'annale'
                   const encodedId = encodeHashId(session.id) || session.id
-                  const sessionPath = `/${session._type === 'annale' ? 'annales' : 'sessions'}/${encodedId}`
+                  const sessionPath = isChat ? `/chat/${encodedId}` : `/${isAnnale ? 'annales' : 'sessions'}/${encodedId}`
+                  const legacyPath = isChat ? `/chat/${session.id}` : `/${isAnnale ? 'annales' : 'sessions'}/${session.id}`
                   const isCurrent = isLivePage
                     ? location.search.includes(`code=${session.roomCode}`)
-                    : (location.pathname === sessionPath || location.pathname === `/${session._type === 'annale' ? 'annales' : 'sessions'}/${session.id}`)
+                    : (location.pathname === sessionPath || location.pathname === legacyPath)
                   const link = isLivePage
                     ? `/live/host?code=${session.roomCode}&reset=1`
                     : sessionPath
@@ -690,7 +705,9 @@ export function SidebarLayout() {
                     >
                       {isLivePage ? (
                         <Zap className="w-4 h-4 text-sphera-green" />
-                      ) : session._type === 'annale' ? (
+                      ) : isChat ? (
+                        <ChatCircle className="w-4 h-4 text-sky-400" />
+                      ) : isAnnale ? (
                         <Exam className="w-4 h-4 text-orange-400" />
                       ) : (
                         <BookOpen className="w-4 h-4 text-sphera-green" />

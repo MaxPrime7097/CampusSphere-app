@@ -13,14 +13,11 @@ import {
   BookOpen,
   Lightbulb,
   GraduationCap,
-  List as Menu,
-  CaretLeft,
   Spinner as Loader2
 } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 import {
-  getStandaloneChatThreads,
   getStandaloneChatThread,
   createStandaloneChatThread,
   sendThreadMessage,
@@ -31,6 +28,7 @@ import {
 } from '../services/spheraApi'
 import { AiMessageItem } from '../components/app/AiMessageItem'
 import { encodeHashId, parseSlugId } from '../lib/hashids'
+import { invalidateSpheraSessions } from '../hooks/useSpheraQueries'
 
 const STARTER_SUGGESTIONS = [
   {
@@ -62,13 +60,11 @@ export default function ChatPage() {
   const location = useLocation()
   const { user } = useSpheraAuth()
 
-  // Threads list & active thread
-  const [threads, setThreads] = useState<ChatThreadItem[]>([])
+  // Active thread state
   const [activeThreadId, setActiveThreadId] = useState<number | null>(() => {
     return paramThreadId ? parseSlugId(paramThreadId) : null
   })
   const [activeThread, setActiveThread] = useState<ChatThreadItem | null>(null)
-  const [isLoadingThreads, setIsLoadingThreads] = useState(true)
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
 
   // Messages in current thread
@@ -76,52 +72,46 @@ export default function ChatPage() {
   const [inputMessage, setInputMessage] = useState('')
   const [isSending, setIsSending] = useState(false)
 
-  // Responsive Sidebar (closed by default on mobile < 768px)
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
-    return typeof window !== 'undefined' ? window.innerWidth >= 768 : true
-  })
-
   // Rename thread state
-  const [editingThreadId, setEditingThreadId] = useState<number | null>(null)
-  const [editThreadTitle, setEditThreadTitle] = useState('')
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [editTitleValue, setEditTitleValue] = useState('')
 
   const chatBottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // ─── 1. Load Standalone Chat Threads ─────────────────────────
-  const fetchThreads = async () => {
-    try {
-      const res = await getStandaloneChatThreads()
-      const list = res?.data || []
-      setThreads(list)
-      return list
-    } catch (err) {
-      console.error('Erreur chargement des discussions:', err)
-      return []
-    } finally {
-      setIsLoadingThreads(false)
+  const formatThreadMessages = (rawMsgs: any[] = []) => {
+    const formatted: Array<{ question: string; answer: string; id?: number }> = []
+    for (let i = 0; i < rawMsgs.length; i++) {
+      const m = rawMsgs[i]
+      if (m.role === 'user') {
+        const next = rawMsgs[i + 1]
+        formatted.push({
+          question: m.content,
+          answer: next && next.role === 'assistant' ? next.content : '',
+          id: m.id
+        })
+        if (next && next.role === 'assistant') i++
+      }
     }
+    return formatted
   }
 
+  // ─── 1. Handle paramThreadId changes ─────────────────────────
   useEffect(() => {
-    fetchThreads().then(() => {
-      if (paramThreadId) {
-        const idNum = parseSlugId(paramThreadId)
-        setActiveThreadId(idNum)
-      } else {
-        // Staying on /chat means a clean slate for a new conversation
-        setActiveThreadId(null)
-        setActiveThread(null)
-        setMessages([])
-      }
-    })
+    if (paramThreadId) {
+      const idNum = parseSlugId(paramThreadId)
+      setActiveThreadId(idNum)
+    } else {
+      setActiveThreadId(null)
+      setActiveThread(null)
+      setMessages([])
+    }
   }, [paramThreadId])
 
   // ─── 2. Handle initialQuestion from Dashboard ────────────────
   useEffect(() => {
     const initialQ = (location.state as any)?.initialQuestion
     if (initialQ && typeof initialQ === 'string' && initialQ.trim()) {
-      // Clear location state so it doesn't trigger again
       navigate(location.pathname, { replace: true, state: {} })
       handleStartNewChatWithQuestion(initialQ.trim())
     }
@@ -144,22 +134,7 @@ export default function ChatPage() {
         const thread = res?.data
         if (thread) {
           setActiveThread(thread)
-          // Format messages for AiMessageItem
-          const formatted: Array<{ question: string; answer: string; id?: number }> = []
-          const rawMsgs = thread.messages || []
-          for (let i = 0; i < rawMsgs.length; i++) {
-            const m = rawMsgs[i]
-            if (m.role === 'user') {
-              const next = rawMsgs[i + 1]
-              formatted.push({
-                question: m.content,
-                answer: next && next.role === 'assistant' ? next.content : '',
-                id: m.id
-              })
-              if (next && next.role === 'assistant') i++
-            }
-          }
-          setMessages(formatted)
+          setMessages(formatThreadMessages(thread.messages || []))
         }
       })
       .catch((err) => {
@@ -189,11 +164,14 @@ export default function ChatPage() {
       const res = await createStandaloneChatThread({ question: tempQuestion })
       const newThread = res?.data
       if (newThread) {
-        setThreads((prev) => [newThread, ...prev])
         setActiveThreadId(newThread.id)
         setActiveThread(newThread)
+        if (newThread.messages && newThread.messages.length > 0) {
+          setMessages(formatThreadMessages(newThread.messages))
+        }
         const hash = encodeHashId(newThread.id) || newThread.id
         navigate(`/chat/${hash}`, { replace: true })
+        invalidateSpheraSessions()
       }
     } catch (err) {
       console.error('Erreur initialisation chat:', err)
@@ -203,9 +181,8 @@ export default function ChatPage() {
     }
   }
 
-  const handleSendMessage = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault()
-    const trimmed = inputMessage.trim()
+  const handleSendMessageWithText = async (text: string) => {
+    const trimmed = text.trim()
     if (!trimmed || isSending) return
 
     setInputMessage('')
@@ -239,7 +216,7 @@ export default function ChatPage() {
           return updated
         })
       }
-      fetchThreads()
+      invalidateSpheraSessions()
     } catch (err: any) {
       console.error('Erreur envoi message:', err)
       setMessages((prev) => {
@@ -255,6 +232,11 @@ export default function ChatPage() {
     } finally {
       setIsSending(false)
     }
+  }
+
+  const handleSendMessage = (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    handleSendMessageWithText(inputMessage)
   }
 
   // Handle Edit & Regenerate
@@ -315,51 +297,45 @@ export default function ChatPage() {
     setMessages([])
     setInputMessage('')
     navigate('/chat')
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      setIsSidebarOpen(false)
-    }
     textareaRef.current?.focus()
   }
 
-  const handleDeleteThread = async (e: React.MouseEvent, threadId: number) => {
-    e.stopPropagation()
+  const handleDeleteCurrentThread = async () => {
+    if (!activeThreadId) return
+    const confirmDelete = window.confirm("Supprimer cette discussion ?")
+    if (!confirmDelete) return
+
     try {
-      await deleteChatThread(threadId)
-      setThreads((prev) => prev.filter((t) => t.id !== threadId))
-      if (activeThreadId === threadId) {
-        handleCreateNewThread()
-      }
+      await deleteChatThread(activeThreadId)
+      invalidateSpheraSessions()
+      handleCreateNewThread()
     } catch (err) {
       console.error('Erreur suppression discussion:', err)
     }
   }
 
-  const handleStartRename = (e: React.MouseEvent, tItem: ChatThreadItem) => {
-    e.stopPropagation()
-    setEditingThreadId(tItem.id)
-    setEditThreadTitle(tItem.title)
+  const handleStartRename = () => {
+    if (!activeThread) return
+    setEditTitleValue(activeThread.title)
+    setIsEditingTitle(true)
   }
 
-  const handleSaveRename = async (e: React.MouseEvent | React.KeyboardEvent, threadId: number) => {
-    e.stopPropagation()
-    const trimmed = editThreadTitle.trim()
-    if (!trimmed) {
-      setEditingThreadId(null)
+  const handleSaveRename = async () => {
+    if (!activeThreadId) return
+    const trimmed = editTitleValue.trim()
+    if (!trimmed || trimmed === activeThread?.title) {
+      setIsEditingTitle(false)
       return
     }
 
     try {
-      await renameChatThread(threadId, trimmed)
-      setThreads((prev) =>
-        prev.map((t) => (t.id === threadId ? { ...t, title: trimmed } : t))
-      )
-      if (activeThread?.id === threadId) {
-        setActiveThread((prev) => (prev ? { ...prev, title: trimmed } : prev))
-      }
+      await renameChatThread(activeThreadId, trimmed)
+      setActiveThread((prev) => (prev ? { ...prev, title: trimmed } : prev))
+      invalidateSpheraSessions()
     } catch (err) {
       console.error('Erreur renommage discussion:', err)
     } finally {
-      setEditingThreadId(null)
+      setIsEditingTitle(false)
     }
   }
 
@@ -378,180 +354,102 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-full w-full bg-sphera-bg overflow-hidden relative font-sans">
-      
-      {/* ─── MOBILE BACKDROP (When drawer is open) ─────────────── */}
-      {isSidebarOpen && (
-        <div
-          className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-30 transition-opacity animate-in fade-in"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
+    <div className="flex flex-col h-full w-full bg-sphera-bg overflow-hidden relative font-sans">
 
-      {/* ─── LEFT SUB-PANEL: Discussion History ───────────────── */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-40 md:static bg-sphera-surface-2 border-r border-sphera-border flex flex-col transition-all duration-300 shadow-2xl md:shadow-none ${
-          isSidebarOpen ? 'w-72 translate-x-0' : 'w-0 -translate-x-full md:w-0 md:translate-x-0 overflow-hidden'
-        }`}
-      >
-        {/* Sidebar Header */}
-        <div className="h-14 border-b border-sphera-border px-4 flex items-center justify-between shrink-0 bg-sphera-surface-2">
-          <div className="flex items-center gap-2">
-            <ChatCircle className="w-5 h-5 text-sphera-green" />
-            <span className="font-semibold text-sm text-white">Discussions</span>
-          </div>
+      {/* ─── TOP HEADER ────────────────────────────────────────── */}
+      <header className="h-14 border-b border-sphera-border px-3 sm:px-6 flex items-center justify-between bg-sphera-surface-2/80 backdrop-blur-md shrink-0 z-10">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <Link
+            to="/app"
+            className="flex items-center gap-1.5 text-xs font-medium text-sphera-text-muted hover:text-white transition-colors shrink-0"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Accueil</span>
+          </Link>
+
+          <span className="text-sphera-border text-sm">/</span>
+
+          <Link
+            to="/chat"
+            className="text-xs font-medium text-sphera-text-muted hover:text-white transition-colors shrink-0"
+          >
+            Chat
+          </Link>
+
+          {activeThread && (
+            <>
+              <span className="text-sphera-border text-sm">/</span>
+              {isEditingTitle ? (
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    value={editTitleValue}
+                    onChange={(e) => setEditTitleValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveRename()
+                      if (e.key === 'Escape') setIsEditingTitle(false)
+                    }}
+                    autoFocus
+                    className="bg-sphera-bg border border-sphera-green/50 rounded-lg px-2.5 py-1 text-xs text-white outline-none max-w-[200px] sm:max-w-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSaveRename}
+                    className="p-1 text-sphera-green hover:text-white rounded transition-colors cursor-pointer"
+                    title="Enregistrer"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingTitle(false)}
+                    className="p-1 text-sphera-text-muted hover:text-white rounded transition-colors cursor-pointer"
+                    title="Annuler"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <h1 className="text-xs sm:text-sm font-semibold text-white truncate max-w-[140px] xs:max-w-[200px] sm:max-w-sm md:max-w-md">
+                    {activeThread.title}
+                  </h1>
+                  <button
+                    type="button"
+                    onClick={handleStartRename}
+                    className="p-1 rounded text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors shrink-0 cursor-pointer"
+                    title="Renommer la discussion"
+                  >
+                    <PencilSimple className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeleteCurrentThread}
+                    className="p-1 rounded text-sphera-text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0 cursor-pointer"
+                    title="Supprimer la discussion"
+                  >
+                    <Trash className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={handleCreateNewThread}
-            className="p-1.5 rounded-lg bg-sphera-surface hover:bg-sphera-surface-2 text-sphera-text-muted hover:text-white border border-sphera-border transition-colors flex items-center gap-1.5 text-xs font-medium cursor-pointer"
-            title="Nouvelle discussion"
+            className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-sphera-surface hover:bg-sphera-surface-2 text-white border border-sphera-border transition-colors text-xs font-semibold flex items-center gap-1.5 shadow-sm cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Nouveau</span>
+            <Plus className="w-3.5 h-3.5 text-sphera-green" />
+            <span className="hidden sm:inline">Nouveau chat</span>
           </button>
         </div>
+      </header>
 
-        {/* Sidebar Threads List */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar min-h-0">
-          {isLoadingThreads ? (
-            <div className="space-y-2 p-2">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-9 bg-sphera-surface/50 rounded-xl animate-pulse" />
-              ))}
-            </div>
-          ) : threads.length === 0 ? (
-            <div className="p-6 text-center text-xs text-sphera-text-muted">
-              <ChatCircle className="w-8 h-8 mx-auto mb-2 opacity-40 text-sphera-text-muted" />
-              <p>Aucune discussion enregistrée.</p>
-              <p className="mt-1 text-[11px] opacity-75">Posez votre première question pour commencer !</p>
-            </div>
-          ) : (
-            threads.map((tItem) => {
-              const isActive = activeThreadId === tItem.id
-              const isEditing = editingThreadId === tItem.id
-              const hash = encodeHashId(tItem.id) || tItem.id
-
-              return (
-                <div
-                  key={tItem.id}
-                  onClick={() => {
-                    setActiveThreadId(tItem.id)
-                    navigate(`/chat/${hash}`)
-                    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                      setIsSidebarOpen(false)
-                    }
-                  }}
-                  className={`group relative flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-sphera-surface text-white border border-sphera-border shadow-sm'
-                      : 'text-sphera-text-muted hover:text-white hover:bg-sphera-surface/60'
-                  }`}
-                >
-                  {isEditing ? (
-                    <div className="flex items-center gap-1.5 w-full" onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="text"
-                        value={editThreadTitle}
-                        onChange={(e) => setEditThreadTitle(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleSaveRename(e, tItem.id)
-                          if (e.key === 'Escape') setEditingThreadId(null)
-                        }}
-                        autoFocus
-                        className="flex-1 bg-sphera-bg border border-sphera-green/50 rounded-lg px-2 py-1 text-xs text-white outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={(e) => handleSaveRename(e, tItem.id)}
-                        className="p-1 text-sphera-green hover:text-white rounded transition-colors"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditingThreadId(null)}
-                        className="p-1 text-sphera-text-muted hover:text-white rounded transition-colors"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-2 min-w-0 flex-1 pr-2">
-                        <ChatCircle className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-sphera-green' : 'text-sphera-text-muted'}`} />
-                        <span className="truncate">{tItem.title}</span>
-                      </div>
-
-                      {/* Action buttons (Rename, Delete) */}
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          type="button"
-                          onClick={(e) => handleStartRename(e, tItem)}
-                          className="p-1 rounded text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 transition-colors"
-                          title="Renommer"
-                        >
-                          <PencilSimple className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => handleDeleteThread(e, tItem.id)}
-                          className="p-1 rounded text-sphera-text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                          title="Supprimer"
-                        >
-                          <Trash className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )
-            })
-          )}
-        </div>
-      </aside>
-
-      {/* ─── RIGHT MAIN PANEL: Chat Conversation ──────────────── */}
+      {/* ─── MAIN CONVERSATION AREA ────────────────────────────── */}
       <main className="flex-1 flex flex-col h-full min-w-0 bg-sphera-bg relative">
-        
-        {/* Top Header */}
-        <header className="h-14 border-b border-sphera-border px-3 sm:px-4 flex items-center justify-between bg-sphera-surface-2/80 backdrop-blur-md shrink-0 z-10">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <button
-              type="button"
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors cursor-pointer"
-              title={isSidebarOpen ? "Masquer l'historique" : "Afficher l'historique"}
-            >
-              {isSidebarOpen ? <CaretLeft className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-            </button>
-
-            <Link
-              to="/app"
-              className="flex items-center gap-1 text-xs font-medium text-sphera-text-muted hover:text-white transition-colors shrink-0"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Accueil</span>
-            </Link>
-
-            <div className="h-4 w-px bg-sphera-border mx-0.5 sm:mx-1" />
-
-            <h1 className="text-xs sm:text-sm font-semibold text-white truncate max-w-[150px] xs:max-w-[200px] sm:max-w-md">
-              {activeThread?.title || 'Nouvelle discussion'}
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={handleCreateNewThread}
-              className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-sphera-surface hover:bg-sphera-surface-2 text-white border border-sphera-border transition-colors text-xs font-semibold flex items-center gap-1.5 shadow-sm cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5 text-sphera-green" />
-              <span className="hidden sm:inline">Nouveau chat</span>
-            </button>
-          </div>
-        </header>
-
         {/* Messages Scroll Area */}
         <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 pb-28 sm:pb-32 custom-scrollbar min-h-0">
           <div className="max-w-3xl mx-auto w-full">
@@ -583,10 +481,7 @@ export default function ChatPage() {
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => {
-                          setInputMessage(item.prompt)
-                          textareaRef.current?.focus()
-                        }}
+                        onClick={() => handleSendMessageWithText(item.prompt)}
                         className="p-3.5 sm:p-4 rounded-xl border border-sphera-border bg-sphera-surface/60 hover:bg-sphera-surface-2 hover:border-sphera-green/40 transition-all text-left flex flex-col gap-1.5 group cursor-pointer shadow-sm hover:shadow-md"
                       >
                         <div className="flex items-center gap-2 text-sphera-green">
@@ -615,6 +510,7 @@ export default function ChatPage() {
                     onEdit={handleEditMessage}
                     onRegenerate={handleRegenerate}
                     onCreateNote={handleCreateNote}
+                    onSelectSuggestion={(sug) => handleSendMessageWithText(sug)}
                     disabled={isSending}
                   />
                 ))}
@@ -637,7 +533,7 @@ export default function ChatPage() {
                 onChange={handleTextareaChange}
                 onKeyDown={handleKeyDown}
                 rows={1}
-                placeholder="Pose ta question académique libre..."
+                placeholder="Demande n'importe quoi..."
                 disabled={isSending}
                 className="flex-1 bg-transparent border-0 text-xs sm:text-sm text-white placeholder-sphera-text-muted outline-none focus:ring-0 resize-none max-h-32 py-1.5 leading-relaxed"
               />
@@ -656,12 +552,11 @@ export default function ChatPage() {
               </button>
             </form>
 
-            <p className="text-center text-[10px] text-sphera-text-muted/60 mt-1.5 hidden sm:block">
+            <p className="text-center text-[10px] text-sphera-text-muted/60 mt-1.5 block">
               Sphera peut faire des erreurs. Vérifie les informations avec tes cours.
             </p>
           </div>
         </div>
-
       </main>
     </div>
   )

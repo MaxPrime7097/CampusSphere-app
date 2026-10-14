@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { useNavigate } from 'react-router-dom'
-import { MagnifyingGlass as Search, X, FileText, Brain as BrainCircuit, NotePencil as FilePenLine, Lightning as Zap, Calendar, ArrowRight, Stack as SquareStack } from "@phosphor-icons/react";
+import { MagnifyingGlass as Search, X, FileText, Brain as BrainCircuit, NotePencil as FilePenLine, Lightning as Zap, Calendar, ArrowRight, Stack as SquareStack, ChatCircle } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next'
 import { encodeHashId } from '../../lib/hashids'
 
@@ -46,6 +46,7 @@ export function SearchModal({ isOpen, onClose, items }: SearchModalProps) {
 
   const getItemIcon = (item: any) => {
     if (item.roomCode) return <Zap className="w-4 h-4 text-sphera-green" />
+    if (item._type === 'chat') return <ChatCircle className="w-4 h-4 text-sky-400" />
     if (item._type === 'annale') return <FilePenLine className="w-4 h-4 text-orange-400" />
     const primaryTool = item.tool_types?.[0]
     if (primaryTool === 'quiz') return <BrainCircuit className="w-4 h-4 text-purple-400" />
@@ -59,7 +60,9 @@ export function SearchModal({ isOpen, onClose, items }: SearchModalProps) {
       navigate(`/live/host?code=${item.roomCode}&reset=1`)
     } else {
       const hashId = encodeHashId(item.id) || item.id
-      if (item._type === 'annale') {
+      if (item._type === 'chat') {
+        navigate(`/chat/${hashId}`)
+      } else if (item._type === 'annale') {
         navigate(`/annales/${hashId}`)
       } else {
         navigate(`/sessions/${hashId}`)
