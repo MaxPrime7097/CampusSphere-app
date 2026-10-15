@@ -24,6 +24,7 @@ import {
   getStandaloneChatThread,
   createStandaloneChatThread,
   sendThreadMessage,
+  streamThreadMessage,
   deleteChatThread,
   renameChatThread,
   type ChatThreadItem,
@@ -227,17 +228,27 @@ export default function ChatPage() {
     setMessages([{ question: tempQuestion, answer: '...' }])
 
     try {
-      const res = await createStandaloneChatThread({ question: tempQuestion }, controller.signal)
+      // 1. Create the thread shell instantly (very fast, ~30ms)
+      const res = await createStandaloneChatThread({ title: tempQuestion.slice(0, 40) }, controller.signal)
       const newThread = res?.data
       if (newThread) {
         setActiveThreadId(newThread.id)
         setActiveThread(newThread)
-        if (newThread.messages && newThread.messages.length > 0) {
-          setMessages(formatThreadMessages(newThread.messages))
-        }
         const hash = encodeHashId(newThread.id) || newThread.id
         navigate(`/chat/${hash}`, { replace: true })
         invalidateSpheraSessions()
+
+        // 2. Stream the first message in real time
+        let streamedText = ''
+        await streamThreadMessage(
+          newThread.id,
+          tempQuestion,
+          (token) => {
+            streamedText += token
+            setMessages([{ question: tempQuestion, answer: streamedText }])
+          },
+          controller.signal
+        )
       }
     } catch (err: any) {
       if (err?.name === 'AbortError' || controller.signal.aborted) {
@@ -275,7 +286,7 @@ export default function ChatPage() {
     const controller = new AbortController()
     abortControllerRef.current = controller
 
-    // Append to current thread
+    // Append to current thread with loading indicator
     const newMsgIndex = messages.length
     setMessages((prev) => [...prev, { question: trimmed, answer: '...' }])
     setIsSending(true)
@@ -285,21 +296,26 @@ export default function ChatPage() {
       scrollToBottom('smooth')
     }, 60)
 
+    let streamedText = ''
     try {
-      const res = await sendThreadMessage(activeThreadId, trimmed, controller.signal)
-      const assistantMsg = res?.data
-      if (assistantMsg) {
-        setMessages((prev) => {
-          const updated = [...prev]
-          if (updated[newMsgIndex]) {
-            updated[newMsgIndex] = {
-              ...updated[newMsgIndex],
-              answer: assistantMsg.content
+      await streamThreadMessage(
+        activeThreadId,
+        trimmed,
+        (token) => {
+          streamedText += token
+          setMessages((prev) => {
+            const updated = [...prev]
+            if (updated[newMsgIndex]) {
+              updated[newMsgIndex] = {
+                ...updated[newMsgIndex],
+                answer: streamedText
+              }
             }
-          }
-          return updated
-        })
-      }
+            return updated
+          })
+        },
+        controller.signal
+      )
       invalidateSpheraSessions()
     } catch (err: any) {
       if (err?.name === 'AbortError' || controller.signal.aborted) {
@@ -311,7 +327,7 @@ export default function ChatPage() {
         if (updated[newMsgIndex]) {
           updated[newMsgIndex] = {
             ...updated[newMsgIndex],
-            answer: "Une erreur est survenue lors de la réponse. Veuillez réessayer."
+            answer: streamedText || "Une erreur est survenue lors de la réponse. Veuillez réessayer."
           }
         }
         return updated
@@ -349,18 +365,23 @@ export default function ChatPage() {
       return updated
     })
 
+    let streamedText = ''
     try {
-      const res = await sendThreadMessage(activeThreadId, newQuestion, controller.signal)
-      const assistantMsg = res?.data
-      if (assistantMsg) {
-        setMessages((prev) => {
-          const updated = [...prev]
-          if (updated[index]) {
-            updated[index] = { ...updated[index], answer: assistantMsg.content }
-          }
-          return updated
-        })
-      }
+      await streamThreadMessage(
+        activeThreadId,
+        newQuestion,
+        (token) => {
+          streamedText += token
+          setMessages((prev) => {
+            const updated = [...prev]
+            if (updated[index]) {
+              updated[index] = { ...updated[index], answer: streamedText }
+            }
+            return updated
+          })
+        },
+        controller.signal
+      )
     } catch (err: any) {
       if (err?.name === 'AbortError' || controller.signal.aborted) {
         return

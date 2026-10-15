@@ -2,7 +2,7 @@ import { parseSlugId, encodeHashId } from "../lib/hashids";
 import React, { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { getSession, getAnnale, askQuestion, deleteSession, deleteAnnale, shareSession, shareAnnale, updateSessionText, addToolToSession, createFromSelection, createArtefact, updateArtefact, deleteArtefact, regenerateFiche, getChatThreads, createChatThread, sendThreadMessage, deleteChatThread, type ArtefactItem, type ChatThreadItem, API_BASE, type ToolType } from '../services/spheraApi'
+import { getSession, getAnnale, askQuestion, streamAskQuestion, deleteSession, deleteAnnale, shareSession, shareAnnale, updateSessionText, addToolToSession, createFromSelection, createArtefact, updateArtefact, deleteArtefact, regenerateFiche, getChatThreads, createChatThread, sendThreadMessage, deleteChatThread, type ArtefactItem, type ChatThreadItem, API_BASE, type ToolType } from '../services/spheraApi'
 import { StudyWorkspacePanel } from '../components/app/StudyWorkspacePanel'
 import { QuotaIndicator } from '../components/app/QuotaIndicator'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
@@ -639,13 +639,29 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
+    let streamedText = '';
     try {
-      const res = await askQuestion(id, newQuestion, type, controller.signal);
-      const normalized = normalizeAiResponse(res?.data?.answer);
+      const res = await streamAskQuestion(
+        id,
+        newQuestion,
+        type,
+        (token) => {
+          streamedText += token;
+          setChatHistory(prev => {
+            const newHist = [...prev];
+            if (newHist[index]) {
+              newHist[index] = { question: newQuestion, answer: streamedText, created_at: new Date().toISOString() };
+            }
+            return newHist;
+          });
+        },
+        controller.signal
+      );
+      const normalized = normalizeAiResponse(streamedText || res?.fullText);
       setChatHistory(prev => {
         const newHist = [...prev];
-        if (newHist[index] && newHist[index].answer === '...') {
-          newHist[index] = { question: newQuestion, answer: normalized, created_at: new Date().toISOString() };
+        if (newHist[index]) {
+          newHist[index] = { question: newQuestion, answer: normalized, created_at: res?.metadata?.created_at || new Date().toISOString() };
         }
         return newHist;
       });
@@ -799,23 +815,45 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
     setIsChatting(true);
     setActiveTab('chat');
 
+    const targetIdx = chatHistory.length;
     setChatHistory(prev => [...prev, { question: displayQuestion, answer: '...' }]);
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
+    let streamedText = '';
     try {
-      const res = await askQuestion(id, queryForAi, type, controller.signal);
-      const normalized = normalizeAiResponse(res?.data?.answer);
+      const res = await streamAskQuestion(
+        id,
+        queryForAi,
+        type,
+        (token) => {
+          streamedText += token;
+          setChatHistory(prev => {
+            const newHist = [...prev];
+            if (newHist[targetIdx]) {
+              newHist[targetIdx] = {
+                question: displayQuestion,
+                answer: streamedText,
+                created_at: new Date().toISOString(),
+              };
+            }
+            return newHist;
+          });
+        },
+        controller.signal
+      );
+
+      const normalized = normalizeAiResponse(streamedText || res?.fullText);
       const newEntry = {
         question: displayQuestion,
         answer: normalized,
-        created_at: res?.data?.created_at || new Date().toISOString(),
+        created_at: res?.metadata?.created_at || new Date().toISOString(),
       };
       setChatHistory(prev => {
         const newHist = [...prev];
-        if (newHist.length > 0 && newHist[newHist.length - 1].answer === '...') {
-          newHist[newHist.length - 1] = newEntry;
+        if (newHist[targetIdx]) {
+          newHist[targetIdx] = newEntry;
         } else {
           newHist.push(newEntry);
         }

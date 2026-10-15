@@ -335,6 +335,276 @@ export async function callMantleMiniMax(prompt: string, maxTokens: number, meta?
   );
 }
 
+async function* readOpenAiSseStream(response: Response, signal?: AbortSignal): AsyncGenerator<string, void, void> {
+  if (!response.body) return;
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+  let buffer = "";
+
+  try {
+    while (true) {
+      if (signal?.aborted) break;
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data:")) continue;
+        const dataStr = trimmed.slice(5).trim();
+        if (dataStr === "[DONE]") return;
+        try {
+          const parsed = JSON.parse(dataStr);
+          const token = parsed.choices?.[0]?.delta?.content;
+          if (token) {
+            yield token;
+          }
+        } catch {
+          // ignore incomplete JSON chunk
+        }
+      }
+    }
+    if (buffer.trim()) {
+      const trimmed = buffer.trim();
+      if (trimmed.startsWith("data:")) {
+        const dataStr = trimmed.slice(5).trim();
+        if (dataStr !== "[DONE]") {
+          try {
+            const parsed = JSON.parse(dataStr);
+            const token = parsed.choices?.[0]?.delta?.content;
+            if (token) yield token;
+          } catch {}
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+async function* readGeminiSseStream(response: Response, signal?: AbortSignal): AsyncGenerator<string, void, void> {
+  if (!response.body) return;
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+  let buffer = "";
+
+  try {
+    while (true) {
+      if (signal?.aborted) break;
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data:")) continue;
+        const dataStr = trimmed.slice(5).trim();
+        if (dataStr === "[DONE]") return;
+        try {
+          const parsed = JSON.parse(dataStr);
+          const token = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (token) {
+            yield token;
+          }
+        } catch {
+          // ignore incomplete JSON chunk
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+/** Stream from Amazon Bedrock Mantle OpenAI-compatible endpoints with AWS SigV4 signing. */
+export async function* streamMantleModel(
+  providerName: string,
+  modelId: string,
+  prompt: string,
+  maxTokens: number,
+  inputPrice: number,
+  outputPrice: number,
+  meta?: CallMeta,
+  signal?: AbortSignal,
+): AsyncGenerator<string, { fullText: string }, void> {
+  const endpoint = env.ai.bedrockMantle.endpoint.replace(/\/+$/, "");
+  const url = `${endpoint}/chat/completions`;
+
+  const payload = {
+    model: modelId,
+    messages: [{ role: "user", content: prompt }],
+    max_tokens: maxTokens,
+    temperature: 0,
+    stream: true,
+  };
+  const bodyString = JSON.stringify(payload);
+  const signed = await signMantleRequest(url, bodyString);
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  if (signal) {
+    signal.addEventListener("abort", () => controller.abort(), { once: true });
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: signed.headers,
+      body: bodyString,
+      signal: controller.signal,
+    });
+  } catch (fetchError: any) {
+    if (signal?.aborted) return { fullText: "" };
+    if (fetchError?.name === "AbortError") {
+      throw new Error(`Timeout Mantle (${REQUEST_TIMEOUT_MS}ms dépassé pour ${modelId})`);
+    }
+    throw new Error(`Erreur réseau Mantle (${modelId}): ${fetchError?.message || String(fetchError)}`);
+  } finally {
+    clearTimeout(timer);
+  }
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    let detailMsg = errorText.slice(0, 300);
+    try {
+      const parsed = JSON.parse(errorText);
+      detailMsg = parsed?.error?.message || parsed?.message || detailMsg;
+    } catch {}
+    throw new Error(`HTTP ${response.status} Bedrock Mantle (${modelId}): ${detailMsg}`);
+  }
+
+  let fullText = "";
+  for await (const token of readOpenAiSseStream(response, signal)) {
+    fullText += token;
+    yield token;
+  }
+
+  const inputTokens = Math.ceil(prompt.length / 4);
+  const outputTokens = Math.ceil(fullText.length / 4);
+  const cost = inputTokens * inputPrice + outputTokens * outputPrice;
+  recordUsageLog(providerName, modelId, meta, inputTokens, outputTokens, cost);
+
+  return { fullText };
+}
+
+/** Stream Groq models. */
+export async function* streamGroq(
+  prompt: string,
+  maxTokens: number,
+  meta?: CallMeta,
+  signal?: AbortSignal,
+): AsyncGenerator<string, { fullText: string }, void> {
+  const apiKey = env.ai.groqApiKey;
+  if (!apiKey) throw new Error("GROQ_API_KEY non configurée");
+
+  const modelId = "openai/gpt-oss-120b";
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  if (signal) {
+    signal.addEventListener("abort", () => controller.abort(), { once: true });
+  }
+
+  let response: Response;
+  try {
+    response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: modelId,
+        max_tokens: maxTokens,
+        temperature: 0,
+        stream: true,
+        messages: [{ role: "user", content: prompt }],
+      }),
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    if (signal?.aborted) return { fullText: "" };
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`HTTP ${response.status} Groq: ${errorText.slice(0, 300)}`);
+  }
+
+  let fullText = "";
+  for await (const token of readOpenAiSseStream(response, signal)) {
+    fullText += token;
+    yield token;
+  }
+
+  const inputTokens = Math.ceil(prompt.length / 4);
+  const outputTokens = Math.ceil(fullText.length / 4);
+  recordUsageLog("groq", modelId, meta, inputTokens, outputTokens, 0);
+
+  return { fullText };
+}
+
+/** Stream Gemini models. */
+export async function* streamGemini(
+  prompt: string,
+  maxTokens: number,
+  meta?: CallMeta,
+  signal?: AbortSignal,
+): AsyncGenerator<string, { fullText: string }, void> {
+  const apiKey = env.ai.geminiApiKey;
+  if (!apiKey) throw new Error("GEMINI_API_KEY non configurée");
+
+  const modelId = "gemini-2.5-flash";
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  if (signal) {
+    signal.addEventListener("abort", () => controller.abort(), { once: true });
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?alt=sse`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: maxTokens, temperature: 0 },
+        }),
+        signal: controller.signal,
+      },
+    );
+  } catch (err: any) {
+    if (signal?.aborted) return { fullText: "" };
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`HTTP ${response.status} Gemini: ${errorText.slice(0, 300)}`);
+  }
+
+  let fullText = "";
+  for await (const token of readGeminiSseStream(response, signal)) {
+    fullText += token;
+    yield token;
+  }
+
+  const inputTokens = Math.ceil(prompt.length / 4);
+  const outputTokens = Math.ceil(fullText.length / 4);
+  const cost = inputTokens * (0.075 / 1_000_000) + outputTokens * (0.30 / 1_000_000);
+  recordUsageLog("gemini", modelId, meta, inputTokens, outputTokens, cost);
+
+  return { fullText };
+}
+
 /**
  * Call Claude Haiku via Amazon Bedrock Mantle using the Anthropic Messages API surface
  * (`/anthropic/v1/messages`).
@@ -786,6 +1056,121 @@ export async function callWithFallback(
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.warn(`[sphera-ai] ${provider.name} failed: ${message}`);
+      attempts.push({ name: provider.name, error: message });
+    }
+  }
+
+  throw new AllProvidersFailedError(attempts);
+}
+
+interface StreamProvider {
+  name: string;
+  stream: (
+    prompt: string,
+    maxTokens: number,
+    meta?: CallMeta,
+    signal?: AbortSignal,
+  ) => AsyncGenerator<string, { fullText: string }, void>;
+}
+
+export function buildStreamProviderChain(toolType: string | undefined, isBudgetExceeded: boolean): StreamProvider[] {
+  const chain: StreamProvider[] = [];
+
+  const mantleDeepSeek: StreamProvider = {
+    name: "bedrock-mantle-deepseek",
+    stream: (p, t, m, s) => {
+      const { deepseekModelId, deepseekInputPrice, deepseekOutputPrice } = env.ai.bedrockMantle;
+      return streamMantleModel("bedrock-mantle-deepseek", deepseekModelId, p, t, deepseekInputPrice, deepseekOutputPrice, m, s);
+    },
+  };
+  const mantleMiniMax: StreamProvider = {
+    name: "bedrock-mantle-minimax",
+    stream: (p, t, m, s) => {
+      const { minimaxModelId, minimaxInputPrice, minimaxOutputPrice } = env.ai.bedrockMantle;
+      return streamMantleModel("bedrock-mantle-minimax", minimaxModelId, p, t, minimaxInputPrice, minimaxOutputPrice, m, s);
+    },
+  };
+  const gemini: StreamProvider = {
+    name: "gemini-2.5-flash",
+    stream: (p, t, m, s) => streamGemini(p, t, m, s),
+  };
+  const groq: StreamProvider = {
+    name: "groq",
+    stream: (p, t, m, s) => streamGroq(p, t, m, s),
+  };
+
+  const hasMantleConfig = Boolean(
+    (env.ai.bedrock.accessKeyId && env.ai.bedrock.secretAccessKey) || env.ai.bedrockMantle.apiKey,
+  );
+  const allowMantle = hasMantleConfig && !isBudgetExceeded;
+
+  const isMiniMaxPrimary = env.ai.bedrockMantle.primaryStructured === "minimax";
+  const primaryStructured = isMiniMaxPrimary ? mantleMiniMax : mantleDeepSeek;
+  const secondaryStructured = isMiniMaxPrimary ? mantleDeepSeek : mantleMiniMax;
+
+  if (toolType === "qa") {
+    // Q&A priority: MiniMax -> DeepSeek -> Gemini -> Groq
+    if (allowMantle) chain.push(primaryStructured, secondaryStructured);
+    if (env.ai.geminiApiKey) chain.push(gemini);
+    if (env.ai.groqApiKey) chain.push(groq);
+  } else {
+    if (allowMantle) chain.push(primaryStructured, secondaryStructured);
+    if (env.ai.geminiApiKey) chain.push(gemini);
+    if (env.ai.groqApiKey) chain.push(groq);
+  }
+
+  return chain;
+}
+
+/** Try each streaming provider in order; streams chunks as they arrive. */
+export async function* streamWithFallback(
+  prompt: string,
+  maxTokens = TOKENS_DEFAULT,
+  meta?: CallMeta,
+  signal?: AbortSignal,
+): AsyncGenerator<string, { fullText: string }, void> {
+  const attempts: ProviderAttempt[] = [];
+
+  let isBudgetExceeded = false;
+  const hasMantleConfig = Boolean(
+    (env.ai.bedrock.accessKeyId && env.ai.bedrock.secretAccessKey) || env.ai.bedrockMantle.apiKey,
+  );
+  if (hasMantleConfig) {
+    try {
+      const stats = await getBedrockUsageStats();
+      if (stats.isThresholdExceeded) {
+        console.warn(
+          `[sphera-ai] Seuil de sécurité Bedrock/Mantle atteint (${stats.percentUsed.toFixed(1)}%). Bascule providers alternatifs pour stream.`,
+        );
+        isBudgetExceeded = true;
+      }
+    } catch {}
+  }
+
+  const providers = buildStreamProviderChain(meta?.toolType, isBudgetExceeded);
+
+  for (const provider of providers) {
+    let hasEmitted = false;
+    let accumulated = "";
+    try {
+      console.log(`[sphera-ai] trying stream with ${provider.name} for ${meta?.toolType ?? "unknown"}`);
+      const generator = provider.stream(prompt, maxTokens, meta, signal);
+      for await (const chunk of generator) {
+        hasEmitted = true;
+        accumulated += chunk;
+        yield chunk;
+      }
+      console.log(`[sphera-ai] ${provider.name} stream succeeded (${accumulated.length} chars)`);
+      return { fullText: accumulated };
+    } catch (err: any) {
+      if (signal?.aborted) {
+        return { fullText: accumulated };
+      }
+      if (hasEmitted) {
+        throw err;
+      }
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn(`[sphera-ai] ${provider.name} stream failed before emitting: ${message}`);
       attempts.push({ name: provider.name, error: message });
     }
   }

@@ -9,7 +9,7 @@
 import { badRequest, serviceUnavailable } from "../../lib/errors.js";
 import { parseJsonWithFallback, UnparseableModelOutputError } from "./json.js";
 import { annalePrompt, qaPrompt, freeChatPrompt, suggestionsPrompt, toolPrompt, quizFromSelectionPrompt, flashcardFromSelectionPrompt, type AnnaleMode, type ToolType } from "./prompts.js";
-import { AllProvidersFailedError, callWithFallback, TOKENS_ANNALE, TOKENS_DEFAULT, TOKENS_FLASHCARDS, TOKENS_QUIZ } from "./providers.js";
+import { AllProvidersFailedError, callWithFallback, streamWithFallback, TOKENS_ANNALE, TOKENS_DEFAULT, TOKENS_FLASHCARDS, TOKENS_QUIZ } from "./providers.js";
 import { buildContextPrefix, buildStyleInstructions, getUserAcademicContext, getUserPreferences } from "./userContext.js";
 import { extractRelevantPassages, type QaEntry } from "./rag.js";
 export { type QaEntry } from "./rag.js";
@@ -179,6 +179,39 @@ export async function generateQaAnswer(
     return (
       await callWithFallback(prompt, TOKENS_DEFAULT, { toolType: "qa", userId })
     ).trim();
+  } catch (error) {
+    throw asApiError(error);
+  }
+}
+
+/**
+ * Stream an answer grounded in the course text (RAG), or general academic tutor chat if sourceText is empty.
+ * Yields tokens in real-time as they are produced by the AI model.
+ */
+export async function* streamQaAnswer(
+  sourceText: string,
+  question: string,
+  userId?: number,
+  history?: QaEntry[],
+  signal?: AbortSignal,
+): AsyncGenerator<string, { fullText: string }, void> {
+  const prefix = await resolveContextPrefix(userId);
+
+  // If no source text is provided (Free / General Academic Chat mode)
+  if (!sourceText || sourceText.trim().length < MIN_SOURCE_CHARS) {
+    const prompt = prefix + freeChatPrompt(question, history);
+    try {
+      return yield* streamWithFallback(prompt, TOKENS_DEFAULT, { toolType: "qa", userId }, signal);
+    } catch (error) {
+      throw asApiError(error);
+    }
+  }
+
+  // Course-grounded RAG mode
+  const { text: processedText, isFiltered } = extractRelevantPassages(sourceText, question, history);
+  const prompt = prefix + qaPrompt(processedText, question, history, isFiltered);
+  try {
+    return yield* streamWithFallback(prompt, TOKENS_DEFAULT, { toolType: "qa", userId }, signal);
   } catch (error) {
     throw asApiError(error);
   }

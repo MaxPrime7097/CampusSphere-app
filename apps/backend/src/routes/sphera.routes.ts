@@ -39,6 +39,7 @@ import {
   generateAnnale,
   generateFromSelection,
   generateQaAnswer,
+  streamQaAnswer,
   generateSuggestions,
   generateTool,
   isToolType,
@@ -1523,21 +1524,82 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
     }
   }
 
-  const answer = await generateQaAnswer(
-    thread.session.extractedText,
-    question,
-    me.id,
-    previousThreadHistory,
-  );
+  const isStream =
+    req.headers.accept?.includes("text/event-stream") ||
+    req.query.stream === "true" ||
+    (req.body && (req.body as any).stream === true);
 
+  if (!isStream) {
+    const answer = await generateQaAnswer(
+      thread.session.extractedText,
+      question,
+      me.id,
+      previousThreadHistory,
+    );
+
+    await prisma.chatMessage.create({
+      data: { threadId: thread.id, role: "user", content: question },
+    });
+    const assistantMsg = await prisma.chatMessage.create({
+      data: { threadId: thread.id, role: "assistant", content: answer },
+    });
+
+    return ok(res, assistantMsg);
+  }
+
+  // ─── SSE Streaming Mode ──────────────────────────────────────
+  const abortController = new AbortController();
+  req.on("close", () => {
+    abortController.abort();
+  });
+
+  // 1. Immediately persist user message
   await prisma.chatMessage.create({
     data: { threadId: thread.id, role: "user", content: question },
   });
-  const assistantMsg = await prisma.chatMessage.create({
-    data: { threadId: thread.id, role: "assistant", content: answer },
-  });
 
-  ok(res, assistantMsg);
+  // 2. Setup SSE headers
+  res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders?.();
+
+  let fullAnswer = "";
+  try {
+    const stream = streamQaAnswer(
+      thread.session.extractedText,
+      question,
+      me.id,
+      previousThreadHistory,
+      abortController.signal,
+    );
+
+    for await (const token of stream) {
+      fullAnswer += token;
+      res.write(`data: ${JSON.stringify({ token })}\n\n`);
+    }
+
+    const assistantMsg = await prisma.chatMessage.create({
+      data: { threadId: thread.id, role: "assistant", content: fullAnswer },
+    });
+
+    res.write(`data: ${JSON.stringify({ done: true, message: assistantMsg })}\n\n`);
+    res.end();
+  } catch (err: any) {
+    if (abortController.signal.aborted) {
+      if (fullAnswer.trim()) {
+        await prisma.chatMessage.create({
+          data: { threadId: thread.id, role: "assistant", content: fullAnswer },
+        }).catch(() => {});
+      }
+      res.end();
+      return;
+    }
+    console.error("[sphera-ai] SSE thread stream error:", err);
+    res.write(`data: ${JSON.stringify({ error: err?.message || "Erreur de génération" })}\n\n`);
+    res.end();
+  }
 });
 
 /**
@@ -1758,18 +1820,86 @@ spheraRouter.post("/sessions/:id/ask/", async (req, res) => {
       ? (() => { try { const p = JSON.parse(session.qaHistory as string); return Array.isArray(p) ? (p as unknown as QaEntry[]) : []; } catch { return []; } })()
       : [];
 
-  const entry: QaEntry = {
-    question,
-    answer: await generateQaAnswer(session.extractedText, question, me.id, rawHistory),
-    created_at: new Date().toISOString(),
-  };
+  const isStream =
+    req.headers.accept?.includes("text/event-stream") ||
+    req.query.stream === "true" ||
+    (req.body && (req.body as any).stream === true);
 
-  await prisma.studySession.update({
-    where: { id: session.id },
-    data: { qaHistory: appendQa(session.qaHistory, entry) as unknown as Prisma.InputJsonValue },
+  if (!isStream) {
+    const entry: QaEntry = {
+      question,
+      answer: await generateQaAnswer(session.extractedText, question, me.id, rawHistory),
+      created_at: new Date().toISOString(),
+    };
+
+    await prisma.studySession.update({
+      where: { id: session.id },
+      data: { qaHistory: appendQa(session.qaHistory, entry) as unknown as Prisma.InputJsonValue },
+    });
+
+    return ok(res, entry);
+  }
+
+  // ─── SSE Streaming Mode ──────────────────────────────────────
+  const abortController = new AbortController();
+  req.on("close", () => {
+    abortController.abort();
   });
 
-  ok(res, entry);
+  res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders?.();
+
+  let fullAnswer = "";
+  try {
+    const stream = streamQaAnswer(
+      session.extractedText,
+      question,
+      me.id,
+      rawHistory,
+      abortController.signal,
+    );
+
+    for await (const token of stream) {
+      fullAnswer += token;
+      res.write(`data: ${JSON.stringify({ token })}\n\n`);
+    }
+
+    const entry: QaEntry = {
+      question,
+      answer: fullAnswer,
+      created_at: new Date().toISOString(),
+    };
+
+    await prisma.studySession.update({
+      where: { id: session.id },
+      data: { qaHistory: appendQa(session.qaHistory, entry) as unknown as Prisma.InputJsonValue },
+    });
+
+    res.write(`data: ${JSON.stringify({ done: true, entry })}\n\n`);
+    res.end();
+  } catch (err: any) {
+    if (abortController.signal.aborted) {
+      if (fullAnswer.trim()) {
+        const entry: QaEntry = {
+          question,
+          answer: fullAnswer,
+          created_at: new Date().toISOString(),
+        };
+        await prisma.studySession.update({
+          where: { id: session.id },
+          data: { qaHistory: appendQa(session.qaHistory, entry) as unknown as Prisma.InputJsonValue },
+        }).catch(() => {});
+      }
+      res.end();
+      return;
+    }
+    console.error("[sphera-ai] SSE session ask error:", err);
+    res.write(`data: ${JSON.stringify({ error: err?.message || "Erreur de génération" })}\n\n`);
+    res.end();
+  }
 });
 
 const updateTextSchema = z.object({
@@ -1921,18 +2051,86 @@ spheraRouter.post("/annales/:id/ask/", async (req, res) => {
       ? (() => { try { const p = JSON.parse(session.qaHistory as string); return Array.isArray(p) ? (p as unknown as QaEntry[]) : []; } catch { return []; } })()
       : [];
 
-  const entry: QaEntry = {
-    question,
-    answer: await generateQaAnswer(session.extractedText, question, me.id, rawHistory),
-    created_at: new Date().toISOString(),
-  };
+  const isStream =
+    req.headers.accept?.includes("text/event-stream") ||
+    req.query.stream === "true" ||
+    (req.body && (req.body as any).stream === true);
 
-  await prisma.annaleSession.update({
-    where: { id: session.id },
-    data: { qaHistory: appendQa(session.qaHistory, entry) as unknown as Prisma.InputJsonValue },
+  if (!isStream) {
+    const entry: QaEntry = {
+      question,
+      answer: await generateQaAnswer(session.extractedText, question, me.id, rawHistory),
+      created_at: new Date().toISOString(),
+    };
+
+    await prisma.annaleSession.update({
+      where: { id: session.id },
+      data: { qaHistory: appendQa(session.qaHistory, entry) as unknown as Prisma.InputJsonValue },
+    });
+
+    return ok(res, entry);
+  }
+
+  // ─── SSE Streaming Mode ──────────────────────────────────────
+  const abortController = new AbortController();
+  req.on("close", () => {
+    abortController.abort();
   });
 
-  ok(res, entry);
+  res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders?.();
+
+  let fullAnswer = "";
+  try {
+    const stream = streamQaAnswer(
+      session.extractedText,
+      question,
+      me.id,
+      rawHistory,
+      abortController.signal,
+    );
+
+    for await (const token of stream) {
+      fullAnswer += token;
+      res.write(`data: ${JSON.stringify({ token })}\n\n`);
+    }
+
+    const entry: QaEntry = {
+      question,
+      answer: fullAnswer,
+      created_at: new Date().toISOString(),
+    };
+
+    await prisma.annaleSession.update({
+      where: { id: session.id },
+      data: { qaHistory: appendQa(session.qaHistory, entry) as unknown as Prisma.InputJsonValue },
+    });
+
+    res.write(`data: ${JSON.stringify({ done: true, entry })}\n\n`);
+    res.end();
+  } catch (err: any) {
+    if (abortController.signal.aborted) {
+      if (fullAnswer.trim()) {
+        const entry: QaEntry = {
+          question,
+          answer: fullAnswer,
+          created_at: new Date().toISOString(),
+        };
+        await prisma.annaleSession.update({
+          where: { id: session.id },
+          data: { qaHistory: appendQa(session.qaHistory, entry) as unknown as Prisma.InputJsonValue },
+        }).catch(() => {});
+      }
+      res.end();
+      return;
+    }
+    console.error("[sphera-ai] SSE annale ask error:", err);
+    res.write(`data: ${JSON.stringify({ error: err?.message || "Erreur de génération" })}\n\n`);
+    res.end();
+  }
 });
 
 spheraRouter.post("/annales/:id/share/", async (req, res) => {
