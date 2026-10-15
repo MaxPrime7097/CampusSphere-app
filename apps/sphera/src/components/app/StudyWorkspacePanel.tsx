@@ -52,7 +52,8 @@ import { AiMessageItem } from './AiMessageItem'
 import { CommandMenu, COMMANDS, type Command } from './CommandMenu'
 import { QuestionSuggestions } from './QuestionSuggestions'
 import { isTextEnglish } from '../../utils/detectLanguage'
-import { createArtefact, type ArtefactItem, type ChatThreadItem, type ToolType } from '../../services/spheraApi'
+import { createArtefact, correctAnnale, type ArtefactItem, type ChatThreadItem, type ToolType } from '../../services/spheraApi'
+import { updateSessionDetailCache } from '../../hooks/useSpheraQueries'
 import { usePodcastPlayer, podcastStore } from '../../utils/podcastPlayerStore'
 import { GenerateScopeModal } from './GenerateScopeModal'
 import { detectChaptersFromText, type DetectedChapter } from '../../utils/extractChapters'
@@ -191,7 +192,9 @@ export function StudyWorkspacePanel({
     (sessionContent?.sections && sessionContent.sections.length > 0) ||
     (sessionContent?.corrections && sessionContent.corrections.length > 0) ||
     (rawAnnale?.sections && rawAnnale.sections.length > 0) ||
-    (rawAnnale?.corrections && rawAnnale.corrections.length > 0)
+    (rawAnnale?.corrections && rawAnnale.corrections.length > 0) ||
+    (rawAnnale?.content?.sections && rawAnnale.content.sections.length > 0) ||
+    (rawAnnale?.content?.corrections && rawAnnale.content.corrections.length > 0)
   )
 
   // Active view: default to AnnaleView ONLY if there is already a direct correction, otherwise null (dashboard)
@@ -216,6 +219,27 @@ export function StudyWorkspacePanel({
 
     setGeneratingAnnaleMode(mode)
     try {
+      if (rawAnnale || isAnnale) {
+        try {
+          const res = await correctAnnale(sessionId, mode)
+          const updatedAnnale = res?.data ?? res
+          if (updatedAnnale) {
+            updateSessionDetailCache(sessionId, 'annale', () => updatedAnnale)
+            if (typeof onGenerateTool === 'function') {
+              onGenerateTool('annale' as any)
+            }
+            setActiveView({
+              type: 'annale',
+              title: mode === 'rapide' ? 'Correction Rapide' : 'Correction Complète',
+            })
+            showPanelFeedback(mode === 'rapide' ? '⚡ Correction Rapide disponible !' : '📘 Correction Complète disponible !', 'success')
+            return
+          }
+        } catch (annaleErr: any) {
+          console.warn('[StudyWorkspacePanel] correctAnnale fallback to createArtefact:', annaleErr)
+        }
+      }
+
       const res = await createArtefact(sessionId, {
         type: artType,
         title: mode === 'rapide' ? 'Correction Rapide' : 'Correction Complète',

@@ -454,13 +454,24 @@ export async function getSuggestions(sessionId: number | string): Promise<string
   }
 }
 
-export async function generateAnnale(params: { file: File; mode: 'complete' | 'rapide' }) {
+export async function generateAnnale(params: { file?: File; resource_id?: number; mode?: 'complete' | 'rapide'; init_only?: boolean }) {
   const formData = new FormData()
-  formData.append('file', params.file)
-  formData.append('mode', params.mode)
+  if (params.file) formData.append('file', params.file)
+  if (params.resource_id) formData.append('resource_id', String(params.resource_id))
+  if (params.mode) formData.append('mode', params.mode)
+  if (params.init_only) formData.append('init_only', 'true')
   const res = await apiFetch<{ success: boolean; data: any }>(
     'api/sphera/generate/annale/',
     { method: 'POST', body: formData, requireAuth: true }
+  )
+  notifyQuotaUpdated()
+  return res
+}
+
+export async function correctAnnale(id: number | string, mode: 'complete' | 'rapide' = 'complete') {
+  const res = await apiFetch<{ success: boolean; data: any }>(
+    `api/sphera/annales/${id}/correct/`,
+    { method: 'POST', body: { mode }, requireAuth: true }
   )
   notifyQuotaUpdated()
   return res

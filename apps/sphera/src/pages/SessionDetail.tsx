@@ -313,7 +313,8 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
 
   const handleDelete = async () => {
     try {
-      if (type === 'annale') await deleteAnnale(id as string)
+      const isAnnaleDoc = type === 'annale' || session?.mode !== undefined || session?.sections !== undefined || session?.content?.sections !== undefined || session?.content?.isAnnaleWorkspace !== undefined
+      if (isAnnaleDoc) await deleteAnnale(id as string)
       else await deleteSession(id as string)
       navigate('/app')
     } catch (e: any) {
@@ -324,7 +325,8 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
   const handleOpenShare = async () => {
     try {
       if (!session.is_shared) {
-        const shareFn = type === 'annale' ? shareAnnale : shareSession
+        const isAnnaleDoc = type === 'annale' || session?.mode !== undefined || session?.sections !== undefined || session?.content?.sections !== undefined || session?.content?.isAnnaleWorkspace !== undefined
+        const shareFn = isAnnaleDoc ? shareAnnale : shareSession
         await shareFn(id as string)
         setSession({ ...session, is_shared: true })
       }
@@ -357,7 +359,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
       }
     }
 
-    const isAnnaleSession = type === 'annale' || payload.mode !== undefined || payload.sections !== undefined
+    const isAnnaleSession = type === 'annale' || payload.mode !== undefined || payload.sections !== undefined || payload.content?.sections !== undefined || payload.content?.mode !== undefined || payload.content?.isAnnaleWorkspace !== undefined || (Array.isArray(payload.artefacts) && payload.artefacts.some((a: any) => a.type === 'annale_rapide' || a.type === 'annale_complete'))
     const types = payload.tool_types || (isAnnaleSession ? ['annale'] : ['fiche'])
     if (types.length && !activeTab) setActiveTab(types[0])
     else if (!activeTab) setActiveTab(isAnnaleSession ? 'annale' : 'fiche')
@@ -482,7 +484,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
 
   if (!session) return null
 
-  const isAnnale = type === 'annale' || session.mode !== undefined || session.sections !== undefined
+  const isAnnale = type === 'annale' || session.mode !== undefined || session.sections !== undefined || session.content?.sections !== undefined || session.content?.mode !== undefined || session.content?.isAnnaleWorkspace !== undefined || (Array.isArray(session.artefacts) && session.artefacts.some((a: any) => a.type === 'annale_rapide' || a.type === 'annale_complete'))
   const STUDY_TOOLS: ToolType[] = ['fiche', 'quiz', 'flashcards', 'mindmap', 'audio']
   const TOOL_LABELS: Record<string, string> = {
     fiche: t('sessionDetail.tools.fiche'),
@@ -916,7 +918,8 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
     abortControllerRef.current = controller
 
     try {
-      const res = await askQuestion(id!, prompt, type, controller.signal)
+      const askType = (type === 'annale' || session?.mode !== undefined || session?.sections !== undefined || session?.content?.sections !== undefined || session?.content?.isAnnaleWorkspace !== undefined) ? 'annale' : 'session'
+      const res = await askQuestion(id!, prompt, askType, controller.signal)
       const normalized = normalizeAiResponse(res?.data?.answer)
       const newEntry = {
         question: display,
@@ -934,7 +937,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
       });
 
       if (id) {
-        updateSessionDetailCache(id, type, (old: any) => {
+        updateSessionDetailCache(id, askType, (old: any) => {
           const prevQa = Array.isArray(old?.qa_history) ? old.qa_history : [];
           return { ...old, qa_history: [...prevQa, newEntry] };
         });
