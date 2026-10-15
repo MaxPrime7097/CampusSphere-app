@@ -61,7 +61,8 @@ import { AiMessageItem } from '../components/app/AiMessageItem'
 import { TextSelectionToolbar, type SelectionActionType } from '../components/app/TextSelectionToolbar'
 import { useTranslation } from 'react-i18next'
 import { setCached } from '../utils/sessionCache'
-import { updateSessionDetailCache } from '../hooks/useSpheraQueries'
+import { updateSessionDetailCache, invalidateSpheraSessions } from '../hooks/useSpheraQueries'
+import { encodeHashId } from '../lib/hashids'
 
 export default function CreateSession() {
   const { t } = useTranslation('study')
@@ -431,7 +432,13 @@ export default function CreateSession() {
       if (payload.extracted_text) {
         setTextSource(payload.extracted_text)
       }
-      if (payload.id) setSessionId(payload.id)
+      if (payload.id) {
+        setSessionId(payload.id)
+        invalidateSpheraSessions()
+        const hashId = encodeHashId(payload.id) || payload.id
+        navigate(`/sessions/${hashId}`, { replace: true })
+        return
+      }
       if (payload.qa_history) setChatHistory(payload.qa_history)
       setActiveTab('chat')
     } catch (e: any) {
@@ -450,12 +457,16 @@ export default function CreateSession() {
     setError(null)
     const stepTimer = setTimeout(() => setCreationStep(2), 1500)
     try {
-      // Fast initialization: extract text and create session instantly (1-2s)
-      const result = await generateFromUpload({ file, tool_types: [] })
+      // Fast initialization: extract text and create AnnaleSession instantly (1-2s)
+      const result = await generateAnnale({ file, mode: annaleMode, init_only: true })
       clearTimeout(stepTimer)
       const payload = result?.data ?? result
       if (payload.id) {
         setSessionId(payload.id)
+        invalidateSpheraSessions()
+        const hashId = encodeHashId(payload.id) || payload.id
+        navigate(`/annales/${hashId}`, { replace: true })
+        return
       }
       if (payload.extracted_text) {
         setTextSource(payload.extracted_text)
@@ -466,8 +477,8 @@ export default function CreateSession() {
         setThreads(payload.chat_threads)
         setActiveThreadId(payload.chat_threads[0].id)
       }
-      setGeneratedContent({ isAnnaleWorkspace: true, extracted_text: payload.extracted_text, id: payload.id })
-      setRawAnnaleData({ isAnnaleWorkspace: true, extracted_text: payload.extracted_text, id: payload.id })
+      setGeneratedContent({ ...payload, isAnnaleWorkspace: true })
+      setRawAnnaleData(payload)
       setActiveTab('chat')
     } catch (e: any) {
       clearTimeout(stepTimer)

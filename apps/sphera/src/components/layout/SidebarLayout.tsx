@@ -162,7 +162,10 @@ export function SidebarLayout() {
   const { recentSessions, allSearchItems } = React.useMemo(() => {
     const sess = (rawSessions || [])
       .filter((s: any) => s.source_filename !== 'Discussion libre' && s.sourceFilename !== 'Discussion libre' && s.source_filename !== '__sphera_standalone_chat__' && s.sourceFilename !== '__sphera_standalone_chat__')
-      .map((s: any) => ({ ...s, _type: 'session' }))
+      .map((s: any) => {
+        const isAnn = s.content?.isAnnaleWorkspace || s.content?.sections || s.content?.mode || (Array.isArray(s.artefacts) && s.artefacts.some((a: any) => a.type === 'annale_rapide' || a.type === 'annale_complete'))
+        return { ...s, _type: isAnn ? 'annale' : 'session' }
+      })
     const ann = (rawAnnales || []).map((a: any) => ({ ...a, _type: 'annale' }))
     const quiz = (rawQuiz || []).map((q: any) => ({ ...q, _type: 'quiz' }))
     const chats = (rawChats || []).map((c: any) => ({ ...c, _type: 'chat' }))

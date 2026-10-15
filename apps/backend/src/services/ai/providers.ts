@@ -734,8 +734,8 @@ export function buildProviderChain(toolType: string | undefined, isBudgetExceede
     if (env.ai.geminiApiKey) chain.push(gemini);
     if (env.ai.groqApiKey) chain.push(groq);
   } else if (toolType === "annale") {
-    // Complex reasoning and pedagogical conversational voice: Claude first
-    if (allowMantle) chain.push(mantleClaude, primaryStructured, secondaryStructured);
+    // Fast & structured JSON correction with reasoning: primaryStructured (MiniMax / DeepSeek) first, then secondary, then mantleClaude as fallback
+    if (allowMantle) chain.push(primaryStructured, secondaryStructured, mantleClaude);
     if (env.ai.geminiApiKey) chain.push(gemini);
     if (env.ai.groqApiKey) chain.push(groq);
   } else {
