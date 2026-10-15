@@ -38,6 +38,7 @@ import {
   generateFromUpload,
   generateAnnale,
   askQuestion,
+  streamAskQuestion,
   addToolToSession,
   createFromSelection,
   createArtefact,
@@ -46,6 +47,7 @@ import {
   regenerateFiche,
   createChatThread,
   sendThreadMessage,
+  streamThreadMessage,
   deleteChatThread,
   type ArtefactItem,
   type ChatThreadItem,
@@ -286,6 +288,9 @@ export default function CreateSession() {
   const handleSendThreadMessage = async (threadId: number, questionText: string) => {
     setIsChatting(true)
     setActiveTab('chat')
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
     try {
       setThreads(prev => prev.map(t => {
         if (t.id === threadId) {
@@ -301,22 +306,53 @@ export default function CreateSession() {
         return t
       }))
 
-      const res = await sendThreadMessage(threadId, questionText)
-      const assistantMsg = res.data
+      let streamedText = ''
+      const res = await streamThreadMessage(
+        threadId,
+        questionText,
+        (token) => {
+          streamedText += token
+          setThreads(prev => prev.map(t => {
+            if (t.id === threadId) {
+              const msgs = [...(t.messages || [])]
+              if (msgs.length > 0) {
+                const lastIdx = msgs.length - 1
+                if (msgs[lastIdx].role === 'assistant') {
+                  msgs[lastIdx] = {
+                    ...msgs[lastIdx],
+                    content: streamedText,
+                  }
+                }
+              }
+              return { ...t, messages: msgs }
+            }
+            return t
+          }))
+        },
+        controller.signal
+      )
+      const assistantMsg = res?.metadata
 
       setThreads(prev => prev.map(t => {
         if (t.id === threadId) {
-          const msgs = (t.messages || []).map(m => m.content === '...' ? {
-            id: assistantMsg.id,
-            role: 'assistant' as const,
-            content: assistantMsg.content,
-            createdAt: assistantMsg.createdAt,
-          } : m)
+          const msgs = [...(t.messages || [])]
+          if (msgs.length > 0) {
+            const lastIdx = msgs.length - 1
+            if (msgs[lastIdx].role === 'assistant') {
+              msgs[lastIdx] = {
+                id: assistantMsg?.id || msgs[lastIdx].id,
+                role: 'assistant' as const,
+                content: assistantMsg?.content || streamedText,
+                createdAt: assistantMsg?.createdAt || new Date().toISOString(),
+              }
+            }
+          }
           return { ...t, messages: msgs }
         }
         return t
       }))
     } catch (err: any) {
+      if (err?.name === 'AbortError' || controller.signal.aborted) return
       setThreads(prev => prev.map(t => {
         if (t.id === threadId) {
           const msgs = (t.messages || []).map(m => m.content === '...' ? {
@@ -328,7 +364,10 @@ export default function CreateSession() {
         return t
       }))
     } finally {
-      setIsChatting(false)
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null
+        setIsChatting(false)
+      }
     }
   }
 
@@ -595,18 +634,29 @@ export default function CreateSession() {
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
+    let streamedText = '';
     try {
-      const res = await askQuestion(
+      const res = await streamAskQuestion(
         activeSessionId,
         trimmed,
         generationMode === 'annale' ? 'annale' : 'session',
+        (token) => {
+          streamedText += token;
+          setChatHistory(prev => {
+            const newHist = [...prev];
+            if (newHist[index]) {
+              newHist[index] = { question: trimmed, answer: streamedText, created_at: new Date().toISOString() };
+            }
+            return newHist;
+          });
+        },
         controller.signal
       );
-      const normalized = normalizeAiResponse(res?.data?.answer);
+      const normalized = normalizeAiResponse(streamedText || res?.fullText);
       setChatHistory(prev => {
         const newHist = [...prev];
-        if (newHist[index] && newHist[index].answer === '...') {
-          newHist[index].answer = normalized;
+        if (newHist[index]) {
+          newHist[index] = { question: trimmed, answer: normalized, created_at: res?.metadata?.created_at || new Date().toISOString() };
         }
         return newHist;
       });
@@ -673,18 +723,29 @@ export default function CreateSession() {
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
+    let streamedText = '';
     try {
-      const res = await askQuestion(
+      const res = await streamAskQuestion(
         activeSessionId,
         item.question,
         generationMode === 'annale' ? 'annale' : 'session',
+        (token) => {
+          streamedText += token;
+          setChatHistory(prev => {
+            const newHist = [...prev];
+            if (newHist[index]) {
+              newHist[index] = { question: item.question, answer: streamedText, created_at: new Date().toISOString() };
+            }
+            return newHist;
+          });
+        },
         controller.signal
       );
-      const normalized = normalizeAiResponse(res?.data?.answer);
+      const normalized = normalizeAiResponse(streamedText || res?.fullText);
       setChatHistory(prev => {
         const newHist = [...prev];
-        if (newHist[index] && newHist[index].answer === '...') {
-          newHist[index].answer = normalized;
+        if (newHist[index]) {
+          newHist[index] = { question: item.question, answer: normalized, created_at: res?.metadata?.created_at || new Date().toISOString() };
         }
         return newHist;
       });
@@ -777,6 +838,7 @@ export default function CreateSession() {
     
     let activeSessionId = sessionId;
 
+    const targetIdx = chatHistory.length;
     if (!activeSessionId) {
       // First message before session creation: initialize session on the fly
       setGeneratedContent({});
@@ -798,18 +860,42 @@ export default function CreateSession() {
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
+    let streamedText = '';
     try {
-      const res = await askQuestion(
+      const res = await streamAskQuestion(
         activeSessionId,
         queryForAi,
         generationMode === 'annale' ? 'annale' : 'session',
+        (token) => {
+          streamedText += token;
+          setChatHistory(prev => {
+            const newHist = [...prev];
+            const idx = targetIdx < newHist.length ? targetIdx : newHist.length - 1;
+            if (newHist[idx]) {
+              newHist[idx] = {
+                question: displayQuestion,
+                answer: streamedText,
+                created_at: new Date().toISOString(),
+              };
+            }
+            return newHist;
+          });
+        },
         controller.signal
       );
-      const normalized = normalizeAiResponse(res?.data?.answer);
+      const normalized = normalizeAiResponse(streamedText || res?.fullText);
+      const newEntry = {
+        question: displayQuestion,
+        answer: normalized,
+        created_at: res?.metadata?.created_at || new Date().toISOString(),
+      };
       setChatHistory(prev => {
         const newHist = [...prev];
-        if (newHist.length > 0 && newHist[newHist.length - 1].answer === '...') {
-          newHist[newHist.length - 1].answer = normalized;
+        const idx = targetIdx < newHist.length ? targetIdx : newHist.length - 1;
+        if (newHist[idx]) {
+          newHist[idx] = newEntry;
+        } else {
+          newHist.push(newEntry);
         }
         return newHist;
       });
@@ -819,8 +905,9 @@ export default function CreateSession() {
       }
       setChatHistory(prev => {
         const newHist = [...prev];
-        if (newHist.length > 0 && newHist[newHist.length - 1].answer === '...') {
-          newHist[newHist.length - 1].answer = "Erreur de connexion avec l'assistant.";
+        const idx = targetIdx < newHist.length ? targetIdx : newHist.length - 1;
+        if (newHist[idx] && newHist[idx].answer === '...') {
+          newHist[idx].answer = "Erreur de connexion avec l'assistant.";
         }
         return newHist;
       });
@@ -909,8 +996,8 @@ export default function CreateSession() {
     setMobileActiveView('workspace')
     setActiveTab('chat')
     setIsChatting(true)
-
     let activeSessionId = sessionId
+    const targetIdx = chatHistory.length
     if (!activeSessionId) {
       setGeneratedContent({})
       setChatHistory([{ question: display, answer: '...' }])
@@ -931,18 +1018,39 @@ export default function CreateSession() {
     const controller = new AbortController()
     abortControllerRef.current = controller
 
+    let streamedText = ''
     try {
-      const res = await askQuestion(
+      const res = await streamAskQuestion(
         activeSessionId, 
         prompt, 
         generationMode === 'annale' ? 'annale' : 'session',
+        (token) => {
+          streamedText += token
+          setChatHistory(prev => {
+            const newHist = [...prev]
+            const idx = targetIdx < newHist.length ? targetIdx : newHist.length - 1
+            if (newHist[idx]) {
+              newHist[idx] = {
+                question: display,
+                answer: streamedText,
+                created_at: new Date().toISOString(),
+              }
+            }
+            return newHist
+          })
+        },
         controller.signal
       )
-      const normalized = normalizeAiResponse(res?.data?.answer)
+      const normalized = normalizeAiResponse(streamedText || res?.fullText)
       setChatHistory(prev => {
         const newHist = [...prev]
-        if (newHist.length > 0 && newHist[newHist.length - 1].answer === '...') {
-          newHist[newHist.length - 1].answer = normalized
+        const idx = targetIdx < newHist.length ? targetIdx : newHist.length - 1
+        if (newHist[idx]) {
+          newHist[idx] = {
+            question: display,
+            answer: normalized,
+            created_at: res?.metadata?.created_at || new Date().toISOString(),
+          }
         }
         return newHist
       })
@@ -952,8 +1060,9 @@ export default function CreateSession() {
       }
       setChatHistory(prev => {
         const newHist = [...prev]
-        if (newHist.length > 0 && newHist[newHist.length - 1].answer === '...') {
-          newHist[newHist.length - 1].answer = "Erreur de connexion avec l'assistant."
+        const idx = targetIdx < newHist.length ? targetIdx : newHist.length - 1
+        if (newHist[idx] && newHist[idx].answer === '...') {
+          newHist[idx].answer = "Erreur de connexion avec l'assistant."
         }
         return newHist
       })
@@ -995,17 +1104,37 @@ export default function CreateSession() {
     const controller = new AbortController()
     abortControllerRef.current = controller
 
+    let streamedText = ''
     try {
-      const res = await askQuestion(sessionId, query, generationMode === 'annale' ? 'annale' : 'session', controller.signal)
-      const normalized = normalizeAiResponse(res?.data?.answer)
+      const res = await streamAskQuestion(
+        sessionId,
+        query,
+        generationMode === 'annale' ? 'annale' : 'session',
+        (token) => {
+          streamedText += token
+          setChatHistory(prev => {
+            const newHist = [...prev]
+            if (newHist.length > 0 && (newHist[newHist.length - 1].answer === '...' || newHist[newHist.length - 1].question === query)) {
+              newHist[newHist.length - 1] = {
+                question: query,
+                answer: streamedText,
+                created_at: new Date().toISOString(),
+              }
+            }
+            return newHist
+          })
+        },
+        controller.signal
+      )
+      const normalized = normalizeAiResponse(streamedText || res?.fullText)
       const newEntry = {
         question: query,
         answer: normalized,
-        created_at: res?.data?.created_at || new Date().toISOString(),
+        created_at: res?.metadata?.created_at || new Date().toISOString(),
       }
       setChatHistory(prev => {
         const newHist = [...prev]
-        if (newHist.length > 0 && newHist[newHist.length - 1].answer === '...') {
+        if (newHist.length > 0 && (newHist[newHist.length - 1].answer === '...' || newHist[newHist.length - 1].question === query)) {
           newHist[newHist.length - 1] = newEntry
         } else {
           newHist.push(newEntry)

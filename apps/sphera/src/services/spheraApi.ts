@@ -289,6 +289,109 @@ async function apiFetch<T>(
   return res.text() as unknown as Promise<T>
 }
 
+export async function streamApiFetch({
+  path,
+  body,
+  onToken,
+  signal,
+}: {
+  path: string
+  body: Record<string, unknown>
+  onToken: (token: string) => void
+  signal?: AbortSignal
+}): Promise<{ fullText: string; metadata?: any }> {
+  const url = `${API_BASE.replace(/\/$/, '')}/${path.replace(/^\//, '')}`
+  const token = getToken()
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Accept': 'text/event-stream',
+  }
+  if (token) headers['Authorization'] = `Bearer ${token}`
+
+  let res: Response
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ ...body, stream: true }),
+      signal,
+    })
+  } catch (netErr: any) {
+    if (netErr?.name === 'AbortError' || signal?.aborted) {
+      const abortErr = new Error('Génération interrompue')
+      abortErr.name = 'AbortError'
+      throw abortErr
+    }
+    throw new Error('Impossible de joindre le serveur Sphera. Vérifiez votre connexion internet.')
+  }
+
+  if (!res.ok) {
+    const ct = res.headers.get('content-type') || ''
+    if (ct.includes('application/json')) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(translateSpheraApiError(err, res.status))
+    }
+    const text = await res.text().catch(() => '')
+    throw new Error(translateSpheraApiError({ message: text }, res.status))
+  }
+
+  if (!res.body) {
+    throw new Error('Flux de réponse non disponible.')
+  }
+
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder('utf-8')
+  let buffer = ''
+  let fullText = ''
+  let metadata: any = null
+
+  try {
+    while (true) {
+      if (signal?.aborted) break
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed || !trimmed.startsWith('data:')) continue
+        const dataStr = trimmed.slice(5).trim()
+        if (dataStr === '[DONE]') break
+        try {
+          const parsed = JSON.parse(dataStr)
+          if (parsed.error) {
+            throw new Error(parsed.error)
+          }
+          if (parsed.token) {
+            fullText += parsed.token
+            onToken(parsed.token)
+          }
+          if (parsed.done) {
+            metadata = parsed.message || parsed.entry || parsed
+          }
+        } catch (jsonErr: any) {
+          if (jsonErr.message && !jsonErr.message.includes('JSON')) {
+            throw jsonErr
+          }
+        }
+      }
+    }
+  } catch (err: any) {
+    if (err?.name === 'AbortError' || signal?.aborted) {
+      return { fullText, metadata }
+    }
+    throw err
+  } finally {
+    reader.releaseLock()
+  }
+
+  return { fullText, metadata }
+}
+
 // ─── Auth API ────────────────────────────────────────────────────
 
 export async function loginWithCS(email: string, password: string) {
@@ -511,6 +614,22 @@ export async function askQuestion(id: number | string, question: string, type: '
   )
 }
 
+export async function streamAskQuestion(
+  id: number | string,
+  question: string,
+  type: 'session' | 'annale' = 'session',
+  onToken: (token: string) => void,
+  signal?: AbortSignal,
+) {
+  const endpoint = type === 'annale' ? `api/sphera/annales/${id}/ask/` : `api/sphera/sessions/${id}/ask/`;
+  return streamApiFetch({
+    path: endpoint,
+    body: { question },
+    onToken,
+    signal,
+  });
+}
+
 // ─── Sphera Artefacts & Multi-threads Q&A ────────────────────────
 
 export interface ArtefactItem {
@@ -603,6 +722,20 @@ export async function sendThreadMessage(threadId: number | string, question: str
     method: 'POST',
     body: { question },
     requireAuth: true,
+    signal,
+  });
+}
+
+export async function streamThreadMessage(
+  threadId: number | string,
+  question: string,
+  onToken: (token: string) => void,
+  signal?: AbortSignal,
+) {
+  return streamApiFetch({
+    path: `api/sphera/threads/${threadId}/messages/`,
+    body: { question },
+    onToken,
     signal,
   });
 }
