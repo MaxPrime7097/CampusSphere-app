@@ -403,7 +403,7 @@ export function StudyWorkspacePanel({
     }
   }
 
-  // Auto-scroll chat when history updates or when entering chat
+  // Auto-scroll chat to bottom ONLY on entering chat view or switching active thread
   useEffect(() => {
     if (activeView?.type === 'chat') {
       const timer = setTimeout(() => {
@@ -411,7 +411,7 @@ export function StudyWorkspacePanel({
       }, 60)
       return () => clearTimeout(timer)
     }
-  }, [chatHistory, activeView?.type, isChatting])
+  }, [activeView?.type, activeThreadId])
 
   const handleMainScroll = () => {
     if (!mainScrollRef.current || activeView?.type !== 'chat') {
@@ -552,7 +552,10 @@ export function StudyWorkspacePanel({
       return
     }
     if (e.key === 'Enter') {
-      handleSendChat()
+      e.preventDefault()
+      if (!isChatting) {
+        handleSendChat()
+      }
     }
   }
 
@@ -1632,6 +1635,10 @@ export function StudyWorkspacePanel({
                       onEdit={onEditMessage || (() => {})}
                       onRegenerate={onRegenerateResponse || (() => {})}
                       onCreateNote={handleCreateNoteFromAi}
+                      onSelectSuggestion={(sug) => {
+                        onSendMessage(sug)
+                        setTimeout(() => scrollToBottom('smooth'), 100)
+                      }}
                       disabled={isChatting}
                     />
                   ))
@@ -1769,11 +1776,10 @@ export function StudyWorkspacePanel({
             <input
               ref={chatInputRef}
               type="text"
-              placeholder="Demandez n'importe quoi..."
+              placeholder="Demande n'importe quoi..."
               value={chatMessage}
               onChange={(e) => handleChatInputChange(e.target.value)}
               onKeyDown={handleChatKeyDown}
-              disabled={isChatting}
               className="flex-1 min-w-0 bg-transparent border-none text-sm text-white placeholder-sphera-text-muted outline-none focus:ring-0"
             />
             {isChatting ? (
@@ -1781,7 +1787,8 @@ export function StudyWorkspacePanel({
                 type="button"
                 onClick={onStopChat}
                 title="Arrêter la réponse"
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-red-500/90 hover:bg-red-500 text-white flex items-center justify-center transition-all flex-shrink-0 shadow-[0_0_15px_rgba(239,68,68,0.4)] animate-in fade-in"
+                aria-label="Arrêter la réponse"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-sphera-green hover:bg-green-400 text-black flex items-center justify-center transition-all flex-shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.3)] animate-in fade-in cursor-pointer"
               >
                 <Square className="w-3.5 h-3.5 fill-current" />
               </button>
@@ -1791,7 +1798,8 @@ export function StudyWorkspacePanel({
                 onClick={() => handleSendChat()}
                 disabled={!chatMessage.trim()}
                 title="Envoyer la question"
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-sphera-green text-black flex items-center justify-center hover:bg-green-400 disabled:opacity-50 disabled:hover:bg-sphera-green transition-colors flex-shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.3)]"
+                aria-label="Envoyer la question"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-sphera-green text-black flex items-center justify-center hover:bg-green-400 disabled:opacity-50 disabled:hover:bg-sphera-green transition-colors flex-shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.3)] cursor-pointer"
               >
                 <Send weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-0.5" />
               </button>
