@@ -39,6 +39,14 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, o
     setEditText(question)
   }, [question])
 
+  const [questionCopied, setQuestionCopied] = useState(false)
+
+  const handleCopyQuestion = () => {
+    navigator.clipboard.writeText(question)
+    setQuestionCopied(true)
+    setTimeout(() => setQuestionCopied(false), 2000)
+  }
+
   const handleCopy = () => {
     navigator.clipboard.writeText(cleanAnswer)
     setCopied(true)
@@ -62,7 +70,7 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, o
 
   return (
     <div className="flex flex-col gap-5 py-4 border-b border-sphera-border/30 last:border-b-0 animate-in fade-in duration-300">
-      {/* 1. User Message: Aligned Right with edit option */}
+      {/* 1. User Message: Aligned Right with edit and copy options */}
       <div className="flex justify-end w-full group">
         {isEditing ? (
           <div className="w-full max-w-[85%] sm:max-w-[75%] bg-sphera-surface-2 border border-sphera-green/50 rounded-2xl p-3 shadow-lg flex flex-col gap-2">
@@ -90,7 +98,7 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, o
                   setIsEditing(false)
                   setEditText(question)
                 }}
-                className="px-3 py-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
+                className="px-3 py-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors cursor-pointer"
               >
                 {t('aiMessage.cancel')}
               </button>
@@ -98,21 +106,34 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, o
                 type="button"
                 onClick={handleSaveEdit}
                 disabled={!editText.trim()}
-                className="px-3 py-1.5 rounded-lg bg-sphera-green text-black font-medium hover:bg-green-400 disabled:opacity-50 transition-colors"
+                className="px-3 py-1.5 rounded-lg bg-sphera-green text-black font-medium hover:bg-green-400 disabled:opacity-50 transition-colors cursor-pointer"
               >
                 {t('aiMessage.send')}
               </button>
             </div>
           </div>
         ) : (
-          <div className="relative flex items-center gap-2 max-w-[85%] sm:max-w-[75%]">
+          <div className="relative flex items-center gap-1.5 max-w-[85%] sm:max-w-[75%]">
+            <button
+              type="button"
+              onClick={handleCopyQuestion}
+              title={questionCopied ? "Copié !" : "Copier la question"}
+              aria-label="Copier la question"
+              className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 shrink-0 cursor-pointer"
+            >
+              {questionCopied ? (
+                <Check className="w-3.5 h-3.5 text-sphera-green" />
+              ) : (
+                <Copy className="w-3.5 h-3.5" />
+              )}
+            </button>
             {onEdit && index !== undefined && !disabled && (
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
                 title={t('aiMessage.editTooltip')}
                 aria-label={t('aiMessage.editTooltip')}
-                className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 shrink-0"
+                className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 shrink-0 cursor-pointer"
               >
                 <PencilSimple className="w-3.5 h-3.5" />
               </button>

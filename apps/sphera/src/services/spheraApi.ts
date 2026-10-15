@@ -598,11 +598,12 @@ export async function createChatThread(sessionId: number | string, title?: strin
   });
 }
 
-export async function sendThreadMessage(threadId: number | string, question: string) {
+export async function sendThreadMessage(threadId: number | string, question: string, signal?: AbortSignal) {
   return apiFetch<{ success: boolean; data: { id: number; role: 'assistant'; content: string; createdAt: string } }>(`api/sphera/threads/${threadId}/messages/`, {
     method: 'POST',
     body: { question },
     requireAuth: true,
+    signal,
   });
 }
 
@@ -626,11 +627,12 @@ export async function getStandaloneChatThread(threadId: number | string) {
   return apiFetch<{ success: boolean; data: ChatThreadItem }>(`api/sphera/chat/threads/${threadId}/`, { requireAuth: true });
 }
 
-export async function createStandaloneChatThread(params?: { question?: string; title?: string }) {
+export async function createStandaloneChatThread(params?: { question?: string; title?: string }, signal?: AbortSignal) {
   return apiFetch<{ success: boolean; data: ChatThreadItem }>('api/sphera/chat/threads/', {
     method: 'POST',
     body: params || {},
     requireAuth: true,
+    signal,
   });
 }
 
