@@ -15,7 +15,8 @@ import {
   Lightbulb,
   GraduationCap,
   List as Menu,
-  Spinner as Loader2
+  Spinner as Loader2,
+  Square
 } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
@@ -82,6 +83,8 @@ export default function ChatPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const messagesScrollRef = useRef<HTMLDivElement>(null)
   const [showScrollBottom, setShowScrollBottom] = useState(false)
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const isInitialThreadLoadRef = useRef(true)
 
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
     if (messagesScrollRef.current) {
@@ -133,6 +136,21 @@ export default function ChatPage() {
     }
   }, [paramThreadId])
 
+  // Track initial load for newly opened threads
+  useEffect(() => {
+    isInitialThreadLoadRef.current = true
+  }, [activeThreadId])
+
+  // Scroll to bottom on initial thread load once messages are rendered
+  useEffect(() => {
+    if (!isLoadingMessages && messages.length > 0 && isInitialThreadLoadRef.current) {
+      isInitialThreadLoadRef.current = false
+      setTimeout(() => {
+        scrollToBottom('auto')
+      }, 60)
+    }
+  }, [isLoadingMessages, messages.length])
+
   // ─── 2. Handle initialQuestion from Dashboard ────────────────
   useEffect(() => {
     const initialQ = (location.state as any)?.initialQuestion
@@ -174,21 +192,42 @@ export default function ChatPage() {
     }
   }, [activeThreadId])
 
-  // Scroll to bottom on new messages (unless user scrolled up)
-  useEffect(() => {
-    if (!showScrollBottom) {
-      scrollToBottom('smooth')
+  // ─── Stop chat response ──────────────────────────────────────
+  const handleStopChat = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
     }
-  }, [messages, isSending])
+    setIsSending(false)
+    setMessages((prev) => {
+      if (prev.length === 0) return prev
+      const updated = [...prev]
+      for (let i = updated.length - 1; i >= 0; i--) {
+        if (updated[i].answer === '...') {
+          updated[i].answer = '*(Génération interrompue)*'
+          break
+        }
+      }
+      return updated
+    })
+  }
 
   // ─── 4. Send Message / Create Thread ─────────────────────────
   const handleStartNewChatWithQuestion = async (questionText: string) => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
+    isInitialThreadLoadRef.current = false
     setIsSending(true)
     const tempQuestion = questionText
     setMessages([{ question: tempQuestion, answer: '...' }])
 
     try {
-      const res = await createStandaloneChatThread({ question: tempQuestion })
+      const res = await createStandaloneChatThread({ question: tempQuestion }, controller.signal)
       const newThread = res?.data
       if (newThread) {
         setActiveThreadId(newThread.id)
@@ -200,10 +239,16 @@ export default function ChatPage() {
         navigate(`/chat/${hash}`, { replace: true })
         invalidateSpheraSessions()
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.name === 'AbortError' || controller.signal.aborted) {
+        return
+      }
       console.error('Erreur initialisation chat:', err)
       setMessages([])
     } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null
+      }
       setIsSending(false)
     }
   }
@@ -223,13 +268,25 @@ export default function ChatPage() {
       return
     }
 
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
     // Append to current thread
     const newMsgIndex = messages.length
     setMessages((prev) => [...prev, { question: trimmed, answer: '...' }])
     setIsSending(true)
 
+    // Smooth scroll down to bring the new question into view
+    setTimeout(() => {
+      scrollToBottom('smooth')
+    }, 60)
+
     try {
-      const res = await sendThreadMessage(activeThreadId, trimmed)
+      const res = await sendThreadMessage(activeThreadId, trimmed, controller.signal)
       const assistantMsg = res?.data
       if (assistantMsg) {
         setMessages((prev) => {
@@ -245,6 +302,9 @@ export default function ChatPage() {
       }
       invalidateSpheraSessions()
     } catch (err: any) {
+      if (err?.name === 'AbortError' || controller.signal.aborted) {
+        return
+      }
       console.error('Erreur envoi message:', err)
       setMessages((prev) => {
         const updated = [...prev]
@@ -257,6 +317,9 @@ export default function ChatPage() {
         return updated
       })
     } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null
+      }
       setIsSending(false)
     }
   }
@@ -269,6 +332,14 @@ export default function ChatPage() {
   // Handle Edit & Regenerate
   const handleEditMessage = async (index: number, newQuestion: string) => {
     if (!activeThreadId || isSending) return
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
     setIsSending(true)
     setMessages((prev) => {
       const updated = [...prev]
@@ -279,7 +350,7 @@ export default function ChatPage() {
     })
 
     try {
-      const res = await sendThreadMessage(activeThreadId, newQuestion)
+      const res = await sendThreadMessage(activeThreadId, newQuestion, controller.signal)
       const assistantMsg = res?.data
       if (assistantMsg) {
         setMessages((prev) => {
@@ -290,9 +361,15 @@ export default function ChatPage() {
           return updated
         })
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.name === 'AbortError' || controller.signal.aborted) {
+        return
+      }
       console.error('Erreur modification message:', err)
     } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null
+      }
       setIsSending(false)
     }
   }
@@ -376,7 +453,9 @@ export default function ChatPage() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      handleSendMessage()
+      if (!isSending) {
+        handleSendMessage()
+      }
     }
   }
 
@@ -588,22 +667,30 @@ export default function ChatPage() {
               onKeyDown={handleKeyDown}
               rows={1}
               placeholder="Demande n'importe quoi..."
-              disabled={isSending}
               className="flex-1 bg-transparent border-0 text-xs sm:text-sm text-white placeholder-sphera-text-muted outline-none focus:ring-0 resize-none max-h-32 py-1.5 leading-relaxed"
             />
 
-            <button
-              type="submit"
-              disabled={!inputMessage.trim() || isSending}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-sphera-green hover:bg-sphera-green-hover disabled:opacity-40 text-black flex items-center justify-center shrink-0 transition-transform active:scale-95 shadow-md shadow-sphera-green/20 cursor-pointer"
-              title="Envoyer la question"
-            >
-              {isSending ? (
-                <Loader2 className="w-4 h-4 animate-spin text-black" />
-              ) : (
+            {isSending ? (
+              <button
+                type="button"
+                onClick={handleStopChat}
+                title="Arrêter la réponse"
+                aria-label="Arrêter la réponse"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-sphera-green hover:bg-green-400 text-black flex items-center justify-center shrink-0 transition-all shadow-[0_0_15px_rgba(34,197,94,0.3)] animate-in fade-in cursor-pointer"
+              >
+                <Square className="w-3.5 h-3.5 fill-current" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!inputMessage.trim()}
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-sphera-green hover:bg-green-400 disabled:opacity-40 text-black flex items-center justify-center shrink-0 transition-transform active:scale-95 shadow-md shadow-sphera-green/20 cursor-pointer"
+                title="Envoyer la question"
+                aria-label="Envoyer la question"
+              >
                 <ArrowUp className="w-4 h-4 font-bold" />
-              )}
-            </button>
+              </button>
+            )}
           </form>
 
           <p className="text-center text-[10px] text-sphera-text-muted/60 mt-1.5 block">
