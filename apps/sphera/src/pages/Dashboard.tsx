@@ -66,7 +66,10 @@ export default function Dashboard() {
   const allItems = React.useMemo(() => {
     const sess = (sessions || [])
       .filter((s: any) => s.source_filename !== 'Discussion libre' && s.sourceFilename !== 'Discussion libre' && s.source_filename !== '__sphera_standalone_chat__' && s.sourceFilename !== '__sphera_standalone_chat__')
-      .map((s: any) => ({ ...s, _type: 'session' }))
+      .map((s: any) => {
+        const isAnn = s.content?.isAnnaleWorkspace || s.content?.sections || s.content?.mode || (Array.isArray(s.artefacts) && s.artefacts.some((a: any) => a.type === 'annale_rapide' || a.type === 'annale_complete'))
+        return { ...s, _type: isAnn ? 'annale' : 'session' }
+      })
     const ann = (annales || []).map((a: any) => ({ ...a, _type: 'annale' }))
     const chats = (chatThreads || []).map((c: any) => ({ ...c, _type: 'chat' }))
 

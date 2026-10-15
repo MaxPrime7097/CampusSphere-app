@@ -817,6 +817,7 @@ const annaleSchema = z.object({
   mode: z.enum(["complete", "rapide"]).optional(),
   resource_id: z.coerce.number().int().positive().optional(),
   cours_resource_id: z.coerce.number().int().positive().optional(),
+  init_only: z.union([z.boolean(), z.string().transform((v) => v === "true" || v === "1")]).optional(),
 });
 
 /**
@@ -826,11 +827,30 @@ const annaleSchema = z.object({
  * `POST /annales/<id>/ask/` — which reads it — could only ever return 400. Annale
  * Q&A has never worked for anyone.
  */
-spheraRouter.post("/generate/annale/", checkGenerationQuota, singleUpload("file", "resource"), async (req, res) => {
+spheraRouter.post("/generate/annale/", singleUpload("file", "resource"), async (req, res) => {
   const me = currentUser(req);
   const input = annaleSchema.parse(req.body ?? {});
   const mode = input.mode ?? "complete";
   const file = req.file;
+  const isInitOnly = Boolean(input.init_only || req.body?.init_only === "true" || req.body?.init_only === true);
+
+  if (!isInitOnly) {
+    const weekStart = getWeekStartDate();
+    const usage = await prisma.generationUsage.findUnique({
+      where: { userId_weekStartDate: { userId: me.id, weekStartDate: weekStart } },
+    });
+    const currentCount = usage?.count ?? 0;
+    if (currentCount >= WEEKLY_LIMIT) {
+      const nextMonday = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+      res.status(429).json({
+        success: false,
+        error: "weekly_limit_reached",
+        message: `Tu as utilisé tes ${WEEKLY_LIMIT} générations Sphera cette semaine. Ça revient lundi prochain !`,
+        resetsOn: nextMonday.toISOString(),
+      });
+      return;
+    }
+  }
 
   let annaleBuffer: Buffer;
   let sourceFilename: string;
@@ -884,6 +904,24 @@ spheraRouter.post("/generate/annale/", checkGenerationQuota, singleUpload("file"
   const annaleText = await extractText(annaleBuffer, sourceFilename);
   if (!annaleText || annaleText.length < MIN_SOURCE_CHARS) {
     throw badRequest("L'annale ne contient pas de texte extractible.");
+  }
+
+  if (isInitOnly) {
+    const session = await prisma.annaleSession.create({
+      data: {
+        ownerId: me.id,
+        mode: mode.toUpperCase() as PrismaAnnaleMode,
+        sourceFilename,
+        resourceId: annaleResourceId,
+        coursResourceId: null,
+        content: { isAnnaleWorkspace: true },
+        extractedText: annaleText,
+      },
+      include: annaleSessionInclude,
+    });
+
+    created(res, serializeAnnaleSession(session as SerializableAnnaleSession));
+    return;
   }
 
   // The reference course is best-effort: a course that cannot be read falls back to
@@ -1818,6 +1856,53 @@ spheraRouter.delete("/annales/:id/", async (req, res) => {
   const session = await ownAnnaleSession(idParam(req), me.id);
   await prisma.annaleSession.delete({ where: { id: session.id } });
   noContent(res);
+});
+
+/**
+ * POST /annales/<id>/correct/
+ * Generates or updates an annale correction on an existing annale session.
+ */
+spheraRouter.post("/annales/:id/correct/", checkGenerationQuota, async (req, res) => {
+  const me = currentUser(req);
+  const session = await ownAnnaleSession(idParam(req), me.id);
+  const { mode = "complete" } = z.object({
+    mode: z.enum(["complete", "rapide"]).optional(),
+  }).parse(req.body ?? {});
+
+  const textToUse = session.extractedText;
+  if (!textToUse || textToUse.length < MIN_SOURCE_CHARS) {
+    throw badRequest("Le texte de cette annale est manquant ou insuffisant.");
+  }
+
+  let coursText = "";
+  if (session.coursResourceId) {
+    const cours = await prisma.resource.findUnique({
+      where: { id: session.coursResourceId },
+      select: { id: true, title: true, fileUrl: true, storageKey: true },
+    });
+    if (cours?.fileUrl) {
+      try {
+        coursText = await extractText(await readStoredFile(cours), cours.title);
+      } catch (err) {
+        console.warn("[sphera] could not extract reference course:", err);
+      }
+    }
+  }
+
+  const generated = await generateAnnale(textToUse, mode as AnnaleMode, coursText || null, me.id);
+
+  const updated = await prisma.annaleSession.update({
+    where: { id: session.id },
+    data: {
+      content: generated as Prisma.InputJsonObject,
+      mode: mode.toUpperCase() as PrismaAnnaleMode,
+    },
+    include: annaleSessionInclude,
+  });
+
+  await incrementGenerationQuota(me.id, 1);
+
+  ok(res, serializeAnnaleSession(updated as SerializableAnnaleSession));
 });
 
 /** Readable by anyone who may read the annale, so a shared correction is askable. */
