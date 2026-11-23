@@ -9,6 +9,7 @@ import { useDownloadPDF } from '../../hooks/useDownloadPDF'
 import { usePodcastPlayer, podcastStore, getPodcastVoiceData } from '../../utils/podcastPlayerStore'
 import type { WorkspaceSlots } from './workspaceSlots'
 import { useInlineSpheraAsk, InlineSpheraAnswerCard, type InlineAskEntry } from './InlineSpheraExplanation'
+import { isTextEnglish } from '../../utils/detectLanguage'
 
 const formatText = (text: any) => {
   if (!text || typeof text !== 'string') return text;
@@ -254,52 +255,64 @@ export function QuizView({
     [sessionId, artefactId]
   )
 
-  const [savedProgress, setSavedProgress] = useState<{
-    currentIndex: number
-    score: number
-    answers: Array<{ selected: string | null; correct: boolean }>
-  } | null>(() => {
+  const initialProgress = useMemo(() => {
     try {
-      const raw = localStorage.getItem(`sphera_quiz_prog_${sessionId || 'local'}_${artefactId || 'main'}`)
+      const raw = localStorage.getItem(storageKey)
       if (raw) {
         const parsed = JSON.parse(raw)
-        if (typeof parsed.currentIndex === 'number' && parsed.currentIndex > 0 && Array.isArray(parsed.answers)) {
-          return parsed
+        if (
+          typeof parsed.currentIndex === 'number' &&
+          parsed.currentIndex > 0 &&
+          parsed.currentIndex < questions.length &&
+          Array.isArray(parsed.answers)
+        ) {
+          return parsed as {
+            currentIndex: number
+            score: number
+            answers: Array<{ selected: string | null; correct: boolean }>
+          }
         }
       }
     } catch {
       // ignore
     }
     return null
-  })
+  }, [storageKey, questions.length])
 
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const [currentIndex, setCurrentIndex] = useState(() => initialProgress?.currentIndex ?? 0)
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
-  const [score, setScore] = useState(0)
+  const [score, setScore] = useState(() => initialProgress?.score ?? 0)
   const [finished, setFinished] = useState(false)
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS)
   const [timerActive, setTimerActive] = useState(true)
-  const [answers, setAnswers] = useState<Array<{ selected: string | null; correct: boolean }>>([])
+  const [timerPaused, setTimerPaused] = useState(false)
+  const [answers, setAnswers] = useState<Array<{ selected: string | null; correct: boolean }>>(
+    () => initialProgress?.answers ?? []
+  )
   const [showExplanation, setShowExplanation] = useState(false)
 
   const inlineAsk = useInlineSpheraAsk({ sessionId, sessionType })
 
-  // Save progress automatically
+  // Save progress automatically whenever user answers or advances
   useEffect(() => {
-    if (currentIndex > 0 && !finished && answers.length > 0) {
+    if (finished || !questions.length) return
+    const nextResumeIndex =
+      selectedOption !== null ? currentIndex + 1 : currentIndex
+    if (nextResumeIndex > 0 && nextResumeIndex < questions.length && answers.length > 0) {
       try {
         localStorage.setItem(
           storageKey,
           JSON.stringify({
-            currentIndex,
+            currentIndex: nextResumeIndex,
             score,
             answers,
+            total: questions.length,
             timestamp: Date.now(),
           })
         )
       } catch {}
     }
-  }, [currentIndex, score, answers, finished, storageKey])
+  }, [currentIndex, selectedOption, score, answers, finished, storageKey, questions.length])
 
   // Clear saved progress on finish
   useEffect(() => {
@@ -317,24 +330,26 @@ export function QuizView({
     if (selectedOption !== null) return;
     setSelectedOption("__timeout__");
     setTimerActive(false);
+    setTimerPaused(false);
     setShowExplanation(true);
     setAnswers(prev => [...prev, { selected: null, correct: false }]);
   }, [selectedOption])
 
   useEffect(() => {
-    if (!timerActive || finished || !total) return;
+    if (!timerActive || timerPaused || finished || !total) return;
     if (timeLeft <= 0) {
       handleTimeout();
       return;
     }
     const id = setTimeout(() => setTimeLeft(t => t - 1), 1000);
     return () => clearTimeout(id);
-  }, [timeLeft, timerActive, finished, total, handleTimeout])
+  }, [timeLeft, timerActive, timerPaused, finished, total, handleTimeout])
 
   const handleSelect = useCallback((optionLetter: string) => {
     if (selectedOption !== null || !currentQuestion) return;
     setSelectedOption(optionLetter);
     setTimerActive(false);
+    setTimerPaused(false);
     setShowExplanation(true);
     const isCorrect = optionLetter === currentQuestion.bonne_reponse;
     if (isCorrect) setScore(s => s + 1);
@@ -351,6 +366,7 @@ export function QuizView({
       setShowExplanation(false);
       setTimeLeft(TIMER_SECONDS);
       setTimerActive(true);
+      setTimerPaused(false);
     }
   }, [selectedOption, currentIndex, total])
 
@@ -384,70 +400,37 @@ export function QuizView({
 
   if (!questions.length) return <p className="text-sphera-text-muted">{t('resultViews.emptyQuiz')}</p>
 
-  const handleResumeSaved = () => {
-    if (!savedProgress) return
-    setCurrentIndex(savedProgress.currentIndex)
-    setScore(savedProgress.score)
-    setAnswers(savedProgress.answers)
-    setSelectedOption(null)
-    setShowExplanation(false)
-    setTimeLeft(TIMER_SECONDS)
-    setTimerActive(true)
-    setSavedProgress(null)
-  }
-
-  const handleDismissSaved = () => {
-    try {
-      localStorage.removeItem(storageKey)
-    } catch {}
-    setSavedProgress(null)
-  }
-
-  const handlePause = () => {
-    try {
-      localStorage.setItem(
-        storageKey,
-        JSON.stringify({
-          currentIndex: selectedOption !== null && currentIndex + 1 < total ? currentIndex + 1 : currentIndex,
-          score,
-          answers,
-          timestamp: Date.now(),
-        })
-      )
-    } catch {}
-    if (onPause) {
-      onPause()
-    }
-  }
-
   const handleRestart = () => {
     try {
       localStorage.removeItem(storageKey);
     } catch {}
-    setSavedProgress(null);
     setCurrentIndex(0);
     setSelectedOption(null);
     setScore(0);
     setFinished(false);
     setTimeLeft(TIMER_SECONDS);
     setTimerActive(true);
+    setTimerPaused(false);
     setAnswers([]);
     setShowExplanation(false);
   }
 
   const triggerAskForQuestion = (key: string, qObj: any, chosen: string | null, qIdx: number) => {
     const qText = qObj?.question || ''
+    const rightAns = `${qObj?.bonne_reponse} - ${qObj?.options?.find((o: string) => o.startsWith(qObj?.bonne_reponse)) || ''}`
+    const expl = qObj?.explication || ''
+    const isEn = isTextEnglish(`${qText} ${rightAns} ${expl}`)
     const myAns =
       chosen && chosen !== '__timeout__'
         ? `${chosen} - ${qObj?.options?.find((o: string) => o.startsWith(chosen)) || ''}`
         : chosen === '__timeout__'
-          ? 'Temps écoulé'
-          : 'Non répondue'
-    const rightAns = `${qObj?.bonne_reponse} - ${qObj?.options?.find((o: string) => o.startsWith(qObj?.bonne_reponse)) || ''}`
-    const expl = qObj?.explication || ''
-    const prompt = `Concernant la question ${qIdx + 1} du quiz :\n"${qText}"\n\nMa réponse était : "${myAns}"\nLa bonne réponse est : "${rightAns}"\nExplication : "${expl}"\n\nExplique-moi clairement et de façon concise pourquoi c'est cette réponse, avec un moyen mnémotechnique ou un exemple concret pour bien retenir.`
+          ? (isEn ? 'Time expired' : 'Temps écoulé')
+          : (isEn ? 'Unanswered' : 'Non répondue')
+    const prompt = isEn
+      ? `Regarding quiz question #${qIdx + 1}:\n"${qText}"\n\nMy answer was: "${myAns}"\nCorrect answer: "${rightAns}"\nExplanation: "${expl}"\n\nExplain clearly and concisely in English why this is the right answer, and provide a concrete example or mnemonic to help remember it.`
+      : `Concernant la question ${qIdx + 1} du quiz :\n"${qText}"\n\nMa réponse était : "${myAns}"\nLa bonne réponse est : "${rightAns}"\nExplication : "${expl}"\n\nExplique-moi clairement et de façon concise pourquoi c'est cette réponse, avec un moyen mnémotechnique ou un exemple concret pour bien retenir.`
     if (sessionId) {
-      inlineAsk.ask(key, prompt, `Explication • Question ${qIdx + 1}`)
+      inlineAsk.ask(key, prompt, isEn ? `Explanation • Question ${qIdx + 1}` : `Explication • Question ${qIdx + 1}`)
     } else if (onAskQuestion) {
       onAskQuestion(prompt)
     }
@@ -455,12 +438,6 @@ export function QuizView({
 
   const timerPercent = (timeLeft / TIMER_SECONDS) * 100;
   const timerColor = timeLeft > 15 ? "bg-sphera-green" : timeLeft > 7 ? "bg-yellow-500" : "bg-red-500";
-  const timerPillClass =
-    timeLeft > 15
-      ? "border-sphera-border bg-sphera-surface text-sphera-text-muted"
-      : timeLeft > 7
-        ? "border-yellow-500/40 bg-yellow-500/10 text-yellow-400"
-        : "border-red-500/50 bg-red-500/15 text-red-400 animate-pulse font-bold";
 
   const progressPct = finished ? 100 : ((currentIndex + (selectedOption !== null ? 1 : 0)) / total) * 100
   const hasPortal = Boolean(workspaceSlots?.headerSlot)
@@ -600,8 +577,8 @@ export function QuizView({
   const headerPortal = workspaceSlots?.headerSlot
     ? createPortal(
         <div className="flex items-center justify-between gap-2 w-full min-w-0">
-          {/* Center/Left: Question counter + Score + Compact Timer */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+          {/* Center/Left: Question counter + Score */}
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
             <span className="text-xs sm:text-sm text-sphera-text-muted font-medium whitespace-nowrap">
               <span className="hidden sm:inline">Question </span>
               <span className="sm:hidden">Q</span>
@@ -609,35 +586,24 @@ export function QuizView({
               <span className="text-sphera-text-muted/80">/{total}</span>
             </span>
 
-            <div className="bg-sphera-surface px-2 sm:px-2.5 py-1 rounded-full border border-sphera-border flex items-center gap-1.5 text-xs shrink-0">
+            <div className="bg-sphera-surface px-2.5 py-1 rounded-full border border-sphera-border flex items-center gap-1.5 text-xs shrink-0">
               <Trophy className="h-3.5 w-3.5 text-yellow-500 shrink-0" />
               <span className="text-white font-semibold whitespace-nowrap">
                 {t('resultViews.points', { count: score })}
               </span>
             </div>
-
-            {selectedOption === null && (
-              <div
-                className={`px-2 py-1 rounded-full border flex items-center gap-1 text-xs font-mono shrink-0 transition-colors ${timerPillClass}`}
-                title="Temps restant pour cette question"
-              >
-                <Timer className="h-3.5 w-3.5 shrink-0" />
-                <span>{timeLeft}s</span>
-              </div>
-            )}
           </div>
 
-          {/* Right: Continuer plus tard */}
-          {(currentIndex > 0 || selectedOption !== null) && onPause && (
+          {/* Right: Discreet Restart button when in progress */}
+          {(currentIndex > 0 || answers.length > 0) && (
             <button
               type="button"
-              onClick={handlePause}
+              onClick={handleRestart}
               className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs text-sphera-text-muted hover:text-white transition-colors shrink-0 cursor-pointer"
-              title="Sauvegarder et continuer plus tard"
+              title="Recommencer le quiz depuis le début"
             >
-              <Pause className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden md:inline">Continuer plus tard</span>
-              <span className="hidden sm:inline md:hidden">Plus tard</span>
+              <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Recommencer</span>
             </button>
           )}
         </div>,
@@ -706,40 +672,7 @@ export function QuizView({
       {progressBarPortal}
       {footerPortal}
 
-      {/* Saved Progress Banner */}
-      {savedProgress && (
-        <div className="p-3.5 rounded-xl border border-sphera-green/40 bg-sphera-green/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-sphera-green/20 text-sphera-green flex items-center justify-center shrink-0">
-              <RotateCcw className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-white">Progression précédente détectée</p>
-              <p className="text-[11px] text-sphera-text-muted">
-                Question {savedProgress.currentIndex + 1} sur {total} • Score : {savedProgress.score} pt{savedProgress.score > 1 ? 's' : ''}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={handleDismissSaved}
-              className="px-3 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs text-sphera-text-muted hover:text-white transition-colors cursor-pointer"
-            >
-              Recommencer
-            </button>
-            <button
-              type="button"
-              onClick={handleResumeSaved}
-              className="px-3 py-1.5 rounded-lg bg-sphera-green text-black font-semibold text-xs hover:bg-green-400 transition-colors shadow-xs cursor-pointer"
-            >
-              Reprendre
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Standalone fallback Header & Timer when rendered outside StudyWorkspacePanel */}
+      {/* Standalone fallback Header when rendered outside StudyWorkspacePanel */}
       {!hasPortal && (
         <>
           <div className="flex items-center justify-between text-sm">
@@ -747,15 +680,15 @@ export function QuizView({
               Question <span className="text-white font-bold">{currentIndex + 1}</span> / {total}
             </span>
             <div className="flex items-center gap-2">
-              {currentIndex > 0 && onPause && (
+              {(currentIndex > 0 || answers.length > 0) && (
                 <button
                   type="button"
-                  onClick={handlePause}
+                  onClick={handleRestart}
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-[11px] text-sphera-text-muted hover:text-white transition-colors"
-                  title="Sauvegarder et continuer plus tard"
+                  title="Recommencer le quiz"
                 >
-                  <Pause className="w-3.5 h-3.5" />
-                  <span>Continuer plus tard</span>
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Recommencer</span>
                 </button>
               )}
               <div className="bg-sphera-surface px-3 py-1.5 rounded-full border border-sphera-border flex items-center gap-2">
@@ -768,18 +701,42 @@ export function QuizView({
           <div className="h-1.5 w-full bg-sphera-bg rounded-full overflow-hidden">
             <div className="h-full bg-sphera-green transition-all" style={{ width: `${progressPct}%` }} />
           </div>
-
-          <div className="flex items-center gap-3">
-            <Timer className={`h-4 w-4 flex-shrink-0 ${timeLeft <= 7 ? "text-red-500 animate-pulse" : "text-sphera-text-muted"}`} />
-            <div className="flex-1 h-2 bg-sphera-bg rounded-full overflow-hidden border border-sphera-border/50">
-              <div className={`h-full transition-all duration-1000 ${timerColor}`} style={{ width: `${timerPercent}%` }} />
-            </div>
-            <span className={`text-xs font-mono w-8 text-right ${timeLeft <= 7 ? "text-red-500 font-bold" : "text-sphera-text-muted"}`}>
-              {timeLeft}s
-            </span>
-          </div>
         </>
       )}
+
+      {/* Visual Countdown Timer Bar with Pause/Resume control (always visible above question for peripheral awareness) */}
+      <div className="flex items-center gap-2.5">
+        <button
+          type="button"
+          onClick={() => {
+            if (selectedOption === null) setTimerPaused((p) => !p)
+          }}
+          disabled={selectedOption !== null}
+          className={`p-1.5 rounded-lg border transition-colors shrink-0 cursor-pointer disabled:opacity-40 disabled:cursor-default ${
+            timerPaused
+              ? 'border-sphera-green/40 bg-sphera-green/15 text-sphera-green'
+              : 'border-sphera-border bg-sphera-surface text-sphera-text-muted hover:text-white'
+          }`}
+          title={timerPaused ? 'Reprendre le chrono' : 'Mettre le chrono en pause'}
+        >
+          {timerPaused ? <Play weight="fill" className="h-3.5 w-3.5" /> : <Pause weight="fill" className="h-3.5 w-3.5" />}
+        </button>
+        <div className="flex-1 h-2 bg-sphera-surface rounded-full overflow-hidden border border-sphera-border/60">
+          <div
+            className={`h-full transition-all duration-1000 ${timerPaused ? 'bg-sphera-text-muted/60' : timerColor}`}
+            style={{ width: `${timerPercent}%` }}
+          />
+        </div>
+        <span className={`text-xs font-mono min-w-[2.5rem] text-right shrink-0 ${
+          timerPaused
+            ? 'text-sphera-green font-semibold'
+            : timeLeft <= 7 && selectedOption === null
+              ? 'text-red-500 font-bold animate-pulse'
+              : 'text-sphera-text-muted'
+        }`}>
+          {timerPaused ? 'Pause' : `${timeLeft}s`}
+        </span>
+      </div>
 
       {/* Question Card */}
       <div className="sphera-card p-5 sm:p-6 border-l-4 border-l-sphera-green">
@@ -944,34 +901,39 @@ export function FlashcardsView({
     [sessionId, artefactId]
   )
 
-  const [savedProgress, setSavedProgress] = useState<{
-    currentIndex: number
-    known: number[]
-    review: number[]
-  } | null>(() => {
+  const initialProgress = useMemo(() => {
     try {
-      const raw = localStorage.getItem(`sphera_fc_prog_${sessionId || 'local'}_${artefactId || 'main'}`)
+      const raw = localStorage.getItem(storageKey)
       if (raw) {
         const parsed = JSON.parse(raw)
-        if (typeof parsed.currentIndex === 'number' && parsed.currentIndex > 0 && Array.isArray(parsed.known)) {
-          return parsed
+        if (
+          typeof parsed.currentIndex === 'number' &&
+          parsed.currentIndex > 0 &&
+          parsed.currentIndex < total &&
+          Array.isArray(parsed.known)
+        ) {
+          return parsed as {
+            currentIndex: number
+            known: number[]
+            review: number[]
+          }
         }
       }
     } catch {}
     return null
-  })
+  }, [storageKey, total])
 
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const [currentIndex, setCurrentIndex] = useState(() => initialProgress?.currentIndex ?? 0)
   const [flipped, setFlipped] = useState(false)
-  const [known, setKnown] = useState<Set<number>>(new Set())
-  const [review, setReview] = useState<Set<number>>(new Set())
+  const [known, setKnown] = useState<Set<number>>(() => new Set(initialProgress?.known ?? []))
+  const [review, setReview] = useState<Set<number>>(() => new Set(initialProgress?.review ?? []))
   const [finished, setFinished] = useState(false)
 
   const inlineAsk = useInlineSpheraAsk({ sessionId, sessionType })
 
   // Save progress automatically
   useEffect(() => {
-    if (currentIndex > 0 && !finished && (known.size > 0 || review.size > 0)) {
+    if (currentIndex > 0 && currentIndex < total && !finished && (known.size > 0 || review.size > 0)) {
       try {
         localStorage.setItem(
           storageKey,
@@ -979,12 +941,13 @@ export function FlashcardsView({
             currentIndex,
             known: Array.from(known),
             review: Array.from(review),
+            total,
             timestamp: Date.now(),
           })
         )
       } catch {}
     }
-  }, [currentIndex, known, review, finished, storageKey])
+  }, [currentIndex, total, known, review, finished, storageKey])
 
   // Clear when finished
   useEffect(() => {
@@ -1041,44 +1004,10 @@ export function FlashcardsView({
 
   const currentCard = cartes[currentIndex]
 
-  const handleResumeSaved = () => {
-    if (!savedProgress) return
-    setCurrentIndex(savedProgress.currentIndex)
-    setKnown(new Set(savedProgress.known))
-    setReview(new Set(savedProgress.review))
-    setFlipped(false)
-    setSavedProgress(null)
-  }
-
-  const handleDismissSaved = () => {
-    try {
-      localStorage.removeItem(storageKey)
-    } catch {}
-    setSavedProgress(null)
-  }
-
-  const handlePause = () => {
-    try {
-      localStorage.setItem(
-        storageKey,
-        JSON.stringify({
-          currentIndex,
-          known: Array.from(known),
-          review: Array.from(review),
-          timestamp: Date.now(),
-        })
-      )
-    } catch {}
-    if (onPause) {
-      onPause()
-    }
-  }
-
   const handleRestart = () => {
     try {
       localStorage.removeItem(storageKey);
     } catch {}
-    setSavedProgress(null);
     setCurrentIndex(0);
     setFlipped(false);
     setKnown(new Set());
@@ -1090,7 +1019,6 @@ export function FlashcardsView({
     try {
       localStorage.removeItem(storageKey);
     } catch {}
-    setSavedProgress(null);
     setCurrentIndex(0);
     setFlipped(false);
     setKnown(new Set());
@@ -1099,9 +1027,12 @@ export function FlashcardsView({
   }
 
   const triggerAskForCard = (key: string, card: any, idxLabel: number) => {
-    const prompt = `Concernant la carte mémoire #${idxLabel + 1} :\n- Recto (Concept / Question) : "${card.recto}"\n- Verso (Réponse / Définition) : "${card.verso}"\n\nPeux-tu approfondir ce concept avec une explication claire, un exemple concret et une astuce pour bien le retenir ?`
+    const isEn = isTextEnglish(`${card?.recto || ''} ${card?.verso || ''}`)
+    const prompt = isEn
+      ? `Regarding flashcard #${idxLabel + 1}:\n- Front (Concept / Question): "${card.recto}"\n- Back (Answer / Definition): "${card.verso}"\n\nPlease explain this concept clearly in English with a concrete example and a short tip to remember it.`
+      : `Concernant la carte mémoire #${idxLabel + 1} :\n- Recto (Concept / Question) : "${card.recto}"\n- Verso (Réponse / Définition) : "${card.verso}"\n\nPeux-tu approfondir ce concept avec une explication claire, un exemple concret et une astuce pour bien le retenir ?`
     if (sessionId) {
-      inlineAsk.ask(key, prompt, `Explication • Carte ${idxLabel + 1}`)
+      inlineAsk.ask(key, prompt, isEn ? `Explanation • Card ${idxLabel + 1}` : `Explication • Carte ${idxLabel + 1}`)
     } else if (onAskQuestion) {
       onAskQuestion(prompt)
     }
@@ -1270,16 +1201,15 @@ export function FlashcardsView({
             )}
           </div>
 
-          {currentIndex > 0 && onPause && (
+          {currentIndex > 0 && (
             <button
               type="button"
-              onClick={handlePause}
+              onClick={handleRestart}
               className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs text-sphera-text-muted hover:text-white transition-colors shrink-0 cursor-pointer"
-              title="Sauvegarder et continuer plus tard"
+              title="Recommencer le paquet depuis le début"
             >
-              <Pause className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden md:inline">Continuer plus tard</span>
-              <span className="hidden sm:inline md:hidden">Plus tard</span>
+              <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Recommencer</span>
             </button>
           )}
         </div>,
@@ -1334,39 +1264,6 @@ export function FlashcardsView({
       {progressBarPortal}
       {footerPortal}
 
-      {/* Saved Progress Banner */}
-      {savedProgress && (
-        <div className="p-3.5 rounded-xl border border-sphera-green/40 bg-sphera-green/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-sphera-green/20 text-sphera-green flex items-center justify-center shrink-0">
-              <RotateCcw className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-white">Session de révision détectée</p>
-              <p className="text-[11px] text-sphera-text-muted">
-                Carte {savedProgress.currentIndex + 1} sur {total} • {savedProgress.known.length} maîtrisée(s)
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={handleDismissSaved}
-              className="px-3 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs text-sphera-text-muted hover:text-white transition-colors cursor-pointer"
-            >
-              Recommencer
-            </button>
-            <button
-              type="button"
-              onClick={handleResumeSaved}
-              className="px-3 py-1.5 rounded-lg bg-sphera-green text-black font-semibold text-xs hover:bg-green-400 transition-colors shadow-xs cursor-pointer"
-            >
-              Reprendre
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Standalone fallback Header when outside StudyWorkspacePanel */}
       {!hasPortal && (
         <>
@@ -1375,15 +1272,15 @@ export function FlashcardsView({
               Carte <span className="text-white font-bold">{currentIndex + 1}</span> / {total}
             </span>
             <div className="flex items-center gap-2">
-              {currentIndex > 0 && onPause && (
+              {currentIndex > 0 && (
                 <button
                   type="button"
-                  onClick={handlePause}
+                  onClick={handleRestart}
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-[11px] text-sphera-text-muted hover:text-white transition-colors"
-                  title="Sauvegarder et continuer plus tard"
+                  title="Recommencer le paquet"
                 >
-                  <Pause className="w-3.5 h-3.5" />
-                  <span>Continuer plus tard</span>
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Recommencer</span>
                 </button>
               )}
               {known.size > 0 && (
@@ -1823,6 +1720,7 @@ function AskSpheraButton({
   if (!onAskQuestion) return null;
 
   const enonceShort = enonce ? (enonce.length > 80 ? enonce.slice(0, 80) + '...' : enonce) : '';
+  const isEn = isTextEnglish(enonce);
 
   return (
     <div className="relative inline-block" ref={containerRef}>
@@ -1853,7 +1751,11 @@ function AskSpheraButton({
             type="button"
             onClick={() => {
               setIsOpen(false);
-              onAskQuestion(`Peux-tu m'expliquer pas à pas la correction de la question Q${questionNum} : "${enonceShort}" ? Je n'ai pas bien compris le raisonnement.`);
+              onAskQuestion(
+                isEn
+                  ? `Can you explain step-by-step the solution to question Q${questionNum}: "${enonceShort}"? Please detail the reasoning and key formulas clearly in English.`
+                  : `Peux-tu m'expliquer pas à pas la correction de la question Q${questionNum} : "${enonceShort}" ? Je n'ai pas bien compris le raisonnement.`
+              );
             }}
             className="flex items-start gap-2.5 w-full p-2 rounded-lg text-left hover:bg-sphera-surface transition-colors group cursor-pointer"
           >
@@ -1868,7 +1770,11 @@ function AskSpheraButton({
             type="button"
             onClick={() => {
               setIsOpen(false);
-              onAskQuestion(`Donne-moi un exercice d'entraînement similaire à la question Q${questionNum} ("${enonceShort}") avec son énoncé complet et sa correction détaillée.`);
+              onAskQuestion(
+                isEn
+                  ? `Give me a similar practice exercise to question Q${questionNum} ("${enonceShort}") with its full statement and step-by-step solution in English.`
+                  : `Donne-moi un exercice d'entraînement similaire à la question Q${questionNum} ("${enonceShort}") avec son énoncé complet et sa correction détaillée.`
+              );
             }}
             className="flex items-start gap-2.5 w-full p-2 rounded-lg text-left hover:bg-sphera-surface transition-colors group cursor-pointer"
           >
@@ -1883,7 +1789,11 @@ function AskSpheraButton({
             type="button"
             onClick={() => {
               setIsOpen(false);
-              onAskQuestion(`Pour la question Q${questionNum}, je voudrais tester une autre méthode de résolution. Peux-tu analyser si d'autres démarches sont acceptées au barème ?`);
+              onAskQuestion(
+                isEn
+                  ? `For question Q${questionNum} ("${enonceShort}"), are there alternative valid solution methods accepted in grading? Explain clearly in English.`
+                  : `Pour la question Q${questionNum}, je voudrais tester une autre méthode de résolution. Peux-tu analyser si d'autres démarches sont acceptées au barème ?`
+              );
             }}
             className="flex items-start gap-2.5 w-full p-2 rounded-lg text-left hover:bg-sphera-surface transition-colors group cursor-pointer"
           >
@@ -1898,7 +1808,11 @@ function AskSpheraButton({
             type="button"
             onClick={() => {
               setIsOpen(false);
-              onAskQuestion(`Quels sont les pièges classiques et astuces de rédaction pour la question Q${questionNum} ? Comment s'assurer d'obtenir le maximum de points ?`);
+              onAskQuestion(
+                isEn
+                  ? `What are the classic exam pitfalls and writing tips for question Q${questionNum} ("${enonceShort}") to earn full credit? Answer clearly in English.`
+                  : `Quels sont les pièges classiques et astuces de rédaction pour la question Q${questionNum} ? Comment s'assurer d'obtenir le maximum de points ?`
+              );
             }}
             className="flex items-start gap-2.5 w-full p-2 rounded-lg text-left hover:bg-sphera-surface transition-colors group cursor-pointer"
           >

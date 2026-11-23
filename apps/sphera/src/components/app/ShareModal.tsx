@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, Copy, Check } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next';
+import { SPHERA_DRAWER_MODAL_BASE, SpheraDrawerHandle } from '../shared/SpheraDrawerModal';
 
 export function ShareModal({ 
   isOpen, 
@@ -69,10 +70,12 @@ export function ShareModal({
     <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 animate-in fade-in duration-200" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-sphera-surface-2 border border-sphera-border rounded-2xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 p-6 flex flex-col gap-5 text-white">
+        <Dialog.Content className={`${SPHERA_DRAWER_MODAL_BASE} sm:max-w-md text-white`}>
+          <SpheraDrawerHandle />
+          <div className="p-5 sm:p-6 pt-2 sm:pt-6 flex flex-col gap-5 overflow-y-auto">
           <div className="flex items-center justify-between">
             <Dialog.Title className="text-xl font-semibold">{resolvedTitle}</Dialog.Title>
-            <Dialog.Close className="text-sphera-text-muted hover:text-white transition-colors bg-sphera-surface hover:bg-sphera-border p-2 rounded-full">
+            <Dialog.Close className="hidden sm:flex text-sphera-text-muted hover:text-white transition-colors bg-sphera-surface hover:bg-sphera-border p-2 rounded-full">
               <X className="w-4 h-4" />
             </Dialog.Close>
           </div>
@@ -119,6 +122,7 @@ export function ShareModal({
                 </span>
               </a>
             ))}
+          </div>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

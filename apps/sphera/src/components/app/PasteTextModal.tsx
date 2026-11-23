@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, FileText, ArrowRight, WarningCircle as AlertCircle, Sparkle as Sparkles } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next';
+import { SpheraDrawerHandle } from '../shared/SpheraDrawerModal';
 
 interface PasteTextModalProps {
   isOpen: boolean;
@@ -39,11 +40,11 @@ export function PasteTextModal({ isOpen, onClose, onConfirm }: PasteTextModalPro
         onClick={onClose}
       />
 
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-2xl rounded-2xl bg-sphera-surface-2 border border-sphera-border shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-          
+      <div className="flex min-h-full items-end sm:items-center justify-center sm:p-4">
+        <div className="relative w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl bg-sphera-surface-2 border border-sphera-border max-sm:border-x-0 max-sm:border-b-0 shadow-2xl overflow-hidden max-h-[92dvh] sm:max-h-none flex flex-col max-sm:pb-[env(safe-area-inset-bottom,0px)] max-sm:animate-in max-sm:slide-in-from-bottom sm:animate-in sm:fade-in sm:zoom-in-95 duration-200">
+          <SpheraDrawerHandle className="bg-sphera-surface" />
           {/* Accent Line */}
-          <div className="h-1 w-full bg-gradient-to-r from-sphera-green/50 via-sphera-green to-sphera-green/50" />
+          <div className="hidden sm:block h-1 w-full bg-gradient-to-r from-sphera-green/50 via-sphera-green to-sphera-green/50" />
 
           {/* Header */}
           <div className="p-6 pb-4 border-b border-sphera-border flex items-start justify-between bg-sphera-surface">

@@ -70,7 +70,10 @@ function assertUsableSource(text: string, what = "Le texte extrait"): void {
   }
 }
 
-async function resolveContextPrefix(userId?: number): Promise<string> {
+async function resolveContextPrefix(
+  userId?: number,
+  options?: { ignoreLanguageOverride?: boolean },
+): Promise<string> {
   if (!userId) return "";
   try {
     const [context, prefs] = await Promise.all([
@@ -78,7 +81,11 @@ async function resolveContextPrefix(userId?: number): Promise<string> {
       getUserPreferences(userId),
     ]);
     const academicPrefix = buildContextPrefix(context);
-    const stylePrefix = buildStyleInstructions(prefs);
+    const effectivePrefs =
+      prefs && options?.ignoreLanguageOverride
+        ? { ...prefs, defaultLanguage: "auto" }
+        : prefs;
+    const stylePrefix = buildStyleInstructions(effectivePrefs);
     return academicPrefix + stylePrefix;
   } catch (err) {
     console.warn("[sphera-ai] Failed to load academic context or preferences:", err);
@@ -157,8 +164,11 @@ export async function generateQaAnswer(
   question: string,
   userId?: number,
   history?: QaEntry[],
+  options?: { inlineMode?: boolean },
 ): Promise<string> {
-  const prefix = await resolveContextPrefix(userId);
+  const prefix = await resolveContextPrefix(userId, {
+    ignoreLanguageOverride: Boolean(options?.inlineMode),
+  });
 
   // If no source text is provided (Free / General Academic Chat mode)
   if (!sourceText || sourceText.trim().length < MIN_SOURCE_CHARS) {
@@ -174,7 +184,12 @@ export async function generateQaAnswer(
 
   // Course-grounded RAG mode
   const { text: processedText, isFiltered } = extractRelevantPassages(sourceText, question, history);
-  const prompt = prefix + qaPrompt(processedText, question, history, isFiltered);
+  const prompt =
+    prefix +
+    qaPrompt(processedText, question, history, isFiltered, {
+      noSuggestions: Boolean(options?.inlineMode),
+      preferSourceLanguage: Boolean(options?.inlineMode),
+    });
   try {
     return (
       await callWithFallback(prompt, TOKENS_DEFAULT, { toolType: "qa", userId })
@@ -194,8 +209,11 @@ export async function* streamQaAnswer(
   userId?: number,
   history?: QaEntry[],
   signal?: AbortSignal,
+  options?: { inlineMode?: boolean },
 ): AsyncGenerator<string, { fullText: string }, void> {
-  const prefix = await resolveContextPrefix(userId);
+  const prefix = await resolveContextPrefix(userId, {
+    ignoreLanguageOverride: Boolean(options?.inlineMode),
+  });
 
   // If no source text is provided (Free / General Academic Chat mode)
   if (!sourceText || sourceText.trim().length < MIN_SOURCE_CHARS) {
@@ -209,7 +227,12 @@ export async function* streamQaAnswer(
 
   // Course-grounded RAG mode
   const { text: processedText, isFiltered } = extractRelevantPassages(sourceText, question, history);
-  const prompt = prefix + qaPrompt(processedText, question, history, isFiltered);
+  const prompt =
+    prefix +
+    qaPrompt(processedText, question, history, isFiltered, {
+      noSuggestions: Boolean(options?.inlineMode),
+      preferSourceLanguage: Boolean(options?.inlineMode),
+    });
   try {
     return yield* streamWithFallback(prompt, TOKENS_DEFAULT, { toolType: "qa", userId }, signal);
   } catch (error) {

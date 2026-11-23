@@ -1833,7 +1833,7 @@ spheraRouter.post("/sessions/:id/ask/", async (req, res) => {
   if (!isStream) {
     const entry: QaEntry = {
       question,
-      answer: await generateQaAnswer(session.extractedText, question, me.id, rawHistory),
+      answer: await generateQaAnswer(session.extractedText, question, me.id, rawHistory, { inlineMode: ephemeral }),
       created_at: new Date().toISOString(),
     };
 
@@ -1867,6 +1867,7 @@ spheraRouter.post("/sessions/:id/ask/", async (req, res) => {
       me.id,
       rawHistory,
       abortController.signal,
+      { inlineMode: ephemeral },
     );
 
     for await (const token of stream) {
@@ -2070,7 +2071,7 @@ spheraRouter.post("/annales/:id/ask/", async (req, res) => {
   if (!isStream) {
     const entry: QaEntry = {
       question,
-      answer: await generateQaAnswer(session.extractedText, question, me.id, rawHistory),
+      answer: await generateQaAnswer(session.extractedText, question, me.id, rawHistory, { inlineMode: ephemeral }),
       created_at: new Date().toISOString(),
     };
 
@@ -2104,6 +2105,7 @@ spheraRouter.post("/annales/:id/ask/", async (req, res) => {
       me.id,
       rawHistory,
       abortController.signal,
+      { inlineMode: ephemeral },
     );
 
     for await (const token of stream) {
