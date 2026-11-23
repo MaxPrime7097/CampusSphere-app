@@ -31,6 +31,7 @@ import {
   createArtefact
 } from '../services/spheraApi'
 import { AiMessageItem } from '../components/app/AiMessageItem'
+import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal'
 import { encodeHashId, parseSlugId } from '../lib/hashids'
 import { invalidateSpheraSessions } from '../hooks/useSpheraQueries'
 
@@ -76,9 +77,18 @@ export default function ChatPage() {
   const [inputMessage, setInputMessage] = useState('')
   const [isSending, setIsSending] = useState(false)
 
-  // Rename thread state
+  // Rename, Delete Modal & Toast feedback state
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [editTitleValue, setEditTitleValue] = useState('')
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    setToast({ message, type })
+    toastTimerRef.current = setTimeout(() => setToast(null), 2800)
+  }
 
   const chatBottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -403,15 +413,20 @@ export default function ChatPage() {
 
   // Create Note from answer
   const handleCreateNote = async (question: string, answer: string) => {
-    if (!activeThread?.sessionId) return
+    if (!activeThread?.sessionId) {
+      showToast("Impossible de créer une note sur cette discussion.", 'error')
+      return
+    }
     try {
       await createArtefact(activeThread.sessionId, {
         type: 'note',
         title: question.length > 40 ? question.slice(0, 40) + '…' : question,
-        content: `# ${question}\n\n${answer}`
+        content: { text: `# ${question}\n\n${answer}` }
       })
+      showToast('Note enregistrée !', 'success')
     } catch (err) {
       console.error('Erreur création note:', err)
+      showToast("Erreur lors de l'enregistrement de la note.", 'error')
     }
   }
 
@@ -425,17 +440,20 @@ export default function ChatPage() {
     textareaRef.current?.focus()
   }
 
-  const handleDeleteCurrentThread = async () => {
+  const handleDeleteCurrentThread = () => {
     if (!activeThreadId) return
-    const confirmDelete = window.confirm("Supprimer cette discussion ?")
-    if (!confirmDelete) return
+    setIsDeleteModalOpen(true)
+  }
 
+  const confirmDeleteCurrentThread = async () => {
+    if (!activeThreadId) return
     try {
       await deleteChatThread(activeThreadId)
       invalidateSpheraSessions()
       handleCreateNewThread()
     } catch (err) {
       console.error('Erreur suppression discussion:', err)
+      showToast('Erreur lors de la suppression.', 'error')
     }
   }
 
@@ -714,11 +732,30 @@ export default function ChatPage() {
             )}
           </form>
 
-          <p className="text-center text-[10px] text-sphera-text-muted/60 mt-1.5 block">
+          <p className="text-center text-[11px] text-sphera-text-muted/80 mt-1.5 block">
             Sphera peut faire des erreurs. Vérifie les informations avec tes cours.
           </p>
         </div>
       </footer>
+
+      {toast && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3.5 py-2 rounded-full bg-sphera-surface-2/95 border border-sphera-border shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-top-2 text-xs">
+          {toast.type === 'success' ? (
+            <Check className="w-3.5 h-3.5 text-sphera-green shrink-0" />
+          ) : (
+            <X className="w-3.5 h-3.5 text-red-400 shrink-0" />
+          )}
+          <span className="font-medium text-white">{toast.message}</span>
+        </div>
+      )}
+
+      <DeleteConfirmModal
+        isOpen={isDeleteModalOpen}
+        setIsOpen={setIsDeleteModalOpen}
+        onConfirm={confirmDeleteCurrentThread}
+        title="Supprimer cette discussion ?"
+        description="Tous les messages de cette conversation seront définitivement supprimés."
+      />
     </div>
   )
 }

@@ -6,7 +6,7 @@ import { getSession, getAnnale, askQuestion, streamAskQuestion, deleteSession, d
 import { StudyWorkspacePanel } from '../components/app/StudyWorkspacePanel'
 import { QuotaIndicator } from '../components/app/QuotaIndicator'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
-import { FileText, ArrowLeft, ArrowsOut as Maximize2, ArrowsIn as Minimize2, PaperPlaneTilt as Send, Square, ChatCircle as MessageSquare, Robot as Bot, User, Columns, ShareNetwork as Share2, Trash as Trash2, Check, At as AtSign, Plus, Spinner as Loader2, WarningCircle as AlertCircle, Sparkle as Sparkles, GitFork, BookOpen } from "@phosphor-icons/react";
+import { FileText, ArrowLeft, ArrowsOut as Maximize2, ArrowsIn as Minimize2, PaperPlaneTilt as Send, Square, ChatCircle as MessageSquare, Robot as Bot, User, Columns, ShareNetwork as Share2, Trash as Trash2, Check, At as AtSign, Plus, Spinner as Loader2, WarningCircle as AlertCircle, Sparkle as Sparkles, GitFork, BookOpen, List as Menu } from "@phosphor-icons/react";
 import { FicheView, QuizView, FlashcardsView, AnnaleView, MindmapView, AudioSummaryView } from '../components/app/ResultViews'
 import { ShareModal } from '../components/app/ShareModal'
 import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal'
@@ -950,24 +950,47 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
     setActiveTab('chat')
     setIsChatting(true)
 
+    const targetIdx = chatHistory.length
     setChatHistory(prev => [...prev, { question: display, answer: '...' }])
 
     const controller = new AbortController()
     abortControllerRef.current = controller
 
+    let streamedText = ''
     try {
       const askType = (type === 'annale' || session?.mode !== undefined || session?.sections !== undefined || session?.content?.sections !== undefined || session?.content?.isAnnaleWorkspace !== undefined) ? 'annale' : 'session'
-      const res = await askQuestion(id!, prompt, askType, controller.signal)
-      const normalized = normalizeAiResponse(res?.data?.answer)
+      const res = await streamAskQuestion(
+        id!,
+        prompt,
+        askType,
+        (token) => {
+          streamedText += token
+          setChatHistory(prev => {
+            const newHist = [...prev]
+            const idx = targetIdx < newHist.length ? targetIdx : newHist.length - 1
+            if (newHist[idx]) {
+              newHist[idx] = {
+                question: display,
+                answer: streamedText,
+                created_at: new Date().toISOString(),
+              }
+            }
+            return newHist
+          })
+        },
+        controller.signal
+      )
+      const normalized = normalizeAiResponse(streamedText || res?.fullText)
       const newEntry = {
         question: display,
         answer: normalized,
-        created_at: res?.data?.created_at || new Date().toISOString(),
+        created_at: res?.metadata?.created_at || new Date().toISOString(),
       };
       setChatHistory(prev => {
         const newHist = [...prev];
-        if (newHist.length > 0 && newHist[newHist.length - 1].answer === '...') {
-          newHist[newHist.length - 1] = newEntry;
+        const idx = targetIdx < newHist.length ? targetIdx : newHist.length - 1;
+        if (newHist[idx]) {
+          newHist[idx] = newEntry;
         } else {
           newHist.push(newEntry);
         }
@@ -1015,15 +1038,27 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
 
   return (
     <div className="flex flex-1 h-full min-h-0 overflow-hidden flex-col md:flex-row bg-sphera-bg">
-      {/* Mobile Top Bar with Segmented View Switcher */}
-      <div className="md:hidden flex items-center justify-between px-3 py-2 bg-sphera-surface-2 border-b border-sphera-border shrink-0 z-30">
-        <button
-          onClick={() => navigate('/app')}
-          className="p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-md transition-colors shrink-0"
-          title={t('sessionDetail.backToDashboard')}
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </button>
+      {/* Mobile Top Bar with Menu + Segmented View Switcher */}
+      <div className="md:hidden flex items-center justify-between gap-2 px-3 py-2 bg-sphera-surface-2 border-b border-sphera-border shrink-0 z-30">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('sphera:open-mobile-sidebar'))}
+            className="p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-lg transition-colors shrink-0 cursor-pointer"
+            title="Ouvrir le menu"
+            aria-label="Ouvrir le menu"
+          >
+            <Menu className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/app')}
+            className="px-2 py-1 text-xs font-medium text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-lg transition-colors shrink-0 cursor-pointer"
+            title={t('sessionDetail.backToDashboard')}
+          >
+            Accueil
+          </button>
+        </div>
 
         <div className="flex items-center bg-sphera-surface p-1 rounded-lg border border-sphera-border gap-1">
           <button

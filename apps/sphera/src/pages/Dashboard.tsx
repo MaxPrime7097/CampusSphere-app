@@ -54,9 +54,29 @@ export default function Dashboard() {
   const [itemToDelete, setItemToDelete] = useState<{ id: string | number; type: 'session' | 'annale' | 'chat'; title: string } | null>(null)
   const [shareModalData, setShareModalData] = useState<{ url: string; title: string } | null>(null)
 
-  // Pagination for Récents (6 per page + view all toggle)
+  // Pagination & Quick Filter for Récents (6 per page + view all toggle)
   const [displayLimit, setDisplayLimit] = useState(6)
   const [showAll, setShowAll] = useState(false)
+  const [recentFilter, setRecentFilter] = useState<'all' | 'session' | 'annale' | 'chat'>('all')
+
+  const hasSessionInProgress = React.useCallback((sessionId: string | number): boolean => {
+    try {
+      const qPrefix = `sphera_quiz_prog_${sessionId}_`
+      const fPrefix = `sphera_fc_prog_${sessionId}_`
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && (key.startsWith(qPrefix) || key.startsWith(fPrefix))) {
+          const raw = localStorage.getItem(key)
+          if (!raw) continue
+          const parsed = JSON.parse(raw)
+          if (typeof parsed.currentIndex === 'number' && parsed.currentIndex > 0) {
+            if (!parsed.total || parsed.currentIndex < parsed.total) return true
+          }
+        }
+      }
+    } catch {}
+    return false
+  }, [])
 
   // TanStack Query Sessions, Annales & Chats
   const { data: sessions = [], isLoading: isLoadingSessions } = useSessionsQuery()
@@ -82,7 +102,11 @@ export default function Dashboard() {
 
   const isLoadingAll = (isLoadingSessions || isLoadingAnnales || isLoadingChats)
   const showSkeleton = isLoadingAll && allItems.length === 0
-  const displayedItems = showAll ? allItems : allItems.slice(0, displayLimit)
+  const filteredItems = React.useMemo(
+    () => (recentFilter === 'all' ? allItems : allItems.filter((item) => item._type === recentFilter)),
+    [allItems, recentFilter]
+  )
+  const displayedItems = showAll ? filteredItems : filteredItems.slice(0, displayLimit)
 
   const getItemIcon = (type: string) => {
     if (type === 'chat') {
@@ -164,20 +188,8 @@ export default function Dashboard() {
     const trimmed = chatPrompt.trim()
     if (!trimmed || isStartingChat) return
     setIsStartingChat(true)
-    try {
-      const res = await createStandaloneChatThread({ question: trimmed })
-      const threadId = res?.data?.id
-      if (threadId) {
-        navigate(`/chat/${encodeHashId(threadId) || threadId}`)
-      } else {
-        navigate('/chat', { state: { initialQuestion: trimmed } })
-      }
-    } catch (err) {
-      console.error('Erreur création discussion:', err)
-      navigate('/chat', { state: { initialQuestion: trimmed } })
-    } finally {
-      setIsStartingChat(false)
-    }
+    // Navigate immediately so ChatPage creates the thread in ~30ms and streams the first answer live via SSE
+    navigate('/chat', { state: { initialQuestion: trimmed } })
   }
 
   return (
@@ -307,31 +319,74 @@ export default function Dashboard() {
           onConfirm={handlePasteConfirm}
         />
 
-        {/* Section Header: Récents + Voir tout */}
-        <div className="flex items-center justify-between mb-6 px-4 sm:px-0">
-          <div className="flex items-center gap-2">
-            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">Récents</h2>
-            {allItems.length > 0 && (
-              <span className="text-xs text-sphera-text-muted">({allItems.length})</span>
+        {/* Section Header: Récents + Quick Filters + Voir tout */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 px-4 sm:px-0">
+          <div className="flex items-center justify-between sm:justify-start gap-3">
+            <div className="flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">Récents</h2>
+              {filteredItems.length > 0 && (
+                <span className="text-xs text-sphera-text-muted">({filteredItems.length})</span>
+              )}
+            </div>
+            {filteredItems.length > 6 && (
+              <button
+                type="button"
+                onClick={() => setShowAll(prev => !prev)}
+                className="sm:hidden text-xs font-semibold text-sphera-green hover:underline cursor-pointer transition-colors"
+              >
+                {showAll ? 'Réduire' : 'Voir tout'}
+              </button>
             )}
           </div>
-          {allItems.length > 8 && (
-            <button
-              type="button"
-              onClick={() => setShowAll(prev => !prev)}
-              className="text-xs font-semibold text-sphera-green hover:underline cursor-pointer transition-colors"
-            >
-              {showAll ? 'Réduire' : 'Voir tout'}
-            </button>
-          )}
+
+          <div className="flex items-center justify-between sm:justify-end gap-3">
+            {/* Filter Pills */}
+            {allItems.length > 0 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                {[
+                  { id: 'all' as const, label: 'Tous' },
+                  { id: 'session' as const, label: 'Cours' },
+                  { id: 'annale' as const, label: 'Annales' },
+                  { id: 'chat' as const, label: 'Chats' },
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => {
+                      setRecentFilter(f.id)
+                      setDisplayLimit(6)
+                      setShowAll(false)
+                    }}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                      recentFilter === f.id
+                        ? 'bg-sphera-green text-black font-semibold'
+                        : 'bg-sphera-surface text-sphera-text-muted hover:text-white border border-sphera-border'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {filteredItems.length > 6 && (
+              <button
+                type="button"
+                onClick={() => setShowAll(prev => !prev)}
+                className="hidden sm:inline-block text-xs font-semibold text-sphera-green hover:underline cursor-pointer transition-colors shrink-0"
+              >
+                {showAll ? 'Réduire' : 'Voir tout'}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Unified Récents Grid */}
         <>
           {showSkeleton ? (
-            <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 px-4 sm:px-0">
               {[1, 2, 3, 4, 5, 6].map(idx => (
-                <div key={idx} className="sphera-card p-5 block rounded-none sm:rounded-2xl border-x-0 sm:border-x animate-pulse">
+                <div key={idx} className="sphera-card p-5 block rounded-2xl animate-pulse">
                   <div className="flex items-center justify-between mb-4">
                     <div className="w-10 h-10 rounded-lg bg-sphera-surface-2" />
                     <div className="flex gap-2">
@@ -349,43 +404,72 @@ export default function Dashboard() {
               ))}
             </div>
           ) : displayedItems.length === 0 ? (
-            <div className="text-center p-12 bg-sphera-surface-2 rounded-2xl border border-sphera-border mx-4 sm:mx-0">
-              <BookOpen className="w-12 h-12 text-sphera-green/50 mx-auto mb-4" />
-              <p className="text-white font-medium mb-1">Aucune activité récente</p>
-              <p className="text-sm text-sphera-text-muted">Importez un cours, une annale ou posez une question pour commencer vos révisions !</p>
+            <div className="text-center p-10 bg-sphera-surface-2 rounded-2xl border border-sphera-border mx-4 sm:mx-0">
+              <BookOpen className="w-11 h-11 text-sphera-green/50 mx-auto mb-3" />
+              <p className="text-white font-medium mb-1">
+                {recentFilter === 'all' ? 'Aucune activité récente' : 'Aucun élément dans cette catégorie'}
+              </p>
+              <p className="text-sm text-sphera-text-muted">
+                {recentFilter === 'all'
+                  ? 'Importez un cours, une annale ou posez une question pour commencer vos révisions !'
+                  : 'Essayez un autre filtre ou créez un nouveau contenu ci-dessus.'}
+              </p>
             </div>
           ) : (
-            <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-1 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 px-4 sm:px-0">
               {displayedItems.map(item => {
                 const itemTitle = item.title || item.resource_title || (item._type === 'chat' ? 'Discussion' : `Session #${item.id}`)
                 const itemSubtitle = item._type === 'chat'
                   ? (item.messages?.length ? `${item.messages.length} message(s)` : 'Discussion libre')
                   : `Extrait de ${item.source_filename || 'document'}`
+                const toolCount = Array.isArray(item.tool_types) ? item.tool_types.length : 0
+                const toolLabels: Record<string, string> = {
+                  fiche: 'Fiche',
+                  quiz: 'Quiz',
+                  flashcards: 'Cartes',
+                  mindmap: 'Schéma',
+                  audio: 'Audio',
+                }
                 const itemBadge = item._type === 'chat'
                   ? 'Chat'
                   : item._type === 'annale'
                     ? 'Annale'
-                    : (item.tool_types?.join(', ') || 'Cours')
+                    : toolCount === 1
+                      ? (toolLabels[item.tool_types[0]] || item.tool_types[0])
+                      : toolCount > 1
+                        ? `${toolCount} outils`
+                        : 'Cours'
+                const isInProgress = item._type !== 'chat' && hasSessionInProgress(item.id)
 
                 return (
                   <Link 
                     key={`${item._type}-${item.id}`} 
                     to={getItemPath(item)}
-                    className="sphera-card p-5 group hover:-translate-y-1 hover:border-sphera-border/80 hover:bg-sphera-surface-2 transition-all block rounded-none sm:rounded-2xl border-x-0 sm:border-x"
+                    className="sphera-card p-5 group hover:-translate-y-0.5 hover:border-sphera-border/80 hover:bg-sphera-surface-2 transition-all block rounded-2xl"
                   >
                     <div className="flex items-center justify-between mb-4">
-                      <div className="w-10 h-10 rounded-lg bg-sphera-bg border border-sphera-border flex items-center justify-center">
-                        {getItemIcon(item._type)}
+                      <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 rounded-lg bg-sphera-bg border border-sphera-border flex items-center justify-center shrink-0">
+                          {getItemIcon(item._type)}
+                        </div>
+                        {isInProgress && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-sphera-green/15 text-sphera-green border border-sphera-green/30">
+                            <span className="w-1.5 h-1.5 rounded-full bg-sphera-green" />
+                            En cours
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={(e) => handleShareClick(e, item)}
-                          className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
-                          title="Partager"
-                        >
-                          <Share2 className="w-4 h-4" />
-                        </button>
+                        {item._type !== 'chat' && (
+                          <button
+                            type="button"
+                            onClick={(e) => handleShareClick(e, item)}
+                            className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors cursor-pointer"
+                            title="Partager"
+                          >
+                            <Share2 className="w-4 h-4" />
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={(e) => {
@@ -397,7 +481,7 @@ export default function Dashboard() {
                               title: itemTitle
                             });
                           }}
-                          className="p-1.5 rounded-lg text-sphera-text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                          className="p-1.5 rounded-lg text-sphera-text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
                           title="Supprimer"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -413,12 +497,12 @@ export default function Dashboard() {
                         <Calendar className="w-3.5 h-3.5" />
                         {new Date(item.updatedAt || item.updated_at || item.created_at || item.createdAt || Date.now()).toLocaleDateString('fr-FR')}
                       </span>
-                      <span className={`px-2 py-0.5 rounded text-[10px] uppercase tracking-wider border ${
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-medium uppercase tracking-wider border ${
                         item._type === 'chat'
                           ? 'bg-sky-500/10 border-sky-500/30 text-sky-400'
                           : item._type === 'annale'
                             ? 'bg-orange-500/10 border-orange-500/30 text-orange-400'
-                            : 'bg-sphera-surface border-sphera-border text-sphera-text-muted'
+                            : 'bg-sphera-surface border-sphera-border text-white/80'
                       }`}>
                         {itemBadge}
                       </span>
@@ -430,14 +514,14 @@ export default function Dashboard() {
           )}
 
           {/* Button Voir plus (+6) */}
-          {!showAll && allItems.length > displayLimit && (
+          {!showAll && filteredItems.length > displayLimit && (
             <div className="flex justify-center mt-8 px-4 sm:px-0">
               <button
                 type="button"
                 onClick={() => setDisplayLimit(prev => prev + 6)}
                 className="px-6 py-2.5 rounded-full border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-white text-xs font-semibold transition-all shadow-sm hover:border-sphera-green/40 cursor-pointer"
               >
-                Voir plus (+{Math.min(6, allItems.length - displayLimit)})
+                Voir plus (+{Math.min(6, filteredItems.length - displayLimit)})
               </button>
             </div>
           )}

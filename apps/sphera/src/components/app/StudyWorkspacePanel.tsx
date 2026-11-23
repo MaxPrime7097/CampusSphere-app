@@ -42,6 +42,7 @@ import {
   Pause,
   Exam,
   Lightning,
+  Columns,
 } from '@phosphor-icons/react'
 import { SpheraSettingsModal } from '../settings/SpheraSettingsModal'
 import { MarkdownRenderer } from './MarkdownRenderer'
@@ -695,9 +696,10 @@ export function StudyWorkspacePanel({
               type="button"
               onClick={handleReturnToDashboard}
               className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-medium text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors cursor-pointer shrink-0"
-              title="Retour au tableau de bord"
+              title="Retour aux outils"
             >
               <ArrowLeft className="w-4 h-4" />
+              <span className="sm:hidden">Outils</span>
               <span className="hidden sm:inline">Retour</span>
             </button>
           )}
@@ -774,8 +776,14 @@ export function StudyWorkspacePanel({
         )}
 
         {onTogglePdfExpanded && (
-          <button type="button" onClick={onTogglePdfExpanded} className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors shrink-0 cursor-pointer" title={isPdfExpanded ? 'Réduire la vue' : 'Plein écran'}>
-            {isPdfExpanded ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+          <button
+            type="button"
+            onClick={onTogglePdfExpanded}
+            className="hidden md:inline-flex items-center justify-center p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors shrink-0 cursor-pointer"
+            title={isPdfExpanded ? 'Masquer le document (plein écran)' : 'Afficher le document côte à côte'}
+            aria-label={isPdfExpanded ? 'Masquer le document' : 'Afficher le document'}
+          >
+            {isPdfExpanded ? <Maximize2 className="w-4 h-4" /> : <Columns className="w-4 h-4" />}
           </button>
         )}
       </div>
