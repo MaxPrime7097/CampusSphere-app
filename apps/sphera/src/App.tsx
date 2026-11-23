@@ -100,27 +100,27 @@ export default function App() {
       <ScrollToTop />
       {/* SEO meta tags */}
       <Helmet>
-        <title>Sphera – Assistante IA · CampusSphere</title>
+        <title>Sphera — Fiches, Corrigés d’Examens & Quiz IA · CampusSphere</title>
         <meta
           name="description"
-          content="Sphera, l’assistante IA académique, propose fiches de révision, quiz, flashcards, correction d’annales et un chat IA en direct. Connectez votre compte CampusSphere pour une expérience fluide."
+          content="Sphera transforme tes cours en fiches par chapitres, corrigés d’examens, quiz d’entraînement, cartes mémoire, cours en audio et sessions Sphera Live."
         />
         <link rel="canonical" href="https://sphera.campussphere.app/" />
-        <meta property="og:title" content="Sphera – Application IA" />
+        <meta property="og:title" content="Sphera — Fiches, Corrigés d’Examens & Quiz IA · CampusSphere" />
         <meta
           property="og:description"
-          content="Explorez Sphera : génération de fiches, quiz, flashcards, correction d’annales et chat IA en temps réel, intégré à CampusSphere."
+          content="Fiches de cours, corrigés d’examens, quiz, cartes mémoire, cours en audio et Sphera Live — 10 générations offertes / semaine."
         />
         <meta property="og:url" content="https://sphera.campussphere.app/" />
         <meta property="og:type" content="website" />
-        <meta property="og:image" content="https://sphera.campussphere.app/og-image.png" />
+        <meta property="og:image" content="https://sphera.campussphere.app/sphera_preview.webp" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Sphera – Application IA" />
+        <meta name="twitter:title" content="Sphera — Assistante IA de Révision · CampusSphere" />
         <meta
           name="twitter:description"
-          content="Votre assistante IA pour réviser, créer des quiz, flashcards, corriger des annales et discuter en direct."
+          content="Ton assistante IA pour réviser, générer des quiz, flashcards, corriger d’anciennes épreuves et jouer sur Sphera Live."
         />
-        <meta name="twitter:image" content="https://sphera.campussphere.app/og-image.png" />
+        <meta name="twitter:image" content="https://sphera.campussphere.app/sphera_preview.webp" />
       </Helmet>
       <SSOCatcher />
       <main className="flex-1">
@@ -131,7 +131,6 @@ export default function App() {
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/blogs" element={<Blogs />} />
           <Route path="/blogs/:slug" element={<BlogDetail />} />
-          <Route path="/sphera-live" element={<Navigate to="/blogs/sphera-live-quiz-multijoueur-en-direct" replace />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/legal-notice" element={<LegalNotice />} />
