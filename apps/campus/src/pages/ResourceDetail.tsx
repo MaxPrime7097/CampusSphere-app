@@ -19,6 +19,8 @@ import {
 import { CaretLeft as ChevronLeft, Spinner as Loader2 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { getAccessToken } from "@/services/api/client";
 import { useTranslation } from "react-i18next";
 import {
   normalizeAudience,
@@ -50,7 +52,11 @@ function mapResourceDetail(data: any) {
     subject: normalizeSubject(data.subject),
     category: normalizeCategory(data.category),
     type: normalizeResourceType(data.type),
-    format: (data.fileUrl || data.file)?.toString().split(".").pop() || "",
+    format: (() => {
+      const raw = (data.fileUrl || data.file)?.toString().split("?")[0] || "";
+      const candidate = raw.split(".").pop() || "";
+      return candidate.length <= 6 && !candidate.includes("/") ? candidate : "";
+    })(),
     size: String(data.fileSize || data.file_size || data.size || "0"),
     level: normalizeAudience(data.level || data.audience || data.courseLevel),
     pages: Number(data.pages || data.page_count || 0),
@@ -64,9 +70,9 @@ function mapResourceDetail(data: any) {
     },
     uploadDate: data.createdAt || data.created_at || data.uploaded_at || null,
     stats: {
-      downloads: data.downloadCount || data.download_count || data.stats?.downloads || 0,
-      saves: data.saves || data.stats?.saves || data.saves_count || 0,
-      views: data.viewCount || data.view_count || data.stats?.views || 0,
+      downloads: Number(data.downloadCount ?? data.download_count ?? data.downloads_count ?? data.stats?.downloads ?? 0),
+      saves: Number(data.saves ?? data.stats?.saves ?? data.saves_count ?? 0),
+      views: Number(data.viewCount ?? data.view_count ?? data.views_count ?? data.stats?.views ?? 0),
     },
     isSaved: data.isSaved ?? data.is_saved ?? false,
     canEdit: data.canEdit ?? data.can_edit ?? false,
@@ -122,13 +128,11 @@ export function ResourceDetail() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isCopyingLink, setIsCopyingLink] = useState(false);
 
+  const { user } = useAuth();
   const [folders, setFolders] = useState<ResourceFolder[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState<string>("none");
 
-  const isAuthenticated = Boolean(
-    typeof window !== "undefined" &&
-      (localStorage.getItem("access") || localStorage.getItem("access_token"))
-  );
+  const isAuthenticated = Boolean(user || getAccessToken());
 
   const [resource, setResource] = useState<any | null>(() => {
     if (!id) return null;
@@ -198,7 +202,11 @@ export function ResourceDetail() {
         subject: normalizeSubject(data.subject),
         category: normalizeCategory(data.category),
         type: normalizeResourceType(data.type),
-        format: (data.fileUrl || data.file)?.toString().split(".").pop() || "",
+        format: (() => {
+      const raw = (data.fileUrl || data.file)?.toString().split("?")[0] || "";
+      const candidate = raw.split(".").pop() || "";
+      return candidate.length <= 6 && !candidate.includes("/") ? candidate : "";
+    })(),
         size: String(data.fileSize || data.file_size || data.size || "0"),
         level: normalizeAudience(data.level || data.audience || data.courseLevel),
         pages: Number(data.pages || data.page_count || 0),
@@ -212,9 +220,9 @@ export function ResourceDetail() {
         },
         uploadDate: data.createdAt || data.created_at || data.uploaded_at || null,
         stats: {
-          downloads: data.downloadCount || data.download_count || data.stats?.downloads || 0,
-          saves: data.saves || data.stats?.saves || data.saves_count || 0,
-          views: data.viewCount || data.view_count || data.stats?.views || 0,
+          downloads: Number(data.downloadCount ?? data.download_count ?? data.downloads_count ?? data.stats?.downloads ?? 0),
+          saves: Number(data.saves ?? data.stats?.saves ?? data.saves_count ?? 0),
+          views: Number(data.viewCount ?? data.view_count ?? data.views_count ?? data.stats?.views ?? 0),
         },
         isSaved: data.isSaved ?? data.is_saved ?? false,
         canEdit: data.canEdit ?? data.can_edit ?? false,
@@ -315,32 +323,26 @@ export function ResourceDetail() {
   };
 
   const handleDownload = () => {
-    if (!id) return;
+    if (!id || isDownloading) return;
     requireAuth(() => {
       setIsDownloading(true);
       void (async () => {
         try {
-          const result = await downloadResource(id, undefined, { triggerDownload: false });
-          const objectUrl = window.URL.createObjectURL(result.blob);
-          const link = document.createElement("a");
-          link.href = objectUrl;
-          link.download = result.filename;
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-          window.URL.revokeObjectURL(objectUrl);
+          await downloadResource(id);
 
-          setResource((prev: any) =>
-            prev
-              ? {
-                  ...prev,
-                  stats: {
-                    ...prev.stats,
-                    downloads: prev.stats.downloads + 1,
-                  },
-                }
-              : prev
-          );
+          if (!queryClient.getQueryData(["resource", id])) {
+            setResource((prev: any) =>
+              prev
+                ? {
+                    ...prev,
+                    stats: {
+                      ...prev.stats,
+                      downloads: prev.stats.downloads + 1,
+                    },
+                  }
+                : prev
+            );
+          }
 
           toast({
             title: t("detail.toasts.downloadStarted"),
@@ -617,11 +619,13 @@ export function ResourceDetail() {
             resource={resource}
             isSaved={isSaved}
             isSaving={isSaving}
+            isDownloading={isDownloading}
             isSharing={isSharing}
             isReporting={isReporting}
             isDeleting={isDeletingResource}
             folders={folders}
             currentFolderId={currentFolderId}
+            onDownload={handleDownload}
             onSave={handleSaveResource}
             onOpenEdit={() => {
               setDraftTitle(resource.title);

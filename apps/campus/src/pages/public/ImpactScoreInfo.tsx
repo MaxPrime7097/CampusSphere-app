@@ -6,14 +6,10 @@ import { motion } from "motion/react";
 import {
   ArrowDown,
   ArrowUpRight,
-  Crown,
-  Fire,
   Lightning,
-  Plant,
   Prohibit,
   ShieldCheck,
   SlidersHorizontal,
-  Star,
   Trophy,
   UploadSimple,
 } from "@phosphor-icons/react";
@@ -43,7 +39,6 @@ const ACTIVE_RULE_SPECS = [
 ] as const;
 
 const ZERO_RULE_KEYS = ["z1", "z2", "z3", "z4"] as const;
-const LEVEL_ICONS = [Plant, Star, Fire, Trophy, Crown] as const;
 const FUTURE_SPECS = [
   { key: "f1", icon: Trophy },
   { key: "f2", icon: Lightning },
@@ -248,7 +243,7 @@ export function ImpactScoreInfo(): JSX.Element {
 
             <StaggerGrid className="pub-levels-grid" stagger={0.07}>
               {IMPACT_LEVELS.map((level, idx) => {
-                const Icon = LEVEL_ICONS[idx] ?? Trophy;
+                const Icon = level.icon;
                 const isLegend = idx === IMPACT_LEVELS.length - 1;
                 return (
                   <StaggerItem

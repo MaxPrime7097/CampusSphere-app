@@ -379,6 +379,18 @@ export function normalizeResource(resource: any): Resource | null {
   if (!resource) return null;
 
   const authorInfo = normalizeUser(resource.author_info ?? resource.authorInfo);
+  const downloads = toNumber(
+    resource.download_count ?? resource.downloadCount ?? resource.downloads_count ?? resource.stats?.downloads,
+    0
+  );
+  const views = toNumber(
+    resource.view_count ?? resource.viewCount ?? resource.views_count ?? resource.stats?.views,
+    0
+  );
+  const saves = toNumber(
+    resource.saves_count ?? resource.savesCount ?? resource.stats?.saves,
+    0
+  );
 
   return {
     ...resource,
@@ -389,13 +401,19 @@ export function normalizeResource(resource: any): Resource | null {
     category: resource.category ?? "",
     tags: toArray(resource.tags),
     visibility: resource.visibility ?? "public",
-    fileUrl: resource.file_url ?? resource.fileUrl ?? "",
+    fileUrl: resource.file_url ?? resource.fileUrl ?? resource.file ?? "",
     fileSize: resource.file_size ?? resource.fileSize ?? "",
     isSaved: resource.is_saved ?? resource.isSaved ?? false,
     canEdit: resource.can_edit ?? resource.canEdit ?? false,
     canDelete: resource.can_delete ?? resource.canDelete ?? false,
-    downloadCount: toNumber(resource.download_count ?? resource.downloadCount, 0),
-    viewCount: toNumber(resource.view_count ?? resource.viewCount, 0),
+    downloadCount: downloads,
+    viewCount: views,
+    stats: {
+      ...(resource.stats ?? {}),
+      downloads,
+      views,
+      saves,
+    },
     impactScore: toNumber(resource.impact_score ?? resource.impactScore, 0),
     author: authorInfo,
     authorId: resource.author ?? resource.author_id ?? authorInfo?.id ?? null,

@@ -145,6 +145,14 @@ export function keyFromUrl(url: string): string | null {
   const local = url.match(/^\/media\/(.+)$/);
   if (local) return local[1];
 
+  if (env.storage.publicUrl) {
+    const base = env.storage.publicUrl.replace(/\/$/, "") + "/";
+    if (url.startsWith(base)) {
+      const stripped = url.slice(base.length).split("?")[0];
+      if (stripped) return stripped;
+    }
+  }
+
   try {
     const parsed = new URL(url);
     return parsed.pathname.replace(/^\/+/, "") || null;

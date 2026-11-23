@@ -23,6 +23,7 @@ interface ProfileContributionsTabProps {
   userName: string;
   loading: boolean;
   resourcesAvailable: boolean;
+  downloadingIds?: Set<string>;
   onDownloadFile: (resourceId?: string | number, fileName?: string) => void;
 }
 
@@ -31,6 +32,7 @@ export function ProfileContributionsTab({
   userName,
   loading,
   resourcesAvailable,
+  downloadingIds,
   onDownloadFile,
 }: ProfileContributionsTabProps) {
   const { t } = useTranslation("profile");
@@ -78,7 +80,7 @@ export function ProfileContributionsTab({
                 viewCount: file.viewCount || 0,
                 downloadCount: file.downloadCount || 0,
               }}
-              isDownloading={false}
+              isDownloading={Boolean(downloadingIds?.has(String(file.resourceId || file.id)))}
               onDownload={(e) => {
                 e.stopPropagation();
                 onDownloadFile(file.resourceId, file.filename || file.name);
