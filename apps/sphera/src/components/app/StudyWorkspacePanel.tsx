@@ -57,6 +57,7 @@ import { updateSessionDetailCache } from '../../hooks/useSpheraQueries'
 import { usePodcastPlayer, podcastStore } from '../../utils/podcastPlayerStore'
 import { GenerateScopeModal } from './GenerateScopeModal'
 import { detectChaptersFromText, type DetectedChapter } from '../../utils/extractChapters'
+import type { WorkspaceSlots } from './workspaceSlots'
 
 export interface ActiveWorkspaceView {
   type: 'fiche' | 'quiz' | 'flashcards' | 'mindmap' | 'audio' | 'note' | 'annale' | 'chapitres' | 'chat'
@@ -583,11 +584,51 @@ export function StudyWorkspacePanel({
     (t) => sessionContent && sessionContent[t] !== undefined
   )
 
+  // Workspace portal slots for tool headers, thin progress bar, and fixed bottom action dock
+  const [headerSlotEl, setHeaderSlotEl] = useState<HTMLDivElement | null>(null)
+  const [progressSlotEl, setProgressSlotEl] = useState<HTMLDivElement | null>(null)
+  const [footerSlotEl, setFooterSlotEl] = useState<HTMLDivElement | null>(null)
+
+  const workspaceSlots: WorkspaceSlots = useMemo(
+    () => ({
+      headerSlot: headerSlotEl,
+      progressSlot: progressSlotEl,
+      footerSlot: footerSlotEl,
+    }),
+    [headerSlotEl, progressSlotEl, footerSlotEl]
+  )
+
+  const isToolView = activeView !== null && activeView.type !== 'chat'
+
+  const handleSaveInlineNote = async (title: string, text: string) => {
+    if (onCreateNoteWithContent) {
+      await onCreateNoteWithContent(title, text)
+      showPanelFeedback('Explication enregistrée en note !', 'success')
+      return
+    }
+    if (!sessionId) return
+    try {
+      const res = await createArtefact(sessionId, {
+        type: 'note',
+        title,
+        subtitle: 'Explication Sphera',
+        content: { text },
+      })
+      if (res?.data && onArtefactCreated) {
+        onArtefactCreated(res.data)
+      }
+      showPanelFeedback('Explication enregistrée en note !', 'success')
+    } catch (err: any) {
+      console.error('Erreur création note inline:', err)
+      showPanelFeedback("Impossible d'enregistrer la note.", 'error')
+    }
+  }
+
   return (
     <div className="flex flex-col flex-1 h-full min-h-0 bg-sphera-bg overflow-hidden relative">
       {/* ─── 1. TOP BAR ─── */}
-      <div className="h-14 border-b border-sphera-border flex items-center justify-between px-4 bg-sphera-surface-2/80 backdrop-blur-md shrink-0 z-20">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="h-14 border-b border-sphera-border flex items-center justify-between gap-2 px-3 sm:px-4 bg-sphera-surface-2/80 backdrop-blur-md shrink-0 z-20">
+        <div className="flex items-center gap-2 shrink-0">
           {activeView === null ? (
             <div className="flex items-center gap-1.5">
               <button
@@ -616,18 +657,97 @@ export function StudyWorkspacePanel({
               )}
             </div>
           ) : (
-            <button type="button" onClick={() => setActiveView(null)} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors">
+            <button
+              type="button"
+              onClick={() => setActiveView(null)}
+              className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-medium text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors cursor-pointer shrink-0"
+              title="Retour au tableau de bord"
+            >
               <ArrowLeft className="w-4 h-4" />
-              <span>Retour</span>
+              <span className="hidden sm:inline">Retour</span>
             </button>
           )}
         </div>
+
+        {/* Dynamic Center/Right Slot for Active Tool Header */}
+        {isToolView && (
+          activeView.type === 'note' ? (
+            <div className="flex-1 flex items-center justify-between gap-2 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <Note weight="duotone" className="w-4 h-4 text-yellow-400 shrink-0 hidden sm:block" />
+                <span className="text-xs sm:text-sm font-semibold text-white truncate">{activeView.title}</span>
+                <span className="text-[11px] text-sphera-text-muted hidden md:inline shrink-0">
+                  • {noteText.trim() ? noteText.trim().split(/\s+/).length : 0} mots
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center p-0.5 rounded-lg bg-sphera-surface border border-sphera-border text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setNoteViewMode('preview')}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors cursor-pointer ${
+                      noteViewMode === 'preview'
+                        ? 'bg-sphera-surface-2 text-white font-medium shadow-xs'
+                        : 'text-sphera-text-muted hover:text-white'
+                    }`}
+                    title="Mode visualisation (Aperçu formaté)"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Aperçu</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNoteViewMode('edit')}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors cursor-pointer ${
+                      noteViewMode === 'edit'
+                        ? 'bg-sphera-surface-2 text-white font-medium shadow-xs'
+                        : 'text-sphera-text-muted hover:text-white'
+                    }`}
+                    title="Mode édition Markdown"
+                  >
+                    <FileCode className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">MD</span>
+                  </button>
+                </div>
+                {saveSuccessLocal && (
+                  <span className="hidden sm:flex items-center gap-1 text-xs text-sphera-green font-medium animate-in fade-in">
+                    <Check className="w-3.5 h-3.5" />
+                  </span>
+                )}
+                <button
+                  type="button"
+                  disabled={isSavingNoteLocal || !activeView.artefactId}
+                  onClick={handleSaveCurrentNote}
+                  className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-sphera-green text-black font-semibold text-xs rounded-lg hover:bg-green-400 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+                >
+                  {isSavingNoteLocal ? <Spinner className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 sm:hidden" />}
+                  <span className="hidden sm:inline">{isSavingNoteLocal ? 'Enregistrement…' : 'Enregistrer'}</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div ref={setHeaderSlotEl} className="flex-1 flex items-center justify-between gap-2 min-w-0" />
+          )
+        )}
+
+        {activeView?.type === 'chat' && (
+          <div className="flex-1 flex items-center justify-center min-w-0">
+            <span className="text-xs font-semibold text-white/90 truncate flex items-center gap-1.5">
+              <ChatCircle weight="duotone" className="w-4 h-4 text-sphera-green shrink-0" />
+              <span>Discussion Q&A</span>
+            </span>
+          </div>
+        )}
+
         {onTogglePdfExpanded && (
-          <button type="button" onClick={onTogglePdfExpanded} className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors shrink-0" title={isPdfExpanded ? 'Réduire la vue' : 'Plein écran'}>
+          <button type="button" onClick={onTogglePdfExpanded} className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors shrink-0 cursor-pointer" title={isPdfExpanded ? 'Réduire la vue' : 'Plein écran'}>
             {isPdfExpanded ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
           </button>
         )}
       </div>
+
+      {/* Thin contextual progress bar slot directly anchored under Top Bar */}
+      {isToolView && <div ref={setProgressSlotEl} className="w-full shrink-0 z-20" />}
 
       {/* Dynamic Panel Feedback Toast */}
       {panelFeedback && (
@@ -1354,79 +1474,14 @@ export function StudyWorkspacePanel({
           </div>
         ) : (
           /* ACTIVE ITEM VIEW: Full content of the opened tool/artefact */
-          <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className={`${activeView.type === 'mindmap' ? 'w-full h-full' : 'max-w-3xl mx-auto'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
             {activeView.type === 'note' && (
               <div className="space-y-4">
-                {/* Note Header */}
-                <div className="flex items-center justify-between pb-3 border-b border-sphera-border">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
-                      <Note weight="duotone" className="w-4 h-4 text-yellow-400" />
-                    </div>
-                    <div>
-                      <h2 className="text-base font-bold text-white">{activeView.title}</h2>
-                      <div className="flex items-center gap-2 text-[11px] text-sphera-text-muted mt-0.5">
-                        <span>{noteText.trim() ? noteText.trim().split(/\s+/).length : 0} mots</span>
-                        <span>•</span>
-                        <span>{noteText.length} caractères</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {/* Mode toggle: Aperçu (Eye) vs Markdown (MD) */}
-                    <div className="flex items-center p-0.5 rounded-lg bg-sphera-surface border border-sphera-border text-xs">
-                      <button
-                        type="button"
-                        onClick={() => setNoteViewMode('preview')}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors ${
-                          noteViewMode === 'preview'
-                            ? 'bg-sphera-surface-2 text-white font-medium shadow-xs'
-                            : 'text-sphera-text-muted hover:text-white'
-                        }`}
-                        title="Mode visualisation (Aperçu formaté)"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>Aperçu</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setNoteViewMode('edit')}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors ${
-                          noteViewMode === 'edit'
-                            ? 'bg-sphera-surface-2 text-white font-medium shadow-xs'
-                            : 'text-sphera-text-muted hover:text-white'
-                        }`}
-                        title="Mode édition Markdown"
-                      >
-                        <FileCode className="w-3.5 h-3.5" />
-                        <span>MD</span>
-                      </button>
-                    </div>
-
-                    {saveSuccessLocal && (
-                      <span className="flex items-center gap-1 text-xs text-sphera-green font-medium animate-in fade-in">
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Enregistré</span>
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      disabled={isSavingNoteLocal || !activeView.artefactId}
-                      onClick={handleSaveCurrentNote}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 bg-sphera-green text-black font-semibold text-xs rounded-lg hover:bg-green-400 transition-colors shadow-sm disabled:opacity-50"
-                    >
-                      {isSavingNoteLocal && <Spinner className="w-3.5 h-3.5 animate-spin" />}
-                      <span>{isSavingNoteLocal ? 'Enregistrement…' : 'Enregistrer'}</span>
-                    </button>
-                  </div>
-                </div>
-
                 {noteViewMode === 'preview' ? (
                   /* Formatted Preview Mode (Default) */
                   <div 
                     onClick={() => setNoteViewMode('edit')}
-                    className="w-full min-h-[420px] p-6 rounded-xl border border-sphera-border bg-sphera-surface-2/40 text-white cursor-text hover:border-sphera-border/90 transition-all select-text"
+                    className="w-full min-h-[460px] p-6 rounded-xl border border-sphera-border bg-sphera-surface-2/40 text-white cursor-text hover:border-sphera-border/90 transition-all select-text"
                     title="Cliquez pour basculer en mode édition Markdown"
                   >
                     {noteText.trim() ? (
@@ -1529,7 +1584,7 @@ export function StudyWorkspacePanel({
                       value={noteText}
                       onChange={(e) => setNoteText(e.target.value)}
                       placeholder="Écris tes remarques, formules, questions ou résumés personnels ici..."
-                      className="w-full h-[420px] p-4 rounded-xl border border-sphera-border bg-sphera-surface text-sm text-white focus:outline-none focus:border-sphera-green resize-y font-mono leading-relaxed"
+                      className="w-full h-[460px] p-4 rounded-xl border border-sphera-border bg-sphera-surface text-sm text-white focus:outline-none focus:border-sphera-green resize-y font-mono leading-relaxed"
                     />
                   </>
                 )}
@@ -1546,9 +1601,10 @@ export function StudyWorkspacePanel({
                   isRegenerating={isRegeneratingFiche}
                   isGeneratingItem={isGeneratingArtefact}
                   generatingChapterArtefact={generatingChapterArtefact}
+                  workspaceSlots={workspaceSlots}
                 />
               ) : (
-                <FicheView content={sessionContent?.fiche} />
+                <FicheView content={sessionContent?.fiche} workspaceSlots={workspaceSlots} />
               )
             )}
 
@@ -1558,8 +1614,11 @@ export function StudyWorkspacePanel({
                   activeArtefactObj?.content || sessionContent?.quiz
                 }
                 sessionId={sessionId}
+                sessionType={isAnnale ? 'annale' : 'session'}
                 artefactId={activeView.artefactId}
                 onPause={() => setActiveView(null)}
+                onSaveNote={handleSaveInlineNote}
+                workspaceSlots={workspaceSlots}
                 onAskQuestion={(prompt) => {
                   onSendMessage(prompt)
                   setActiveView({ type: 'chat', title: 'Discussion Q&A' })
@@ -1573,8 +1632,11 @@ export function StudyWorkspacePanel({
                   activeArtefactObj?.content || sessionContent?.flashcards
                 }
                 sessionId={sessionId}
+                sessionType={isAnnale ? 'annale' : 'session'}
                 artefactId={activeView.artefactId}
                 onPause={() => setActiveView(null)}
+                onSaveNote={handleSaveInlineNote}
+                workspaceSlots={workspaceSlots}
                 onAskQuestion={(prompt) => {
                   onSendMessage(prompt)
                   setActiveView({ type: 'chat', title: 'Discussion Q&A' })
@@ -1587,6 +1649,7 @@ export function StudyWorkspacePanel({
                 content={
                   activeArtefactObj?.content || sessionContent?.mindmap || sessionContent
                 }
+                workspaceSlots={workspaceSlots}
               />
             )}
 
@@ -1596,6 +1659,7 @@ export function StudyWorkspacePanel({
                   activeArtefactObj?.content || sessionContent?.audio || sessionContent
                 }
                 sessionId={sessionId}
+                workspaceSlots={workspaceSlots}
               />
             )}
 
@@ -1610,6 +1674,10 @@ export function StudyWorkspacePanel({
                       }
                     : rawAnnale || sessionContent
                 }
+                sessionId={sessionId}
+                sessionType={rawAnnale ? 'annale' : 'session'}
+                onSaveNote={handleSaveInlineNote}
+                workspaceSlots={workspaceSlots}
                 onAskQuestion={(prompt) => {
                   setActiveView({ type: 'chat', title: 'Discussion Q&A' })
                   onSendMessage(prompt)
@@ -1663,7 +1731,60 @@ export function StudyWorkspacePanel({
         )}
       </div>
 
-      {/* ─── 3. BOTTOM Q&A CHAT INPUT ─── */}
+      {/* ─── 3. BOTTOM AREA: Q&A CHAT INPUT (Dashboard/Chat) OR CONTEXTUAL TOOL FOOTER DOCK ─── */}
+      {isToolView ? (
+        <>
+          {/* Persistent Podcast Mini-Widget when audio plays in background inside another tool */}
+          {podcast.isActive && podcast.sessionId === sessionId && activeView?.type !== 'audio' && (
+            <div className="shrink-0 w-full bg-sphera-surface-2/90 border-t border-sphera-border/70 px-3 py-2 sm:px-4 z-30 backdrop-blur-md">
+              <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveView({ type: 'audio', title: podcast.title || 'Cours en audio' })}
+                  className="flex items-center gap-2 min-w-0 text-left hover:opacity-80 transition-opacity group cursor-pointer"
+                  title="Ouvrir le cours en audio"
+                >
+                  <div className="w-6 h-6 rounded-md bg-purple-500/15 border border-purple-500/30 flex items-center justify-center shrink-0">
+                    <Waveform className="w-3.5 h-3.5 text-purple-400" />
+                  </div>
+                  <span className="text-xs font-medium text-white truncate max-w-[180px] sm:max-w-md group-hover:text-purple-300 transition-colors">
+                    {podcast.title}
+                  </span>
+                  <span className="text-[10px] text-sphera-text-muted font-mono shrink-0">
+                    {podcast.audioUrl
+                      ? `${formatPodcastTime(podcast.currentTime)} / ${formatPodcastTime(podcast.duration)}`
+                      : `${podcast.currentTime}/${podcast.duration || 0}`}
+                  </span>
+                </button>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => podcastStore.togglePlay()}
+                    className="w-7 h-7 rounded-full bg-purple-500 text-black flex items-center justify-center shadow-md hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+                    title={podcast.isPlaying ? 'Mettre en pause' : 'Reprendre'}
+                  >
+                    {podcast.isPlaying ? <Pause weight="fill" className="w-3.5 h-3.5" /> : <Play weight="fill" className="w-3.5 h-3.5 ml-0.5" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => podcastStore.close()}
+                    className="p-1 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors cursor-pointer"
+                    title="Fermer le lecteur"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Contextual Footer Dock Slot (auto-hidden via empty:hidden when tool has no footer actions) */}
+          <div
+            ref={setFooterSlotEl}
+            className="empty:hidden shrink-0 w-full bg-sphera-surface-2/95 border-t border-sphera-border px-3 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] sm:px-4 sm:py-3 z-30 backdrop-blur-md"
+          />
+        </>
+      ) : (
       <div className="shrink-0 w-full bg-sphera-surface-2/95 border-t border-sphera-border px-3 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] sm:px-4 sm:py-3 z-30 backdrop-blur-md">
         {/* Question suggestions */}
         {sessionId && (
@@ -1680,7 +1801,7 @@ export function StudyWorkspacePanel({
         )}
 
         {/* Persistent Podcast Mini-Widget */}
-        {podcast.isActive && podcast.sessionId === sessionId && activeView?.type !== 'audio' && (
+        {podcast.isActive && podcast.sessionId === sessionId && (
           <div className="max-w-3xl mx-auto mb-2.5">
             <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-sphera-surface/90 border border-sphera-border shadow-lg backdrop-blur-md animate-in fade-in slide-in-from-bottom-2 duration-300">
               {/* Left: Animated Icon + Title (clickable to return to podcast view) */}
@@ -1807,6 +1928,7 @@ export function StudyWorkspacePanel({
           </div>
         </div>
       </div>
+      )}
 
       {/* New thread modal */}
       {showNewThreadModal && (
