@@ -620,11 +620,12 @@ export async function streamAskQuestion(
   type: 'session' | 'annale' = 'session',
   onToken: (token: string) => void,
   signal?: AbortSignal,
+  options?: { ephemeral?: boolean },
 ) {
   const endpoint = type === 'annale' ? `api/sphera/annales/${id}/ask/` : `api/sphera/sessions/${id}/ask/`;
   return streamApiFetch({
     path: endpoint,
-    body: { question },
+    body: { question, ...(options?.ephemeral ? { ephemeral: true } : {}) },
     onToken,
     signal,
   });

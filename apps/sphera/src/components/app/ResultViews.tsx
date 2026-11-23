@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { FileText, Brain as BrainCircuit, List, CheckCircle as CheckCircle2, Question as HelpCircle, Dot as CircleSmall, Lightbulb, CaretDown as ChevronDown, CaretRight as ChevronRight, Timer, Trophy, XCircle, ArrowCounterClockwise as RotateCcw, ArrowClockwise as RotateCw, ArrowCounterClockwise as RefreshCcw, Code as Code2, Calculator, AlignLeft, Target, BookOpen, BookmarkSimple as BookMarked, Medal as Award, Stack as Layers, Lightning as Zap, GitFork, Waveform as AudioLines, Play, Pause, SpeakerHigh as Volume2, SpeakerSimpleHigh, SpeakerSimpleSlash, Download, Crosshair as LocateFixed, Sparkle as Sparkles, ArrowsOut as Maximize2, ArrowsIn as Minimize2, Eye, Check, Copy, MagnifyingGlass as Search, CaretUpDown as ChevronsUpDown, Funnel as Filter, X, CaretUp as ChevronUp, Scales, ChatCircle } from "@phosphor-icons/react";
 import ReactFlow, { Background, Controls, Position, type Node, type Edge, type ReactFlowInstance } from 'reactflow'
@@ -6,6 +7,8 @@ import 'reactflow/dist/style.css'
 import DownloadPDFButton from '../shared/DownloadPDFButton'
 import { useDownloadPDF } from '../../hooks/useDownloadPDF'
 import { usePodcastPlayer, podcastStore, getPodcastVoiceData } from '../../utils/podcastPlayerStore'
+import type { WorkspaceSlots } from './workspaceSlots'
+import { useInlineSpheraAsk, InlineSpheraAnswerCard, type InlineAskEntry } from './InlineSpheraExplanation'
 
 const formatText = (text: any) => {
   if (!text || typeof text !== 'string') return text;
@@ -70,22 +73,51 @@ const formatText = (text: any) => {
   return result;
 };
 
-export function FicheView({ content, sourceName }: { content: any; sourceName?: string }) {
+export function FicheView({
+  content,
+  sourceName,
+  workspaceSlots,
+}: {
+  content: any
+  sourceName?: string
+  workspaceSlots?: WorkspaceSlots
+}) {
   const { t, i18n } = useTranslation('study')
   const f = content?.fiche || content || {}
   const [openDef, setOpenDef] = useState<number | null>(null)
   const { isDownloading, generateFiche } = useDownloadPDF()
 
-  return (
-    <div className="flex flex-col gap-6">
-      {/* Download button */}
-      <div className="flex justify-end">
-        <DownloadPDFButton
-          onDownload={() => generateFiche(content, sourceName)}
-          isDownloading={isDownloading}
-          label={t('resultViews.ficheDownload')}
-        />
+  const headerSlotContent = (
+    <div className="flex items-center justify-between gap-2 w-full min-w-0">
+      <div className="flex items-center gap-2 min-w-0">
+        <FileText weight="duotone" className="w-4 h-4 text-cyan-400 shrink-0 hidden sm:block" />
+        <span className="text-xs sm:text-sm font-semibold text-white truncate">
+          {f.titre || t('resultViews.ficheTitle')}
+        </span>
       </div>
+      <DownloadPDFButton
+        onDownload={() => generateFiche(content, sourceName)}
+        isDownloading={isDownloading}
+        label="PDF"
+        className="!px-2.5 !py-1.5 !text-xs !rounded-lg shrink-0 cursor-pointer"
+      />
+    </div>
+  )
+
+  return (
+    <div className="flex flex-col gap-5">
+      {workspaceSlots?.headerSlot ? (
+        createPortal(headerSlotContent, workspaceSlots.headerSlot)
+      ) : (
+        /* Download button */
+        <div className="flex justify-end">
+          <DownloadPDFButton
+            onDownload={() => generateFiche(content, sourceName)}
+            isDownloading={isDownloading}
+            label={t('resultViews.ficheDownload')}
+          />
+        </div>
+      )}
 
       {/* Captured zone */}
       <div className="flex flex-col gap-6 p-4 rounded-2xl bg-sphera-bg">
@@ -197,15 +229,21 @@ const TIMER_SECONDS = 30
 export function QuizView({
   content,
   sessionId,
+  sessionType = 'session',
   artefactId,
   onAskQuestion,
   onPause,
+  onSaveNote,
+  workspaceSlots,
 }: {
   content: any
-  sessionId?: string | number
+  sessionId?: string | number | null
+  sessionType?: 'session' | 'annale'
   artefactId?: string | number
   onAskQuestion?: (prompt: string) => void
   onPause?: () => void
+  onSaveNote?: (title: string, text: string) => Promise<void> | void
+  workspaceSlots?: WorkspaceSlots
 }) {
   const { t } = useTranslation('study')
   const qData = content?.quiz || content || {}
@@ -244,6 +282,8 @@ export function QuizView({
   const [answers, setAnswers] = useState<Array<{ selected: string | null; correct: boolean }>>([])
   const [showExplanation, setShowExplanation] = useState(false)
 
+  const inlineAsk = useInlineSpheraAsk({ sessionId, sessionType })
+
   // Save progress automatically
   useEffect(() => {
     if (currentIndex > 0 && !finished && answers.length > 0) {
@@ -270,10 +310,79 @@ export function QuizView({
     }
   }, [finished, storageKey])
 
-  if (!questions.length) return <p className="text-sphera-text-muted">{t('resultViews.emptyQuiz')}</p>
-
   const total = questions.length
   const currentQuestion = questions[currentIndex]
+
+  const handleTimeout = useCallback(() => {
+    if (selectedOption !== null) return;
+    setSelectedOption("__timeout__");
+    setTimerActive(false);
+    setShowExplanation(true);
+    setAnswers(prev => [...prev, { selected: null, correct: false }]);
+  }, [selectedOption])
+
+  useEffect(() => {
+    if (!timerActive || finished || !total) return;
+    if (timeLeft <= 0) {
+      handleTimeout();
+      return;
+    }
+    const id = setTimeout(() => setTimeLeft(t => t - 1), 1000);
+    return () => clearTimeout(id);
+  }, [timeLeft, timerActive, finished, total, handleTimeout])
+
+  const handleSelect = useCallback((optionLetter: string) => {
+    if (selectedOption !== null || !currentQuestion) return;
+    setSelectedOption(optionLetter);
+    setTimerActive(false);
+    setShowExplanation(true);
+    const isCorrect = optionLetter === currentQuestion.bonne_reponse;
+    if (isCorrect) setScore(s => s + 1);
+    setAnswers(prev => [...prev, { selected: optionLetter, correct: isCorrect }]);
+  }, [selectedOption, currentQuestion])
+
+  const handleNext = useCallback(() => {
+    if (selectedOption === null) return;
+    if (currentIndex + 1 >= total) {
+      setFinished(true);
+    } else {
+      setCurrentIndex(i => i + 1);
+      setSelectedOption(null);
+      setShowExplanation(false);
+      setTimeLeft(TIMER_SECONDS);
+      setTimerActive(true);
+    }
+  }, [selectedOption, currentIndex, total])
+
+  // Keyboard shortcuts: A-D / 1-4 to answer, Enter to advance
+  useEffect(() => {
+    if (finished || !currentQuestion) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return
+      }
+      if (selectedOption === null) {
+        const key = e.key.toUpperCase()
+        const letterMap: Record<string, string> = { '1': 'A', '2': 'B', '3': 'C', '4': 'D', A: 'A', B: 'B', C: 'C', D: 'D' }
+        const mapped = letterMap[key]
+        if (mapped && Array.isArray(currentQuestion.options)) {
+          const exists = currentQuestion.options.some((opt: string) => opt.charAt(0).toUpperCase() === mapped)
+          if (exists) {
+            e.preventDefault()
+            handleSelect(mapped)
+          }
+        }
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        handleNext()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [finished, currentQuestion, selectedOption, handleSelect, handleNext])
+
+  if (!questions.length) return <p className="text-sphera-text-muted">{t('resultViews.emptyQuiz')}</p>
 
   const handleResumeSaved = () => {
     if (!savedProgress) return
@@ -299,7 +408,7 @@ export function QuizView({
       localStorage.setItem(
         storageKey,
         JSON.stringify({
-          currentIndex,
+          currentIndex: selectedOption !== null && currentIndex + 1 < total ? currentIndex + 1 : currentIndex,
           score,
           answers,
           timestamp: Date.now(),
@@ -308,46 +417,6 @@ export function QuizView({
     } catch {}
     if (onPause) {
       onPause()
-    }
-  }
-
-  const handleTimeout = useCallback(() => {
-    if (selectedOption !== null) return;
-    setSelectedOption("__timeout__");
-    setTimerActive(false);
-    setShowExplanation(true);
-    setAnswers(prev => [...prev, { selected: null, correct: false }]);
-  }, [selectedOption])
-
-  useEffect(() => {
-    if (!timerActive || finished) return;
-    if (timeLeft <= 0) {
-      handleTimeout();
-      return;
-    }
-    const id = setTimeout(() => setTimeLeft(t => t - 1), 1000);
-    return () => clearTimeout(id);
-  }, [timeLeft, timerActive, finished, handleTimeout])
-
-  const handleSelect = (optionLetter: string) => {
-    if (selectedOption !== null) return;
-    setSelectedOption(optionLetter);
-    setTimerActive(false);
-    setShowExplanation(true);
-    const isCorrect = optionLetter === currentQuestion.bonne_reponse;
-    if (isCorrect) setScore(s => s + 1);
-    setAnswers(prev => [...prev, { selected: optionLetter, correct: isCorrect }]);
-  }
-
-  const handleNext = () => {
-    if (currentIndex + 1 >= total) {
-      setFinished(true);
-    } else {
-      setCurrentIndex(i => i + 1);
-      setSelectedOption(null);
-      setShowExplanation(false);
-      setTimeLeft(TIMER_SECONDS);
-      setTimerActive(true);
     }
   }
 
@@ -366,8 +435,47 @@ export function QuizView({
     setShowExplanation(false);
   }
 
+  const triggerAskForQuestion = (key: string, qObj: any, chosen: string | null, qIdx: number) => {
+    const qText = qObj?.question || ''
+    const myAns =
+      chosen && chosen !== '__timeout__'
+        ? `${chosen} - ${qObj?.options?.find((o: string) => o.startsWith(chosen)) || ''}`
+        : chosen === '__timeout__'
+          ? 'Temps écoulé'
+          : 'Non répondue'
+    const rightAns = `${qObj?.bonne_reponse} - ${qObj?.options?.find((o: string) => o.startsWith(qObj?.bonne_reponse)) || ''}`
+    const expl = qObj?.explication || ''
+    const prompt = `Concernant la question ${qIdx + 1} du quiz :\n"${qText}"\n\nMa réponse était : "${myAns}"\nLa bonne réponse est : "${rightAns}"\nExplication : "${expl}"\n\nExplique-moi clairement et de façon concise pourquoi c'est cette réponse, avec un moyen mnémotechnique ou un exemple concret pour bien retenir.`
+    if (sessionId) {
+      inlineAsk.ask(key, prompt, `Explication • Question ${qIdx + 1}`)
+    } else if (onAskQuestion) {
+      onAskQuestion(prompt)
+    }
+  }
+
   const timerPercent = (timeLeft / TIMER_SECONDS) * 100;
   const timerColor = timeLeft > 15 ? "bg-sphera-green" : timeLeft > 7 ? "bg-yellow-500" : "bg-red-500";
+  const timerPillClass =
+    timeLeft > 15
+      ? "border-sphera-border bg-sphera-surface text-sphera-text-muted"
+      : timeLeft > 7
+        ? "border-yellow-500/40 bg-yellow-500/10 text-yellow-400"
+        : "border-red-500/50 bg-red-500/15 text-red-400 animate-pulse font-bold";
+
+  const progressPct = finished ? 100 : ((currentIndex + (selectedOption !== null ? 1 : 0)) / total) * 100
+  const hasPortal = Boolean(workspaceSlots?.headerSlot)
+
+  const progressBarPortal = workspaceSlots?.progressSlot
+    ? createPortal(
+        <div className="h-[3px] w-full bg-sphera-surface overflow-hidden">
+          <div
+            className="h-full bg-sphera-green transition-all duration-300 ease-out"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>,
+        workspaceSlots.progressSlot
+      )
+    : null
 
   if (finished) {
     const pct = Math.round((score / total) * 100);
@@ -377,76 +485,232 @@ export function QuizView({
     else if (pct >= 80) { message = t('resultViews.quizMessageGreat'); }
     else if (pct >= 60) { message = t('resultViews.quizMessageGood'); }
 
+    const finishedHeaderPortal = workspaceSlots?.headerSlot
+      ? createPortal(
+          <div className="flex items-center justify-between gap-2 w-full min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <Trophy className="w-4 h-4 text-sphera-green shrink-0" />
+              <span className="text-xs sm:text-sm font-semibold text-white truncate">
+                Résultats • {score}/{total} ({pct}%)
+              </span>
+            </div>
+          </div>,
+          workspaceSlots.headerSlot
+        )
+      : null
+
+    const finishedFooterPortal = workspaceSlots?.footerSlot
+      ? createPortal(
+          <div className="max-w-2xl mx-auto">
+            <button
+              type="button"
+              onClick={handleRestart}
+              className="sphera-primary-btn w-full justify-center py-3 text-sm sm:text-base cursor-pointer"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" /> {t('resultViews.quizRestartBtn')}
+            </button>
+          </div>,
+          workspaceSlots.footerSlot
+        )
+      : null
+
     return (
-      <div className="space-y-6 max-w-2xl mx-auto pb-8 animate-in fade-in">
-        <div className="text-center p-8 bg-sphera-surface-2 rounded-2xl border border-sphera-border">
-          <div className="w-16 h-16 rounded-2xl bg-sphera-green/15 text-sphera-green flex items-center justify-center mx-auto mb-4 border border-sphera-green/30">
-            <Trophy className="w-8 h-8" />
+      <div className="space-y-6 max-w-2xl mx-auto pb-6 animate-in fade-in">
+        {finishedHeaderPortal}
+        {progressBarPortal}
+        {finishedFooterPortal}
+
+        <div className="text-center p-6 sm:p-8 bg-sphera-surface-2 rounded-2xl border border-sphera-border">
+          <div className="w-14 h-14 rounded-2xl bg-sphera-green/15 text-sphera-green flex items-center justify-center mx-auto mb-3 border border-sphera-green/30">
+            <Trophy className="w-7 h-7" />
           </div>
-          <p className="text-xl text-white font-bold mb-2">{message}</p>
-          <p className="text-3xl font-bold text-white mb-2">
+          <p className="text-lg sm:text-xl text-white font-bold mb-1.5">{message}</p>
+          <p className="text-3xl font-bold text-white mb-1.5">
             {score} <span className="text-sphera-text-muted font-normal text-xl">/ {total}</span>
           </p>
-          <p className="text-sphera-text-muted">{t('resultViews.successRate', { pct })}</p>
-          <div className="h-2 w-full bg-sphera-bg rounded-full overflow-hidden mt-6">
+          <p className="text-sm text-sphera-text-muted">{t('resultViews.successRate', { pct })}</p>
+          <div className="h-2 w-full bg-sphera-bg rounded-full overflow-hidden mt-5">
             <div className="h-full bg-sphera-green transition-all" style={{ width: `${pct}%` }} />
           </div>
         </div>
 
         <div className="space-y-3">
-          <h3 className="font-semibold text-white mb-4">{t('resultViews.recapTitle')}</h3>
-          {answers.map((ans, i) => (
-            <div key={i} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl p-4 border text-sm ${ans.correct ? "border-sphera-green/30 bg-sphera-green/5" : "border-red-500/30 bg-red-500/5"}`}>
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                {ans.correct ? <CheckCircle2 className="h-5 w-5 text-sphera-green flex-shrink-0" /> : <XCircle className="h-5 w-5 text-red-500 flex-shrink-0" />}
-                <div className="flex-1 text-white leading-relaxed">
-                  <span className="font-bold mr-2">Q{i + 1}.</span> {formatText(questions[i]?.question)}
+          <h3 className="font-semibold text-white mb-3">{t('resultViews.recapTitle')}</h3>
+          {answers.map((ans, i) => {
+            const recapKey = `quiz-recap-${i}`
+            const inlineEntry = inlineAsk.entries[recapKey]
+            const canAsk = Boolean(sessionId || onAskQuestion)
+            return (
+              <div key={i} className={`rounded-xl p-4 border text-sm ${ans.correct ? "border-sphera-green/30 bg-sphera-green/5" : "border-red-500/30 bg-red-500/5"}`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    {ans.correct ? <CheckCircle2 className="h-5 w-5 text-sphera-green flex-shrink-0" /> : <XCircle className="h-5 w-5 text-red-500 flex-shrink-0" />}
+                    <div className="flex-1 text-white leading-relaxed">
+                      <span className="font-bold mr-2">Q{i + 1}.</span> {formatText(questions[i]?.question)}
+                    </div>
+                    {!ans.correct && (
+                      <span className="px-2 py-1 rounded bg-sphera-green/20 text-sphera-green text-xs font-bold border border-sphera-green/30 flex-shrink-0">
+                        {questions[i]?.bonne_reponse}
+                      </span>
+                    )}
+                  </div>
+                  {canAsk && (
+                    <button
+                      type="button"
+                      onClick={() => triggerAskForQuestion(recapKey, questions[i], ans.selected, i)}
+                      disabled={inlineEntry?.isStreaming}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 hover:border-sphera-green/40 text-xs text-sphera-text-muted hover:text-sphera-green transition-colors shrink-0 self-end sm:self-center cursor-pointer disabled:opacity-60"
+                      title="Obtenir une explication de Sphera directement ici"
+                    >
+                      <Sparkles weight="fill" className="w-3.5 h-3.5 text-sphera-green" />
+                      <span>Demander à Sphera</span>
+                    </button>
+                  )}
                 </div>
-                {!ans.correct && (
-                  <span className="px-2 py-1 rounded bg-sphera-green/20 text-sphera-green text-xs font-bold border border-sphera-green/30 flex-shrink-0">
-                    {questions[i]?.bonne_reponse}
-                  </span>
+
+                {inlineEntry && (
+                  <InlineSpheraAnswerCard
+                    entry={inlineEntry}
+                    onStop={() => inlineAsk.stop(recapKey)}
+                    onClose={() => inlineAsk.close(recapKey)}
+                    onRetry={() => triggerAskForQuestion(recapKey, questions[i], ans.selected, i)}
+                    onSaveNote={onSaveNote}
+                  />
                 )}
               </div>
-              {onAskQuestion && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const qObj = questions[i]
-                    const qText = qObj?.question || ''
-                    const rightAns = `${qObj?.bonne_reponse} - ${qObj?.options?.find((o: string) => o.startsWith(qObj?.bonne_reponse)) || ''}`
-                    const myAns = ans.selected || 'Non répondue'
-                    const expl = qObj?.explication || ''
-                    const prompt = `Concernant la question ${i + 1} du quiz :\n"${qText}"\n\nJ'ai répondu : "${myAns}" (Bonne réponse : "${rightAns}")\nExplication : "${expl}"\n\nPeux-tu m'expliquer ce concept plus en détail avec des exemples simples ?`
-                    onAskQuestion(prompt)
-                  }}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs text-sphera-text-muted hover:text-sphera-green transition-colors shrink-0 self-end sm:self-center"
-                  title="Poser une question à Sphera sur cette question"
-                >
-                  <ChatCircle className="w-3.5 h-3.5 text-sphera-green" />
-                  <span>Demander à Sphera</span>
-                </button>
-              )}
-            </div>
-          ))}
+            )
+          })}
         </div>
 
-        <button onClick={handleRestart} className="sphera-primary-btn w-full justify-center py-3 mt-4">
-          <RotateCcw className="h-4 w-4 mr-2" /> {t('resultViews.quizRestartBtn')}
-        </button>
+        {!workspaceSlots?.footerSlot && (
+          <button onClick={handleRestart} className="sphera-primary-btn w-full justify-center py-3 mt-4">
+            <RotateCcw className="h-4 w-4 mr-2" /> {t('resultViews.quizRestartBtn')}
+          </button>
+        )}
       </div>
     );
   }
 
   if (!currentQuestion) return null;
 
+  const activeAskKey = `quiz-q-${currentIndex}`
+  const activeInlineEntry = inlineAsk.entries[activeAskKey]
+  const canAsk = Boolean(sessionId || onAskQuestion)
+
+  const headerPortal = workspaceSlots?.headerSlot
+    ? createPortal(
+        <div className="flex items-center justify-between gap-2 w-full min-w-0">
+          {/* Center/Left: Question counter + Score + Compact Timer */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+            <span className="text-xs sm:text-sm text-sphera-text-muted font-medium whitespace-nowrap">
+              <span className="hidden sm:inline">Question </span>
+              <span className="sm:hidden">Q</span>
+              <span className="text-white font-bold">{currentIndex + 1}</span>
+              <span className="text-sphera-text-muted/80">/{total}</span>
+            </span>
+
+            <div className="bg-sphera-surface px-2 sm:px-2.5 py-1 rounded-full border border-sphera-border flex items-center gap-1.5 text-xs shrink-0">
+              <Trophy className="h-3.5 w-3.5 text-yellow-500 shrink-0" />
+              <span className="text-white font-semibold whitespace-nowrap">
+                {t('resultViews.points', { count: score })}
+              </span>
+            </div>
+
+            {selectedOption === null && (
+              <div
+                className={`px-2 py-1 rounded-full border flex items-center gap-1 text-xs font-mono shrink-0 transition-colors ${timerPillClass}`}
+                title="Temps restant pour cette question"
+              >
+                <Timer className="h-3.5 w-3.5 shrink-0" />
+                <span>{timeLeft}s</span>
+              </div>
+            )}
+          </div>
+
+          {/* Right: Continuer plus tard */}
+          {(currentIndex > 0 || selectedOption !== null) && onPause && (
+            <button
+              type="button"
+              onClick={handlePause}
+              className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs text-sphera-text-muted hover:text-white transition-colors shrink-0 cursor-pointer"
+              title="Sauvegarder et continuer plus tard"
+            >
+              <Pause className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden md:inline">Continuer plus tard</span>
+              <span className="hidden sm:inline md:hidden">Plus tard</span>
+            </button>
+          )}
+        </div>,
+        workspaceSlots.headerSlot
+      )
+    : null
+
+  const footerPortal = workspaceSlots?.footerSlot
+    ? createPortal(
+        <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
+          {selectedOption === null ? (
+            <>
+              <div className="hidden sm:flex items-center gap-2 text-xs text-sphera-text-muted min-w-0">
+                <span className="truncate">Choisis une réponse</span>
+                <span className="px-1.5 py-0.5 rounded bg-sphera-surface border border-sphera-border font-mono text-[10px] text-white/70">
+                  A–D
+                </span>
+              </div>
+              <button
+                type="button"
+                disabled
+                className="w-full sm:w-auto sm:min-w-[200px] py-2.5 px-5 rounded-xl bg-sphera-surface border border-sphera-border text-sphera-text-muted/60 font-semibold text-sm flex items-center justify-center gap-2 cursor-not-allowed transition-all"
+              >
+                {currentIndex + 1 >= total ? (
+                  <>
+                    <Trophy className="h-4 w-4" />
+                    <span>{t('resultViews.quizSeeResults')}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{t('resultViews.quizNextQuestion')}</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={handleNext}
+              className="sphera-primary-btn w-full justify-center py-3 text-sm sm:text-base cursor-pointer shadow-[0_0_20px_rgba(34,197,94,0.2)] animate-in fade-in duration-150"
+            >
+              {currentIndex + 1 >= total ? (
+                <span className="flex items-center gap-2">
+                  <Trophy className="h-5 w-5" /> {t('resultViews.quizSeeResults')}
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <span>{t('resultViews.quizNextQuestion')}</span>
+                  <ChevronRight className="h-5 w-5" />
+                  <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 ml-1 rounded bg-black/15 text-[10px] font-mono">
+                    ↵
+                  </span>
+                </span>
+              )}
+            </button>
+          )}
+        </div>,
+        workspaceSlots.footerSlot
+      )
+    : null
+
   return (
-    <div className="space-y-5 max-w-2xl mx-auto pb-8">
+    <div className="space-y-4 max-w-2xl mx-auto pb-4">
+      {headerPortal}
+      {progressBarPortal}
+      {footerPortal}
+
       {/* Saved Progress Banner */}
       {savedProgress && (
-        <div className="p-4 rounded-xl border border-sphera-green/40 bg-sphera-green/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
+        <div className="p-3.5 rounded-xl border border-sphera-green/40 bg-sphera-green/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-sphera-green/20 text-sphera-green flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-sphera-green/20 text-sphera-green flex items-center justify-center shrink-0">
               <RotateCcw className="w-4 h-4" />
             </div>
             <div>
@@ -460,14 +724,14 @@ export function QuizView({
             <button
               type="button"
               onClick={handleDismissSaved}
-              className="px-3 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs text-sphera-text-muted hover:text-white transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs text-sphera-text-muted hover:text-white transition-colors cursor-pointer"
             >
               Recommencer
             </button>
             <button
               type="button"
               onClick={handleResumeSaved}
-              className="px-3 py-1.5 rounded-lg bg-sphera-green text-black font-semibold text-xs hover:bg-green-400 transition-colors shadow-xs"
+              className="px-3 py-1.5 rounded-lg bg-sphera-green text-black font-semibold text-xs hover:bg-green-400 transition-colors shadow-xs cursor-pointer"
             >
               Reprendre
             </button>
@@ -475,58 +739,63 @@ export function QuizView({
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-sphera-text-muted font-medium">
-          Question <span className="text-white font-bold">{currentIndex + 1}</span> / {total}
-        </span>
-        <div className="flex items-center gap-2">
-          {currentIndex > 0 && onPause && (
-            <button
-              type="button"
-              onClick={handlePause}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-[11px] text-sphera-text-muted hover:text-white transition-colors"
-              title="Sauvegarder et continuer plus tard"
-            >
-              <Pause className="w-3.5 h-3.5" />
-              <span>Continuer plus tard</span>
-            </button>
-          )}
-          <div className="bg-sphera-surface px-3 py-1.5 rounded-full border border-sphera-border flex items-center gap-2">
-            <Trophy className="h-3.5 w-3.5 text-yellow-500" />
-            <span className="text-white font-semibold">{t('resultViews.points', { count: score })}</span>
+      {/* Standalone fallback Header & Timer when rendered outside StudyWorkspacePanel */}
+      {!hasPortal && (
+        <>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-sphera-text-muted font-medium">
+              Question <span className="text-white font-bold">{currentIndex + 1}</span> / {total}
+            </span>
+            <div className="flex items-center gap-2">
+              {currentIndex > 0 && onPause && (
+                <button
+                  type="button"
+                  onClick={handlePause}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-[11px] text-sphera-text-muted hover:text-white transition-colors"
+                  title="Sauvegarder et continuer plus tard"
+                >
+                  <Pause className="w-3.5 h-3.5" />
+                  <span>Continuer plus tard</span>
+                </button>
+              )}
+              <div className="bg-sphera-surface px-3 py-1.5 rounded-full border border-sphera-border flex items-center gap-2">
+                <Trophy className="h-3.5 w-3.5 text-yellow-500" />
+                <span className="text-white font-semibold">{t('resultViews.points', { count: score })}</span>
+              </div>
+            </div>
           </div>
+
+          <div className="h-1.5 w-full bg-sphera-bg rounded-full overflow-hidden">
+            <div className="h-full bg-sphera-green transition-all" style={{ width: `${progressPct}%` }} />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Timer className={`h-4 w-4 flex-shrink-0 ${timeLeft <= 7 ? "text-red-500 animate-pulse" : "text-sphera-text-muted"}`} />
+            <div className="flex-1 h-2 bg-sphera-bg rounded-full overflow-hidden border border-sphera-border/50">
+              <div className={`h-full transition-all duration-1000 ${timerColor}`} style={{ width: `${timerPercent}%` }} />
+            </div>
+            <span className={`text-xs font-mono w-8 text-right ${timeLeft <= 7 ? "text-red-500 font-bold" : "text-sphera-text-muted"}`}>
+              {timeLeft}s
+            </span>
+          </div>
+        </>
+      )}
+
+      {/* Question Card */}
+      <div className="sphera-card p-5 sm:p-6 border-l-4 border-l-sphera-green">
+        <div className="font-medium text-white leading-relaxed text-base sm:text-lg">
+          {formatText(currentQuestion.question)}
         </div>
-      </div>
-
-      <div className="h-1.5 w-full bg-sphera-bg rounded-full overflow-hidden">
-        <div className="h-full bg-sphera-green transition-all" style={{ width: `${((currentIndex) / total) * 100}%` }} />
-      </div>
-
-      {/* Timer */}
-      <div className="flex items-center gap-3">
-        <Timer className={`h-4 w-4 flex-shrink-0 ${timeLeft <= 7 ? "text-red-500 animate-pulse" : "text-sphera-text-muted"}`} />
-        <div className="flex-1 h-2 bg-sphera-bg rounded-full overflow-hidden border border-sphera-border/50">
-          <div className={`h-full transition-all duration-1000 ${timerColor}`} style={{ width: `${timerPercent}%` }} />
-        </div>
-        <span className={`text-xs font-mono w-8 text-right ${timeLeft <= 7 ? "text-red-500 font-bold" : "text-sphera-text-muted"}`}>
-          {timeLeft}s
-        </span>
-      </div>
-
-      {/* Question */}
-      <div className="sphera-card p-6 border-l-4 border-l-sphera-green">
-        <div className="font-medium text-white leading-relaxed text-lg">{formatText(currentQuestion.question)}</div>
       </div>
 
       {/* Options */}
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {(Array.isArray(currentQuestion.options) ? currentQuestion.options : []).map((option: string) => {
           const letter = option.charAt(0).toUpperCase();
           const correct = letter === currentQuestion.bonne_reponse;
           const chosen = letter === selectedOption;
           
-          let btnClass = "w-full text-left flex items-start gap-4 border rounded-xl px-5 py-4 text-sm transition-all duration-200 ";
+          let btnClass = "w-full text-left flex items-start gap-3.5 border rounded-xl px-4 py-3.5 text-sm transition-all duration-200 ";
           
           if (selectedOption === null) {
             btnClass += "border-sphera-border hover:border-sphera-green/50 hover:bg-sphera-surface cursor-pointer text-sphera-text-muted hover:text-white";
@@ -549,9 +818,9 @@ export function QuizView({
               }`}>
                 {letter}
               </span>
-              <span className="leading-relaxed pt-1 text-base">{formatText(option.slice(3))}</span>
-              {selectedOption !== null && correct && <CheckCircle2 className="h-5 w-5 text-sphera-green flex-shrink-0 ml-auto mt-1" />}
-              {selectedOption === letter && !correct && <XCircle className="h-5 w-5 text-red-500 flex-shrink-0 ml-auto mt-1" />}
+              <span className="leading-relaxed pt-0.5 text-sm sm:text-base">{formatText(option.slice(3))}</span>
+              {selectedOption !== null && correct && <CheckCircle2 className="h-5 w-5 text-sphera-green flex-shrink-0 ml-auto mt-0.5" />}
+              {selectedOption === letter && !correct && <XCircle className="h-5 w-5 text-red-500 flex-shrink-0 ml-auto mt-0.5" />}
             </button>
           );
         })}
@@ -559,20 +828,38 @@ export function QuizView({
 
       {/* Timeout feedback */}
       {selectedOption === "__timeout__" && (
-        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 text-sm text-yellow-500">
-          {t('resultViews.timeoutMsg', { answer: currentQuestion.bonne_reponse })}
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 text-sm text-yellow-500 space-y-3">
+          <div>{t('resultViews.timeoutMsg', { answer: currentQuestion.bonne_reponse })}</div>
+          {currentQuestion.explication && (
+            <div className="text-white/85 text-xs sm:text-sm leading-relaxed">
+              {formatText(currentQuestion.explication)}
+            </div>
+          )}
+          {canAsk && (
+            <div className="pt-2 border-t border-yellow-500/20 flex justify-end">
+              <button
+                type="button"
+                onClick={() => triggerAskForQuestion(activeAskKey, currentQuestion, selectedOption, currentIndex)}
+                disabled={activeInlineEntry?.isStreaming}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 hover:border-sphera-green/40 text-xs font-medium text-white hover:text-sphera-green transition-all shadow-xs cursor-pointer disabled:opacity-60"
+              >
+                <Sparkles weight="fill" className="w-3.5 h-3.5 text-sphera-green" />
+                <span>{activeInlineEntry ? 'Redemander à Sphera' : 'Demander à Sphera'}</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
       {/* Explication */}
       {showExplanation && selectedOption !== "__timeout__" && (
-        <div className={`rounded-xl p-5 text-sm leading-relaxed border ${
+        <div className={`rounded-xl p-4 sm:p-5 text-sm leading-relaxed border ${
             selectedOption === currentQuestion.bonne_reponse
               ? "bg-sphera-green/10 border-sphera-green/30 text-sphera-green"
               : "bg-red-500/10 border-red-500/30 text-red-400"
           }`}
         >
-          <p className="font-bold mb-2 text-base flex items-center gap-2">
+          <p className="font-bold mb-1.5 text-sm sm:text-base flex items-center gap-2">
             {selectedOption === currentQuestion.bonne_reponse ? (
               <>
                 <CheckCircle2 className="w-5 h-5 text-sphera-green" />
@@ -585,31 +872,37 @@ export function QuizView({
               </>
             )}
           </p>
-          <div className="opacity-90">{formatText(currentQuestion.explication)}</div>
+          <div className="opacity-95 text-white/90">{formatText(currentQuestion.explication)}</div>
 
-          {onAskQuestion && (
+          {canAsk && (
             <div className="pt-3 mt-3 border-t border-sphera-border/40 flex justify-end">
               <button
                 type="button"
-                onClick={() => {
-                  const qText = currentQuestion.question || ''
-                  const myAns = selectedOption ? `${selectedOption} - ${currentQuestion.options?.find((o: string) => o.startsWith(selectedOption)) || ''}` : 'Aucune'
-                  const rightAns = `${currentQuestion.bonne_reponse} - ${currentQuestion.options?.find((o: string) => o.startsWith(currentQuestion.bonne_reponse)) || ''}`
-                  const expl = currentQuestion.explication || ''
-                  const prompt = `Concernant la question du quiz :\n"${qText}"\n\nMa réponse était : "${myAns}"\nLa bonne réponse est : "${rightAns}"\nExplication : "${expl}"\n\nPeux-tu m'expliquer en détail pourquoi c'est cette réponse et me donner un moyen mnémotechnique ou un exemple pour bien comprendre ?`
-                  onAskQuestion(prompt)
-                }}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs font-medium text-white hover:text-sphera-green transition-all shadow-xs"
+                onClick={() => triggerAskForQuestion(activeAskKey, currentQuestion, selectedOption, currentIndex)}
+                disabled={activeInlineEntry?.isStreaming}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 hover:border-sphera-green/40 text-xs font-medium text-white hover:text-sphera-green transition-all shadow-xs cursor-pointer disabled:opacity-60"
               >
-                <ChatCircle weight="duotone" className="w-4 h-4 text-sphera-green" />
-                <span>Demander à Sphera</span>
+                <Sparkles weight="fill" className="w-3.5 h-3.5 text-sphera-green" />
+                <span>{activeInlineEntry ? 'Redemander à Sphera' : 'Demander à Sphera'}</span>
               </button>
             </div>
           )}
         </div>
       )}
 
-      {selectedOption !== null && (
+      {/* Inline Sphera Streaming Answer (no navigation away from Quiz!) */}
+      {activeInlineEntry && (
+        <InlineSpheraAnswerCard
+          entry={activeInlineEntry}
+          onStop={() => inlineAsk.stop(activeAskKey)}
+          onClose={() => inlineAsk.close(activeAskKey)}
+          onRetry={() => triggerAskForQuestion(activeAskKey, currentQuestion, selectedOption, currentIndex)}
+          onSaveNote={onSaveNote}
+        />
+      )}
+
+      {/* Standalone Next button fallback when rendered outside StudyWorkspacePanel */}
+      {!workspaceSlots?.footerSlot && selectedOption !== null && (
         <button onClick={handleNext} className="sphera-primary-btn w-full justify-center py-4 mt-4 text-base">
           {currentIndex + 1 >= total ? (
             <span className="flex items-center gap-2"><Trophy className="h-5 w-5" /> {t('resultViews.quizSeeResults')}</span>
@@ -625,15 +918,21 @@ export function QuizView({
 export function FlashcardsView({
   content,
   sessionId,
+  sessionType = 'session',
   artefactId,
   onAskQuestion,
   onPause,
+  onSaveNote,
+  workspaceSlots,
 }: {
   content: any
-  sessionId?: string | number
+  sessionId?: string | number | null
+  sessionType?: 'session' | 'annale'
   artefactId?: string | number
   onAskQuestion?: (prompt: string) => void
   onPause?: () => void
+  onSaveNote?: (title: string, text: string) => Promise<void> | void
+  workspaceSlots?: WorkspaceSlots
 }) {
   const { t } = useTranslation('study')
   const fData = content?.flashcards || content || {}
@@ -668,6 +967,8 @@ export function FlashcardsView({
   const [review, setReview] = useState<Set<number>>(new Set())
   const [finished, setFinished] = useState(false)
 
+  const inlineAsk = useInlineSpheraAsk({ sessionId, sessionType })
+
   // Save progress automatically
   useEffect(() => {
     if (currentIndex > 0 && !finished && (known.size > 0 || review.size > 0)) {
@@ -693,6 +994,48 @@ export function FlashcardsView({
       } catch {}
     }
   }, [finished, storageKey])
+
+  const advance = useCallback(() => {
+    setFlipped(false);
+    if (currentIndex + 1 >= total) {
+      setFinished(true);
+    } else {
+      setCurrentIndex(i => i + 1);
+    }
+  }, [currentIndex, total])
+
+  const handleKnew = useCallback(() => {
+    setKnown(prev => new Set(prev).add(currentIndex));
+    advance();
+  }, [currentIndex, advance])
+
+  const handleReview = useCallback(() => {
+    setReview(prev => new Set(prev).add(currentIndex));
+    advance();
+  }, [currentIndex, advance])
+
+  // Keyboard shortcuts: Space/Enter to flip, Left/Right arrows to rate
+  useEffect(() => {
+    if (finished || !total) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return
+      }
+      if (!flipped && (e.code === 'Space' || e.key === 'Enter')) {
+        e.preventDefault()
+        setFlipped(true)
+      } else if (flipped && e.key === 'ArrowLeft') {
+        e.preventDefault()
+        handleReview()
+      } else if (flipped && e.key === 'ArrowRight') {
+        e.preventDefault()
+        handleKnew()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [finished, total, flipped, handleReview, handleKnew])
 
   if (!total) return <p className="text-sphera-text-muted">{t('resultViews.emptyFlashcards')}</p>
 
@@ -731,25 +1074,6 @@ export function FlashcardsView({
     }
   }
 
-  const handleKnew = () => {
-    setKnown(prev => new Set(prev).add(currentIndex));
-    advance();
-  }
-
-  const handleReview = () => {
-    setReview(prev => new Set(prev).add(currentIndex));
-    advance();
-  }
-
-  const advance = () => {
-    setFlipped(false);
-    if (currentIndex + 1 >= total) {
-      setFinished(true);
-    } else {
-      setCurrentIndex(i => i + 1);
-    }
-  }
-
   const handleRestart = () => {
     try {
       localStorage.removeItem(storageKey);
@@ -774,79 +1098,247 @@ export function FlashcardsView({
     setFinished(false);
   }
 
+  const triggerAskForCard = (key: string, card: any, idxLabel: number) => {
+    const prompt = `Concernant la carte mémoire #${idxLabel + 1} :\n- Recto (Concept / Question) : "${card.recto}"\n- Verso (Réponse / Définition) : "${card.verso}"\n\nPeux-tu approfondir ce concept avec une explication claire, un exemple concret et une astuce pour bien le retenir ?`
+    if (sessionId) {
+      inlineAsk.ask(key, prompt, `Explication • Carte ${idxLabel + 1}`)
+    } else if (onAskQuestion) {
+      onAskQuestion(prompt)
+    }
+  }
+
+  const hasPortal = Boolean(workspaceSlots?.headerSlot)
+  const progressPct = finished ? 100 : (currentIndex / total) * 100
+  const canAsk = Boolean(sessionId || onAskQuestion)
+
+  const progressBarPortal = workspaceSlots?.progressSlot
+    ? createPortal(
+        <div className="h-[3px] w-full bg-sphera-surface overflow-hidden">
+          <div
+            className="h-full bg-sphera-green transition-all duration-300 ease-out"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>,
+        workspaceSlots.progressSlot
+      )
+    : null
+
   if (finished) {
     const knownCount = known.size;
     const reviewCount = total - knownCount;
-    const reviewCards = cartes.filter((_, i) => !known.has(i));
+    const reviewCards = cartes.filter((_: any, i: number) => !known.has(i));
+
+    const finishedHeaderPortal = workspaceSlots?.headerSlot
+      ? createPortal(
+          <div className="flex items-center gap-2 min-w-0">
+            <Trophy className="w-4 h-4 text-sphera-green shrink-0" />
+            <span className="text-xs sm:text-sm font-semibold text-white truncate">
+              Bilan • {knownCount}/{total} maîtrisées
+            </span>
+          </div>,
+          workspaceSlots.headerSlot
+        )
+      : null
+
+    const finishedFooterPortal = workspaceSlots?.footerSlot
+      ? createPortal(
+          <div className="max-w-2xl mx-auto flex flex-col sm:flex-row gap-2.5">
+            <button
+              type="button"
+              onClick={handleRestart}
+              className="flex-1 py-2.5 px-4 rounded-xl bg-sphera-surface border border-sphera-border text-white text-sm font-medium flex justify-center items-center gap-2 hover:bg-sphera-surface-2 transition-colors cursor-pointer"
+            >
+              <RotateCcw className="h-4 w-4" /> {t('resultViews.restartAll')}
+            </button>
+            {reviewCards.length > 0 && (
+              <button
+                type="button"
+                onClick={handleRestartReview}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-sphera-green text-black text-sm font-semibold flex justify-center items-center gap-2 hover:bg-green-400 transition-colors cursor-pointer"
+              >
+                <RefreshCcw className="h-4 w-4" /> {t('resultViews.reviewCardsBtn', { count: reviewCount })}
+              </button>
+            )}
+          </div>,
+          workspaceSlots.footerSlot
+        )
+      : null
 
     return (
-      <div className="space-y-6 max-w-2xl mx-auto pb-8 animate-in fade-in">
-        <div className="text-center p-8 bg-sphera-surface-2 rounded-2xl border border-sphera-border">
-          <div className="w-16 h-16 rounded-2xl bg-sphera-green/15 text-sphera-green flex items-center justify-center mx-auto mb-4 border border-sphera-green/30">
-            {knownCount === total ? <Trophy className="w-8 h-8" /> : <BookOpen className="w-8 h-8" />}
+      <div className="space-y-6 max-w-2xl mx-auto pb-6 animate-in fade-in">
+        {finishedHeaderPortal}
+        {progressBarPortal}
+        {finishedFooterPortal}
+
+        <div className="text-center p-6 sm:p-8 bg-sphera-surface-2 rounded-2xl border border-sphera-border">
+          <div className="w-14 h-14 rounded-2xl bg-sphera-green/15 text-sphera-green flex items-center justify-center mx-auto mb-3 border border-sphera-green/30">
+            {knownCount === total ? <Trophy className="w-7 h-7" /> : <BookOpen className="w-7 h-7" />}
           </div>
-          <p className="text-3xl font-bold text-white mb-2">
+          <p className="text-3xl font-bold text-white mb-1.5">
             {knownCount} <span className="text-sphera-text-muted font-normal text-xl">/ {total} {t('resultViews.memorized', { count: total })}</span>
           </p>
-          <p className="text-sphera-text-muted">
+          <p className="text-sm text-sphera-text-muted">
             {reviewCount > 0 ? t('resultViews.cardsToReview', { count: reviewCount }) : t('resultViews.allMastered')}
           </p>
-          <div className="h-2 w-full bg-sphera-bg rounded-full overflow-hidden mt-6">
+          <div className="h-2 w-full bg-sphera-bg rounded-full overflow-hidden mt-5">
             <div className="h-full bg-sphera-green transition-all" style={{ width: `${(knownCount / total) * 100}%` }} />
           </div>
         </div>
 
         {reviewCards.length > 0 && (
           <div className="space-y-3">
-            <h3 className="font-semibold text-white flex items-center gap-2 mb-4">
+            <h3 className="font-semibold text-white flex items-center gap-2 mb-3">
               <RefreshCcw className="h-5 w-5 text-yellow-500" /> {t('resultViews.flashcardsToReview')}
             </h3>
-            {reviewCards.map((card: any, i: number) => (
-              <div key={i} className="border border-red-500/30 bg-red-500/5 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-red-400 mb-1">{formatText(card.recto)}</p>
-                  <div className="text-sm text-sphera-text-muted leading-relaxed">{formatText(card.verso)}</div>
+            {reviewCards.map((card: any, i: number) => {
+              const reviewKey = `fc-review-${i}`
+              const inlineEntry = inlineAsk.entries[reviewKey]
+              return (
+                <div key={i} className="border border-red-500/30 bg-red-500/5 rounded-xl p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-red-400 mb-1">{formatText(card.recto)}</p>
+                      <div className="text-sm text-sphera-text-muted leading-relaxed">{formatText(card.verso)}</div>
+                    </div>
+                    {canAsk && (
+                      <button
+                        type="button"
+                        onClick={() => triggerAskForCard(reviewKey, card, i)}
+                        disabled={inlineEntry?.isStreaming}
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 hover:border-sphera-green/40 text-xs text-sphera-text-muted hover:text-sphera-green transition-colors shrink-0 self-end sm:self-center cursor-pointer disabled:opacity-60"
+                        title="Demander de l'aide à Sphera directement ici"
+                      >
+                        <Sparkles weight="fill" className="w-3.5 h-3.5 text-sphera-green" />
+                        <span>Demander à Sphera</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {inlineEntry && (
+                    <InlineSpheraAnswerCard
+                      entry={inlineEntry}
+                      onStop={() => inlineAsk.stop(reviewKey)}
+                      onClose={() => inlineAsk.close(reviewKey)}
+                      onRetry={() => triggerAskForCard(reviewKey, card, i)}
+                      onSaveNote={onSaveNote}
+                    />
+                  )}
                 </div>
-                {onAskQuestion && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const prompt = `Concernant la carte de révision :\n- Notion / Recto : "${card.recto}"\n- Définition / Verso : "${card.verso}"\n\nPeux-tu m'expliquer ce point en détail et m'aider à le retenir ?`
-                      onAskQuestion(prompt)
-                    }}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs text-sphera-text-muted hover:text-sphera-green transition-colors shrink-0 self-end sm:self-center"
-                    title="Demander de l'aide à Sphera sur cette carte"
-                  >
-                    <ChatCircle className="w-3.5 h-3.5 text-sphera-green" />
-                    <span>Demander à Sphera</span>
-                  </button>
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-3 pt-4">
-          <button onClick={handleRestart} className="flex-1 py-3 px-4 rounded-xl bg-sphera-surface border border-sphera-border text-white font-medium flex justify-center items-center gap-2 hover:bg-sphera-surface-2 transition-colors">
-            <RotateCcw className="h-4 w-4" /> {t('resultViews.restartAll')}
-          </button>
-          {reviewCards.length > 0 && (
-            <button onClick={handleRestartReview} className="flex-1 py-3 px-4 rounded-xl bg-sphera-green text-black font-semibold flex justify-center items-center gap-2 hover:bg-green-400 transition-colors">
-              <RefreshCcw className="h-4 w-4" /> {t('resultViews.reviewCardsBtn', { count: reviewCount })}
+        {!workspaceSlots?.footerSlot && (
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
+            <button onClick={handleRestart} className="flex-1 py-3 px-4 rounded-xl bg-sphera-surface border border-sphera-border text-white font-medium flex justify-center items-center gap-2 hover:bg-sphera-surface-2 transition-colors">
+              <RotateCcw className="h-4 w-4" /> {t('resultViews.restartAll')}
             </button>
-          )}
-        </div>
+            {reviewCards.length > 0 && (
+              <button onClick={handleRestartReview} className="flex-1 py-3 px-4 rounded-xl bg-sphera-green text-black font-semibold flex justify-center items-center gap-2 hover:bg-green-400 transition-colors">
+                <RefreshCcw className="h-4 w-4" /> {t('resultViews.reviewCardsBtn', { count: reviewCount })}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     );
   }
 
+  const activeCardAskKey = `fc-card-${currentIndex}`
+  const activeCardInlineEntry = inlineAsk.entries[activeCardAskKey]
+
+  const headerPortal = workspaceSlots?.headerSlot
+    ? createPortal(
+        <div className="flex items-center justify-between gap-2 w-full min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+            <span className="text-xs sm:text-sm text-sphera-text-muted font-medium whitespace-nowrap">
+              <span className="hidden sm:inline">Carte </span>
+              <span className="text-white font-bold">{currentIndex + 1}</span>
+              <span className="text-sphera-text-muted/80">/{total}</span>
+            </span>
+
+            {known.size > 0 && (
+              <span className="bg-sphera-green/10 text-sphera-green border border-sphera-green/20 px-2 py-0.5 rounded-full text-[11px] font-bold flex items-center gap-1 shrink-0">
+                <CheckCircle2 className="h-3 w-3" /> {known.size}
+              </span>
+            )}
+            {review.size > 0 && (
+              <span className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-2 py-0.5 rounded-full text-[11px] font-bold flex items-center gap-1 shrink-0">
+                ↩ {review.size}
+              </span>
+            )}
+          </div>
+
+          {currentIndex > 0 && onPause && (
+            <button
+              type="button"
+              onClick={handlePause}
+              className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs text-sphera-text-muted hover:text-white transition-colors shrink-0 cursor-pointer"
+              title="Sauvegarder et continuer plus tard"
+            >
+              <Pause className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden md:inline">Continuer plus tard</span>
+              <span className="hidden sm:inline md:hidden">Plus tard</span>
+            </button>
+          )}
+        </div>,
+        workspaceSlots.headerSlot
+      )
+    : null
+
+  const footerPortal = workspaceSlots?.footerSlot
+    ? createPortal(
+        <div className="max-w-2xl mx-auto">
+          {flipped ? (
+            <div className="flex gap-2.5 sm:gap-3 animate-in fade-in duration-150">
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); handleReview(); }}
+                className="flex-1 py-3 rounded-xl border-2 border-red-500/40 text-red-400 font-semibold text-sm sm:text-base hover:bg-red-500/10 hover:border-red-500 transition-colors flex justify-center items-center gap-2 cursor-pointer"
+              >
+                <span>↩ {t('resultViews.toReview')}</span>
+                <span className="hidden sm:inline-flex px-1.5 py-0.5 rounded bg-red-500/15 text-[10px] font-mono">←</span>
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); handleKnew(); }}
+                className="flex-1 py-3 rounded-xl bg-sphera-green text-black font-bold text-sm sm:text-base hover:bg-green-400 transition-colors flex justify-center items-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(34,197,94,0.2)]"
+              >
+                <CheckCircle2 className="h-5 w-5" />
+                <span>{t('resultViews.iKnewIt')}</span>
+                <span className="hidden sm:inline-flex px-1.5 py-0.5 rounded bg-black/15 text-[10px] font-mono">→</span>
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setFlipped(true)}
+              className="w-full py-3 rounded-xl border border-sphera-border text-white bg-sphera-surface hover:bg-sphera-surface-2 hover:border-sphera-green/40 font-semibold text-sm sm:text-base transition-colors flex justify-center items-center gap-2 cursor-pointer"
+            >
+              <RotateCcw className="h-4 w-4" />
+              <span>{t('resultViews.flipCard')}</span>
+              <span className="hidden sm:inline-flex px-1.5 py-0.5 ml-1 rounded bg-sphera-surface-2 border border-sphera-border text-[10px] font-mono text-sphera-text-muted">
+                Espace
+              </span>
+            </button>
+          )}
+        </div>,
+        workspaceSlots.footerSlot
+      )
+    : null
+
   return (
-    <div className="max-w-2xl mx-auto pb-12 space-y-5">
+    <div className="max-w-2xl mx-auto pb-6 space-y-4">
+      {headerPortal}
+      {progressBarPortal}
+      {footerPortal}
+
       {/* Saved Progress Banner */}
       {savedProgress && (
-        <div className="p-4 rounded-xl border border-sphera-green/40 bg-sphera-green/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
+        <div className="p-3.5 rounded-xl border border-sphera-green/40 bg-sphera-green/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-sphera-green/20 text-sphera-green flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-sphera-green/20 text-sphera-green flex items-center justify-center shrink-0">
               <RotateCcw className="w-4 h-4" />
             </div>
             <div>
@@ -860,14 +1352,14 @@ export function FlashcardsView({
             <button
               type="button"
               onClick={handleDismissSaved}
-              className="px-3 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs text-sphera-text-muted hover:text-white transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs text-sphera-text-muted hover:text-white transition-colors cursor-pointer"
             >
               Recommencer
             </button>
             <button
               type="button"
               onClick={handleResumeSaved}
-              className="px-3 py-1.5 rounded-lg bg-sphera-green text-black font-semibold text-xs hover:bg-green-400 transition-colors shadow-xs"
+              className="px-3 py-1.5 rounded-lg bg-sphera-green text-black font-semibold text-xs hover:bg-green-400 transition-colors shadow-xs cursor-pointer"
             >
               Reprendre
             </button>
@@ -875,57 +1367,61 @@ export function FlashcardsView({
         </div>
       )}
 
-      {/* Progression & Header */}
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-sphera-text-muted font-medium">
-          Carte <span className="text-white font-bold">{currentIndex + 1}</span> / {total}
-        </span>
-        <div className="flex items-center gap-2">
-          {currentIndex > 0 && onPause && (
-            <button
-              type="button"
-              onClick={handlePause}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-[11px] text-sphera-text-muted hover:text-white transition-colors"
-              title="Sauvegarder et continuer plus tard"
-            >
-              <Pause className="w-3.5 h-3.5" />
-              <span>Continuer plus tard</span>
-            </button>
-          )}
-          {known.size > 0 && (
-            <span className="bg-sphera-green/10 text-sphera-green border border-sphera-green/20 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-              <CheckCircle2 className="h-3.5 w-3.5" /> {t('resultViews.knownBadge', { count: known.size })}
+      {/* Standalone fallback Header when outside StudyWorkspacePanel */}
+      {!hasPortal && (
+        <>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-sphera-text-muted font-medium">
+              Carte <span className="text-white font-bold">{currentIndex + 1}</span> / {total}
             </span>
-          )}
-          {review.size > 0 && (
-            <span className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-              ↩ {t('resultViews.reviewBadge', { count: review.size })}
-            </span>
-          )}
-        </div>
-      </div>
-      
-      <div className="h-1.5 w-full bg-sphera-bg rounded-full overflow-hidden">
-        <div className="h-full bg-sphera-green transition-all" style={{ width: `${((currentIndex) / total) * 100}%` }} />
-      </div>
+            <div className="flex items-center gap-2">
+              {currentIndex > 0 && onPause && (
+                <button
+                  type="button"
+                  onClick={handlePause}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-[11px] text-sphera-text-muted hover:text-white transition-colors"
+                  title="Sauvegarder et continuer plus tard"
+                >
+                  <Pause className="w-3.5 h-3.5" />
+                  <span>Continuer plus tard</span>
+                </button>
+              )}
+              {known.size > 0 && (
+                <span className="bg-sphera-green/10 text-sphera-green border border-sphera-green/20 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> {t('resultViews.knownBadge', { count: known.size })}
+                </span>
+              )}
+              {review.size > 0 && (
+                <span className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                  ↩ {t('resultViews.reviewBadge', { count: review.size })}
+                </span>
+              )}
+            </div>
+          </div>
+          
+          <div className="h-1.5 w-full bg-sphera-bg rounded-full overflow-hidden">
+            <div className="h-full bg-sphera-green transition-all" style={{ width: `${progressPct}%` }} />
+          </div>
+        </>
+      )}
 
       {/* Carte flip 3D réelle */}
-      <div className="perspective-1000 w-full min-h-[350px]">
+      <div className="perspective-1000 w-full min-h-[340px] sm:min-h-[380px]">
         <div
           onClick={() => setFlipped(!flipped)}
-          className={`relative w-full h-full min-h-[350px] cursor-pointer transition-transform duration-700 transform-style-3d ${
+          className={`relative w-full h-full min-h-[340px] sm:min-h-[380px] cursor-pointer transition-transform duration-700 transform-style-3d ${
             flipped ? 'rotate-y-180' : ''
           }`}
         >
           {/* Front (Question) */}
-          <div className="absolute inset-0 backface-hidden rounded-2xl p-8 flex flex-col items-center justify-center text-center bg-gradient-to-br from-sphera-surface to-sphera-surface-2 border-2 border-sphera-border shadow-xl hover:border-sphera-border/80">
+          <div className="absolute inset-0 backface-hidden rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center text-center bg-gradient-to-br from-sphera-surface to-sphera-surface-2 border-2 border-sphera-border shadow-xl hover:border-sphera-border/80">
             <div className="absolute top-6">
               <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-sphera-border text-sphera-text-muted">
                 {t('resultViews.questionTerm')}
               </span>
             </div>
             
-            <div className="text-xl md:text-2xl leading-relaxed mt-4 font-bold text-white w-full max-h-[200px] overflow-y-auto scrollbar-thin">
+            <div className="text-xl md:text-2xl leading-relaxed mt-4 font-bold text-white w-full max-h-[220px] overflow-y-auto scrollbar-thin">
               {formatText(currentCard.recto)}
             </div>
 
@@ -935,64 +1431,77 @@ export function FlashcardsView({
           </div>
 
           {/* Back (Réponse) */}
-          <div className="absolute inset-0 backface-hidden rotate-y-180 rounded-2xl p-8 flex flex-col items-center justify-center text-center bg-gradient-to-br from-sphera-green/10 to-sphera-surface-2 border-2 border-sphera-green/50 shadow-[0_0_40px_rgba(34,197,94,0.15)]">
+          <div className="absolute inset-0 backface-hidden rotate-y-180 rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center text-center bg-gradient-to-br from-sphera-green/10 to-sphera-surface-2 border-2 border-sphera-green/50 shadow-[0_0_40px_rgba(34,197,94,0.15)]">
             <div className="absolute top-6">
               <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-sphera-green/30 text-sphera-green">
                 {t('resultViews.answerDef')}
               </span>
             </div>
             
-            <div className="text-xl md:text-2xl leading-relaxed mt-4 font-normal text-white/90 w-full max-h-[200px] overflow-y-auto scrollbar-thin">
+            <div className="text-xl md:text-2xl leading-relaxed mt-4 font-normal text-white/90 w-full max-h-[220px] overflow-y-auto scrollbar-thin">
               {formatText(currentCard.verso)}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Ask Sphera button when flipped */}
-      {flipped && onAskQuestion && (
+      {/* Ask Sphera button when flipped (inline!) */}
+      {flipped && canAsk && (
         <div className="flex justify-center animate-in fade-in duration-200">
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation()
-              const prompt = `Concernant la flashcard de révision :\n- Recto (Concept / Question) : "${currentCard.recto}"\n- Verso (Réponse / Définition) : "${currentCard.verso}"\n\nPeux-tu approfondir ce concept avec des explications claires et des exemples concrets d'application ?`
-              onAskQuestion(prompt)
+              triggerAskForCard(activeCardAskKey, currentCard, currentIndex)
             }}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs font-medium text-white hover:text-sphera-green transition-all shadow-xs"
+            disabled={activeCardInlineEntry?.isStreaming}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 hover:border-sphera-green/40 text-xs font-medium text-white hover:text-sphera-green transition-all shadow-xs cursor-pointer disabled:opacity-60"
           >
-            <ChatCircle weight="duotone" className="w-4 h-4 text-sphera-green" />
-            <span>Demander des explications à Sphera</span>
+            <Sparkles weight="fill" className="w-3.5 h-3.5 text-sphera-green" />
+            <span>{activeCardInlineEntry ? 'Redemander à Sphera' : 'Demander des explications à Sphera'}</span>
           </button>
         </div>
       )}
 
-      {/* Actions */}
-      <div className="pt-2 h-16">
-        {flipped ? (
-          <div className="flex gap-3 animate-in fade-in zoom-in duration-300">
+      {/* Inline Sphera Explanation directly beneath card */}
+      {activeCardInlineEntry && (
+        <InlineSpheraAnswerCard
+          entry={activeCardInlineEntry}
+          onStop={() => inlineAsk.stop(activeCardAskKey)}
+          onClose={() => inlineAsk.close(activeCardAskKey)}
+          onRetry={() => triggerAskForCard(activeCardAskKey, currentCard, currentIndex)}
+          onSaveNote={onSaveNote}
+        />
+      )}
+
+      {/* Standalone Actions fallback when rendered outside StudyWorkspacePanel */}
+      {!workspaceSlots?.footerSlot && (
+        <div className="pt-2 h-16">
+          {flipped ? (
+            <div className="flex gap-3 animate-in fade-in zoom-in duration-300">
+              <button
+                onClick={(e) => { e.stopPropagation(); handleReview(); }}
+                className="flex-1 py-3.5 rounded-xl border-2 border-red-500/40 text-red-400 font-semibold hover:bg-red-500/10 hover:border-red-500 transition-colors flex justify-center items-center gap-2"
+              >
+                ↩ {t('resultViews.toReview')}
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); handleKnew(); }}
+                className="flex-1 py-3.5 rounded-xl bg-sphera-green text-black font-bold hover:bg-green-400 transition-colors flex justify-center items-center gap-2"
+              >
+                <CheckCircle2 className="h-5 w-5" /> {t('resultViews.iKnewIt')}
+              </button>
+            </div>
+          ) : (
             <button
-              onClick={(e) => { e.stopPropagation(); handleReview(); }}
-              className="flex-1 py-3.5 rounded-xl border-2 border-red-500/40 text-red-400 font-semibold hover:bg-red-500/10 hover:border-red-500 transition-colors flex justify-center items-center gap-2"
+              onClick={() => setFlipped(true)}
+              className="w-full py-3.5 rounded-xl border border-sphera-border text-white bg-sphera-surface hover:bg-sphera-surface-2 font-medium transition-colors flex justify-center items-center gap-2"
             >
-              ↩ {t('resultViews.toReview')}
+              <RotateCcw className="h-4 w-4" /> {t('resultViews.flipCard')}
             </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); handleKnew(); }}
-              className="flex-1 py-3.5 rounded-xl bg-sphera-green text-black font-bold hover:bg-green-400 transition-colors flex justify-center items-center gap-2"
-            >
-              <CheckCircle2 className="h-5 w-5" /> {t('resultViews.iKnewIt')}
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setFlipped(true)}
-            className="w-full py-3.5 rounded-xl border border-sphera-border text-white bg-sphera-surface hover:bg-sphera-surface-2 font-medium transition-colors flex justify-center items-center gap-2"
-          >
-            <RotateCcw className="h-4 w-4" /> {t('resultViews.flipCard')}
-          </button>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -1411,12 +1920,22 @@ function QuestionCard({
   isOpen,
   onToggle,
   onAskQuestion,
+  inlineEntry,
+  onStopInline,
+  onCloseInline,
+  onRetryInline,
+  onSaveNote,
 }: {
   question: any;
   mode?: 'complete' | 'rapide';
   isOpen?: boolean;
   onToggle?: () => void;
   onAskQuestion?: (prompt: string) => void;
+  inlineEntry?: InlineAskEntry;
+  onStopInline?: () => void;
+  onCloseInline?: () => void;
+  onRetryInline?: () => void;
+  onSaveNote?: (title: string, text: string) => Promise<void> | void;
 }) {
   const [localOpen, setLocalOpen] = useState(false);
   const open = isOpen !== undefined ? isOpen : localOpen;
@@ -1434,7 +1953,7 @@ function QuestionCard({
           <span className="flex-shrink-0 min-w-[2rem] h-7 rounded-lg bg-[#ff9800]/15 text-[#ff9800] text-xs font-bold flex items-center justify-center ring-1 ring-[#ff9800]/25 px-2">
             Q{num}
           </span>
-          <div className="flex-1 space-y-2">
+          <div className="flex-1 space-y-2 min-w-0">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="text-sm font-semibold text-white leading-relaxed">
                 {formatText(enonce)}
@@ -1471,6 +1990,16 @@ function QuestionCard({
               <div className="pt-2 animate-in fade-in">
                 <AdaptiveAnswer question={question} />
               </div>
+            )}
+
+            {inlineEntry && onStopInline && onCloseInline && (
+              <InlineSpheraAnswerCard
+                entry={inlineEntry}
+                onStop={onStopInline}
+                onClose={onCloseInline}
+                onRetry={onRetryInline}
+                onSaveNote={onSaveNote}
+              />
             )}
           </div>
         </div>
@@ -1511,6 +2040,15 @@ function QuestionCard({
             <span className="text-[11px] text-sphera-text-muted">Besoin d'aide ou d'approfondir cette question ?</span>
             <AskSpheraButton questionNum={num} enonce={enonce} onAskQuestion={onAskQuestion} />
           </div>
+          {inlineEntry && onStopInline && onCloseInline && (
+            <InlineSpheraAnswerCard
+              entry={inlineEntry}
+              onStop={onStopInline}
+              onClose={onCloseInline}
+              onRetry={onRetryInline}
+              onSaveNote={onSaveNote}
+            />
+          )}
         </div>
       )}
     </div>
@@ -1520,11 +2058,19 @@ function QuestionCard({
 export function AnnaleView({
   annale,
   sourceName,
+  sessionId,
+  sessionType = 'annale',
   onAskQuestion,
+  onSaveNote,
+  workspaceSlots,
 }: {
   annale: any;
   sourceName?: string;
+  sessionId?: string | number | null;
+  sessionType?: 'session' | 'annale';
   onAskQuestion?: (prompt: string) => void;
+  onSaveNote?: (title: string, text: string) => Promise<void> | void;
+  workspaceSlots?: WorkspaceSlots;
 }) {
   const { t } = useTranslation('study')
   const rawAnnale = annale || {};
@@ -1545,6 +2091,15 @@ export function AnnaleView({
   const hasQuestions = !isRawArray && Array.isArray(content?.questions) && content.questions.length > 0;
   const conseils = content?.conseils_generaux || rawAnnale?.conseils_generaux || [];
   const { isDownloading, generateAnnale } = useDownloadPDF();
+  const inlineAsk = useInlineSpheraAsk({ sessionId, sessionType });
+
+  const handleQuestionAsk = (key: string, questionNum: number | string, prompt: string) => {
+    if (sessionId) {
+      inlineAsk.ask(key, prompt, `Aide Sphera • Q${questionNum}`)
+    } else if (onAskQuestion) {
+      onAskQuestion(prompt)
+    }
+  }
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState('');
@@ -1618,29 +2173,66 @@ export function AnnaleView({
     return statement.includes(query) || answer.includes(query) || expl.includes(query) || sec.includes(query);
   };
 
-  return (
-    <div className="flex flex-col gap-6">
-      {/* Top Action Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleToggleAll}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-sphera-surface hover:bg-sphera-surface-2 text-white border border-sphera-border transition-colors cursor-pointer"
-          >
-            <ChevronsUpDown className="w-3.5 h-3.5 text-[#ff9800]" />
-            <span>{areAllExpanded ? t('resultViews.collapseAll') : t('resultViews.expandAll')}</span>
-          </button>
-        </div>
+  const annaleHeaderPortal = workspaceSlots?.headerSlot
+    ? createPortal(
+        <div className="flex items-center justify-between gap-2 w-full min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#ff9800]/15 text-[#ff9800] border border-[#ff9800]/30 shrink-0">
+              {mode === 'complete' ? 'Complète' : 'Rapide'}
+            </span>
+            <span className="text-xs text-sphera-text-muted truncate hidden sm:inline">
+              {totalQuestions} question{totalQuestions > 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={handleToggleAll}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-sphera-surface hover:bg-sphera-surface-2 text-white border border-sphera-border transition-colors cursor-pointer"
+              title={areAllExpanded ? t('resultViews.collapseAll') : t('resultViews.expandAll')}
+            >
+              <ChevronsUpDown className="w-3.5 h-3.5 text-[#ff9800]" />
+              <span className="hidden md:inline">{areAllExpanded ? t('resultViews.collapseAll') : t('resultViews.expandAll')}</span>
+            </button>
+            <DownloadPDFButton
+              onDownload={() => generateAnnale(annale, sourceName || content?.titre)}
+              isDownloading={isDownloading}
+              label="PDF"
+              className="!px-2.5 !py-1.5 !text-xs !rounded-lg cursor-pointer"
+            />
+          </div>
+        </div>,
+        workspaceSlots.headerSlot
+      )
+    : null
 
-        <div className="flex items-center gap-2">
-          <DownloadPDFButton
-            onDownload={() => generateAnnale(annale, sourceName || content?.titre)}
-            isDownloading={isDownloading}
-            label={t('resultViews.downloadCorrection')}
-          />
+  return (
+    <div className="flex flex-col gap-5">
+      {annaleHeaderPortal}
+
+      {/* Top Action Bar fallback when rendered outside StudyWorkspacePanel */}
+      {!workspaceSlots?.headerSlot && (
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleToggleAll}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-sphera-surface hover:bg-sphera-surface-2 text-white border border-sphera-border transition-colors cursor-pointer"
+            >
+              <ChevronsUpDown className="w-3.5 h-3.5 text-[#ff9800]" />
+              <span>{areAllExpanded ? t('resultViews.collapseAll') : t('resultViews.expandAll')}</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <DownloadPDFButton
+              onDownload={() => generateAnnale(annale, sourceName || content?.titre)}
+              isDownloading={isDownloading}
+              label={t('resultViews.downloadCorrection')}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Header Card */}
       <div className="flex flex-col gap-4 p-5 rounded-2xl bg-sphera-bg border border-sphera-border/60">
@@ -1751,16 +2343,25 @@ export function AnnaleView({
                 </div>
 
                 <div className="space-y-3">
-                  {filteredSecQuestions.map((q: any) => (
-                    <QuestionCard
-                      key={q._key}
-                      question={q}
-                      mode={mode}
-                      isOpen={expandedMap[q._key] ?? areAllExpanded}
-                      onToggle={() => toggleQuestion(q._key)}
-                      onAskQuestion={onAskQuestion}
-                    />
-                  ))}
+                  {filteredSecQuestions.map((q: any) => {
+                    const askKey = `annale-${q._key}`
+                    const inlineEntry = inlineAsk.entries[askKey]
+                    return (
+                      <QuestionCard
+                        key={q._key}
+                        question={q}
+                        mode={mode}
+                        isOpen={expandedMap[q._key] ?? areAllExpanded}
+                        onToggle={() => toggleQuestion(q._key)}
+                        onAskQuestion={(sessionId || onAskQuestion) ? (prompt) => handleQuestionAsk(askKey, q.numero, prompt) : undefined}
+                        inlineEntry={inlineEntry}
+                        onStopInline={() => inlineAsk.stop(askKey)}
+                        onCloseInline={() => inlineAsk.close(askKey)}
+                        onRetryInline={inlineEntry ? () => handleQuestionAsk(askKey, q.numero, inlineEntry.prompt) : undefined}
+                        onSaveNote={onSaveNote}
+                      />
+                    )
+                  })}
                 </div>
               </div>
             );
@@ -1771,16 +2372,25 @@ export function AnnaleView({
       {/* Legacy Format / Raw Array */}
       {(!hasSections && (hasLegacy || isRawArray || hasQuestions)) && (
         <div className="space-y-3">
-          {allQuestions.filter(filterQuestion).map((q: any) => (
-            <QuestionCard
-              key={q._key}
-              question={q}
-              mode={mode}
-              isOpen={expandedMap[q._key] ?? areAllExpanded}
-              onToggle={() => toggleQuestion(q._key)}
-              onAskQuestion={onAskQuestion}
-            />
-          ))}
+          {allQuestions.filter(filterQuestion).map((q: any) => {
+            const askKey = `annale-${q._key}`
+            const inlineEntry = inlineAsk.entries[askKey]
+            return (
+              <QuestionCard
+                key={q._key}
+                question={q}
+                mode={mode}
+                isOpen={expandedMap[q._key] ?? areAllExpanded}
+                onToggle={() => toggleQuestion(q._key)}
+                onAskQuestion={(sessionId || onAskQuestion) ? (prompt) => handleQuestionAsk(askKey, q.numero, prompt) : undefined}
+                inlineEntry={inlineEntry}
+                onStopInline={() => inlineAsk.stop(askKey)}
+                onCloseInline={() => inlineAsk.close(askKey)}
+                onRetryInline={inlineEntry ? () => handleQuestionAsk(askKey, q.numero, inlineEntry.prompt) : undefined}
+                onSaveNote={onSaveNote}
+              />
+            )
+          })}
         </div>
       )}
 
@@ -1859,7 +2469,13 @@ function getBranchColor(couleurStr?: string, index: number = 0) {
   return palette[index % palette.length];
 }
 
-export function MindmapView({ content }: { content: any }) {
+export function MindmapView({
+  content,
+  workspaceSlots,
+}: {
+  content: any
+  workspaceSlots?: WorkspaceSlots
+}) {
   const { t } = useTranslation('study')
   const mapData = content?.mindmap || content || {};
   const centralNode = mapData?.noeud_central || mapData?.titre || "Concept Central";
@@ -2133,96 +2749,182 @@ export function MindmapView({ content }: { content: any }) {
 
   const totalSubBranches = branches.reduce((acc, b) => acc + (Array.isArray(b.sous_branches) ? b.sous_branches.length : 0), 0);
 
-  return (
-    <div className={`flex flex-col gap-6 ${isFullscreen ? 'fixed inset-0 z-50 bg-[#070b14] p-4 sm:p-6 overflow-hidden' : ''}`}>
-      {/* Mindmap Sleek Header & Structured Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-sphera-border/60">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <GitFork className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Carte Mentale</span>
-          </div>
-          {mapData?.titre && (
-            <h2 className="text-base sm:text-lg font-semibold text-white truncate">
-              {mapData.titre}
-            </h2>
-          )}
+  const mindmapToolbar = (
+    <div className="flex items-center justify-between gap-2 w-full min-w-0">
+      <div className="flex items-center gap-2 min-w-0">
+        <GitFork className="w-4 h-4 text-emerald-400 shrink-0 hidden sm:block" />
+        <span className="text-xs sm:text-sm font-semibold text-white truncate">
+          {mapData?.titre || 'Carte Mentale'}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-1.5 shrink-0">
+        {/* 1. Mode Switcher (Canvas / Arbre) */}
+        <div className="inline-flex p-0.5 rounded-lg bg-sphera-surface border border-sphera-border">
+          <button
+            type="button"
+            onClick={() => setViewMode('canvas')}
+            className={`px-2 py-1 text-xs font-semibold rounded-md flex items-center gap-1 transition-all cursor-pointer ${
+              viewMode === 'canvas'
+                ? 'bg-sphera-surface-2 text-emerald-300 shadow-xs'
+                : 'text-sphera-text-muted hover:text-white'
+            }`}
+            title="Vue Canvas"
+          >
+            <GitFork className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden sm:inline">Canvas</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('tree')}
+            className={`px-2 py-1 text-xs font-semibold rounded-md flex items-center gap-1 transition-all cursor-pointer ${
+              viewMode === 'tree'
+                ? 'bg-sphera-surface-2 text-emerald-300 shadow-xs'
+                : 'text-sphera-text-muted hover:text-white'
+            }`}
+            title="Vue Arbre"
+          >
+            <List className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden sm:inline">Arbre</span>
+          </button>
         </div>
 
-        {/* Cohesive, structured button toolbar */}
-        <div className="flex items-center gap-2 flex-wrap shrink-0">
-          {/* 1. Mode Switcher (Canvas / Arbre) */}
-          <div className="inline-flex p-0.5 rounded-xl bg-sphera-surface-2 border border-sphera-border shadow-xs">
+        {/* 2. Expand / Collapse */}
+        <div className="hidden md:inline-flex p-0.5 rounded-lg bg-sphera-surface border border-sphera-border">
+          <button
+            type="button"
+            onClick={expandAll}
+            className="px-2 py-1 text-xs font-medium rounded-md text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 transition-colors cursor-pointer"
+            title="Déplier toutes les branches"
+          >
+            Déplier
+          </button>
+          <div className="w-px h-3.5 bg-sphera-border/60 self-center mx-0.5" />
+          <button
+            type="button"
+            onClick={collapseAll}
+            className="px-2 py-1 text-xs font-medium rounded-md text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 transition-colors cursor-pointer"
+            title="Replier toutes les branches"
+          >
+            Replier
+          </button>
+        </div>
+
+        {/* 3. Canvas utilities */}
+        {viewMode === 'canvas' && (
+          <div className="inline-flex p-0.5 rounded-lg bg-sphera-surface border border-sphera-border">
             <button
               type="button"
-              onClick={() => setViewMode('canvas')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all ${
-                viewMode === 'canvas'
-                  ? 'bg-sphera-surface text-emerald-300 shadow-sm border border-emerald-500/20'
-                  : 'text-sphera-text-muted hover:text-white'
-              }`}
+              onClick={handleRecenter}
+              className="p-1 rounded-md text-sphera-text-muted hover:text-emerald-400 hover:bg-sphera-surface-2 transition-colors cursor-pointer"
+              title="Recentrer la carte mentale"
             >
-              <GitFork className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Canvas</span>
+              <LocateFixed className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
-              onClick={() => setViewMode('tree')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all ${
-                viewMode === 'tree'
-                  ? 'bg-sphera-surface text-emerald-300 shadow-sm border border-emerald-500/20'
-                  : 'text-sphera-text-muted hover:text-white'
-              }`}
+              onClick={() => setIsFullscreen((prev) => !prev)}
+              className="p-1 rounded-md text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 transition-colors cursor-pointer"
+              title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
             >
-              <List className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Arbre</span>
+              {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
             </button>
           </div>
+        )}
+      </div>
+    </div>
+  )
 
-          {/* 2. Hierarchy Action Pills: Déplier / Replier */}
-          <div className="inline-flex p-0.5 rounded-xl bg-sphera-surface-2 border border-sphera-border shadow-xs">
-            <button
-              type="button"
-              onClick={expandAll}
-              className="px-2.5 py-1.5 text-xs font-medium rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
-              title="Déplier toutes les branches"
-            >
-              Déplier tout
-            </button>
-            <div className="w-px h-3.5 bg-sphera-border/60 self-center mx-0.5" />
-            <button
-              type="button"
-              onClick={collapseAll}
-              className="px-2.5 py-1.5 text-xs font-medium rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
-              title="Replier toutes les branches"
-            >
-              Replier tout
-            </button>
+  return (
+    <div className={`flex flex-col gap-4 h-full ${isFullscreen ? 'fixed inset-0 z-50 bg-[#070b14] p-4 sm:p-6 overflow-hidden' : ''}`}>
+      {workspaceSlots?.headerSlot && !isFullscreen ? (
+        createPortal(mindmapToolbar, workspaceSlots.headerSlot)
+      ) : (
+        /* Standalone or Fullscreen Mindmap Header & Toolbar */
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-sphera-border/60">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-0.5">
+              <GitFork className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Carte Mentale</span>
+            </div>
+            {mapData?.titre && (
+              <h2 className="text-base sm:text-lg font-semibold text-white truncate">
+                {mapData.titre}
+              </h2>
+            )}
           </div>
 
-          {/* 3. Canvas utilities (Recenter & Fullscreen) */}
-          {viewMode === 'canvas' && (
+          <div className="flex items-center gap-2 flex-wrap shrink-0">
             <div className="inline-flex p-0.5 rounded-xl bg-sphera-surface-2 border border-sphera-border shadow-xs">
               <button
                 type="button"
-                onClick={handleRecenter}
-                className="p-1.5 rounded-lg text-sphera-text-muted hover:text-emerald-400 hover:bg-sphera-surface transition-colors"
-                title="Recentrer la carte mentale"
+                onClick={() => setViewMode('canvas')}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all ${
+                  viewMode === 'canvas'
+                    ? 'bg-sphera-surface text-emerald-300 shadow-sm border border-emerald-500/20'
+                    : 'text-sphera-text-muted hover:text-white'
+                }`}
               >
-                <LocateFixed className="w-4 h-4" />
+                <GitFork className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Canvas</span>
               </button>
               <button
                 type="button"
-                onClick={() => setIsFullscreen((prev) => !prev)}
-                className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
-                title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+                onClick={() => setViewMode('tree')}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all ${
+                  viewMode === 'tree'
+                    ? 'bg-sphera-surface text-emerald-300 shadow-sm border border-emerald-500/20'
+                    : 'text-sphera-text-muted hover:text-white'
+                }`}
               >
-                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                <List className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Arbre</span>
               </button>
             </div>
-          )}
+
+            <div className="inline-flex p-0.5 rounded-xl bg-sphera-surface-2 border border-sphera-border shadow-xs">
+              <button
+                type="button"
+                onClick={expandAll}
+                className="px-2.5 py-1.5 text-xs font-medium rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
+                title="Déplier toutes les branches"
+              >
+                Déplier tout
+              </button>
+              <div className="w-px h-3.5 bg-sphera-border/60 self-center mx-0.5" />
+              <button
+                type="button"
+                onClick={collapseAll}
+                className="px-2.5 py-1.5 text-xs font-medium rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
+                title="Replier toutes les branches"
+              >
+                Replier tout
+              </button>
+            </div>
+
+            {viewMode === 'canvas' && (
+              <div className="inline-flex p-0.5 rounded-xl bg-sphera-surface-2 border border-sphera-border shadow-xs">
+                <button
+                  type="button"
+                  onClick={handleRecenter}
+                  className="p-1.5 rounded-lg text-sphera-text-muted hover:text-emerald-400 hover:bg-sphera-surface transition-colors"
+                  title="Recentrer la carte mentale"
+                >
+                  <LocateFixed className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsFullscreen((prev) => !prev)}
+                  className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
+                  title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
+                >
+                  {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main View Area */}
       {branches.length === 0 ? (
@@ -2235,7 +2937,7 @@ export function MindmapView({ content }: { content: any }) {
         </div>
       ) : viewMode === 'canvas' ? (
         /* Real Interactive Radial ReactFlow Mind Map Canvas with Collapsible Nodes */
-        <div className={`relative w-full rounded-2xl border border-sphera-border bg-[#070b14] overflow-hidden shadow-2xl ${isFullscreen ? 'flex-1 h-full' : 'h-[650px]'}`}>
+        <div className={`relative w-full rounded-2xl border border-sphera-border bg-[#070b14] overflow-hidden shadow-2xl ${isFullscreen ? 'flex-1 h-full' : workspaceSlots?.headerSlot ? 'flex-1 min-h-[520px]' : 'h-[650px]'}`}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -2419,9 +3121,11 @@ function LiveVoiceVisualizer({ isPlaying }: { isPlaying: boolean }) {
 export function AudioSummaryView({
   content,
   sessionId,
+  workspaceSlots,
 }: {
   content: any;
-  sessionId?: string | number;
+  sessionId?: string | number | null;
+  workspaceSlots?: WorkspaceSlots;
 }) {
   const { t } = useTranslation('study');
   const audioData = content?.audio || content || {};
@@ -2487,91 +3191,77 @@ export function AudioSummaryView({
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  return (
-    <div className="flex flex-col gap-6">
-      {/* Sleek Podcast Header */}
-      <div className="flex items-center justify-between gap-3 pb-3 border-b border-sphera-border/60">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <AudioLines className="w-4 h-4 text-purple-400 shrink-0" />
-            <span className="text-xs font-bold uppercase tracking-wider text-purple-400">
-              {t('resultViews.podcastTitle')}
+  const audioHeaderPortal = workspaceSlots?.headerSlot
+    ? createPortal(
+        <div className="flex items-center justify-between gap-2 w-full min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <AudioLines className="w-4 h-4 text-purple-400 shrink-0 hidden sm:block" />
+            <span className="text-xs sm:text-sm font-semibold text-white truncate">
+              {currentTitle}
             </span>
           </div>
-          {audioData?.titre && (
-            <h2 className="text-base sm:text-lg font-semibold text-white truncate">
-              {audioData.titre}
-            </h2>
+          {audioUrl && (
+            <a
+              href={audioUrl}
+              download="podcast-revision.mp3"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-sphera-surface border border-sphera-border text-xs font-medium text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 transition-colors shrink-0"
+              title={t('resultViews.downloadMp3')}
+            >
+              <Download className="w-3.5 h-3.5 text-purple-400" />
+              <span>MP3</span>
+            </a>
           )}
-        </div>
+        </div>,
+        workspaceSlots.headerSlot
+      )
+    : null
 
-        {audioUrl && (
-          <a
-            href={audioUrl}
-            download="podcast-revision.mp3"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sphera-surface-2 border border-sphera-border text-xs font-medium text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors shrink-0"
-            title={t('resultViews.downloadMp3')}
-          >
-            <Download className="w-3.5 h-3.5 text-purple-400" />
-            <span>MP3</span>
-          </a>
-        )}
-      </div>
-
-      {/* Modern Studio Audio Player Card */}
-      <div className="p-5 sm:p-6 rounded-2xl bg-sphera-surface-2 border border-sphera-border relative overflow-hidden shadow-sm space-y-5">
-        {/* Dynamic Voice Visualizer connected to voice harmonics & word boundaries */}
-        <LiveVoiceVisualizer isPlaying={isPlaying} />
-
-        {/* Audio Scrubber & Progress */}
-        <div className="space-y-1.5">
-          {audioUrl ? (
-            <input
-              type="range"
-              min={0}
-              max={duration || 100}
-              value={currentTime}
-              onChange={handleSeek}
-              className="w-full accent-purple-400 cursor-pointer h-1.5 bg-sphera-surface rounded-lg appearance-none"
-            />
-          ) : (
-            <div className="h-1.5 w-full bg-sphera-surface rounded-full overflow-hidden">
-              <div
-                className="h-full bg-purple-500 transition-all duration-300"
-                style={{
-                  width: `${
-                    dialogue.length > 0
-                      ? Math.min(100, ((currentTime + 1) / dialogue.length) * 100)
-                      : 0
-                  }%`,
-                }}
-              />
-            </div>
-          )}
-          <div className="flex justify-between text-[11px] font-mono text-sphera-text-muted">
-            <span>
+  const audioFooterDock = workspaceSlots?.footerSlot
+    ? createPortal(
+        <div className="max-w-3xl mx-auto space-y-2">
+          {/* Compact Scrubber */}
+          <div className="flex items-center gap-2.5">
+            <span className="text-[11px] font-mono text-sphera-text-muted w-11 text-right shrink-0">
               {audioUrl
                 ? formatTime(currentTime)
-                : (dialogue.length > 0
-                    ? `Réplique ${Math.min(currentTime + 1, dialogue.length)}`
-                    : '0:00')}
+                : (dialogue.length > 0 ? `#${Math.min(currentTime + 1, dialogue.length)}` : '0:00')}
             </span>
-            <span>
-              {audioUrl ? formatTime(duration) : `${dialogue.length} répliques`}
+            {audioUrl ? (
+              <input
+                type="range"
+                min={0}
+                max={duration || 100}
+                value={currentTime}
+                onChange={handleSeek}
+                className="flex-1 accent-purple-400 cursor-pointer h-1.5 bg-sphera-surface rounded-lg appearance-none"
+              />
+            ) : (
+              <div className="flex-1 h-1.5 bg-sphera-surface rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-purple-500 transition-all duration-300"
+                  style={{
+                    width: `${
+                      dialogue.length > 0
+                        ? Math.min(100, ((currentTime + 1) / dialogue.length) * 100)
+                        : 0
+                    }%`,
+                  }}
+                />
+              </div>
+            )}
+            <span className="text-[11px] font-mono text-sphera-text-muted w-11 shrink-0">
+              {audioUrl ? formatTime(duration) : `${dialogue.length} rép.`}
             </span>
           </div>
-        </div>
 
-        {/* Audio Controls (Left Mute, Center Play/Pause & Skip, Right Speed) */}
-        <div className="flex items-center justify-between pt-1">
-          {/* Left: Sound Mute / Unmute Button */}
-          <div className="flex items-center">
+          {/* Transport Controls */}
+          <div className="flex items-center justify-between">
             <button
               type="button"
               onClick={() => podcastStore.toggleMute()}
-              className={`p-2.5 rounded-xl border transition-colors cursor-pointer ${
+              className={`p-2 rounded-xl border transition-colors cursor-pointer ${
                 podcast.isMuted
                   ? 'bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20'
                   : 'bg-sphera-surface border-sphera-border text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2'
@@ -2580,55 +3270,205 @@ export function AudioSummaryView({
             >
               {podcast.isMuted ? <SpeakerSimpleSlash className="w-4 h-4" /> : <SpeakerSimpleHigh className="w-4 h-4" />}
             </button>
-          </div>
 
-          {/* Center: Transport Controls (Reculer 15s, Play/Pause, Avancer 15s) */}
-          <div className="flex items-center gap-2.5 sm:gap-3.5">
-            <button
-              type="button"
-              onClick={() => podcastStore.skip(-15)}
-              className="p-2.5 rounded-xl text-sphera-text-muted hover:text-white hover:bg-sphera-surface border border-sphera-border/60 transition-colors cursor-pointer"
-              title="Reculer de 15s"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-2.5 sm:gap-3.5">
+              <button
+                type="button"
+                onClick={() => podcastStore.skip(-15)}
+                className="p-2 rounded-xl text-sphera-text-muted hover:text-white hover:bg-sphera-surface border border-sphera-border/60 transition-colors cursor-pointer"
+                title="Reculer de 15s"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
 
-            <button
-              type="button"
-              onClick={toggleAudioPlay}
-              className="w-12 h-12 rounded-full bg-purple-500 hover:bg-purple-400 text-white flex items-center justify-center font-bold shadow-lg shadow-purple-500/25 active:scale-95 transition-all shrink-0 cursor-pointer"
-              title={isPlaying ? 'Pause' : 'Lecture'}
-            >
-              {isPlaying ? (
-                <Pause className="w-5 h-5 fill-current" />
-              ) : (
-                <Play className="w-5 h-5 ml-0.5 fill-current" />
-              )}
-            </button>
+              <button
+                type="button"
+                onClick={toggleAudioPlay}
+                className="w-10 h-10 rounded-full bg-purple-500 hover:bg-purple-400 text-white flex items-center justify-center font-bold shadow-lg shadow-purple-500/25 active:scale-95 transition-all shrink-0 cursor-pointer"
+                title={isPlaying ? 'Pause' : 'Lecture'}
+              >
+                {isPlaying ? (
+                  <Pause className="w-4 h-4 fill-current" />
+                ) : (
+                  <Play className="w-4 h-4 ml-0.5 fill-current" />
+                )}
+              </button>
 
-            <button
-              type="button"
-              onClick={() => podcastStore.skip(15)}
-              className="p-2.5 rounded-xl text-sphera-text-muted hover:text-white hover:bg-sphera-surface border border-sphera-border/60 transition-colors cursor-pointer"
-              title="Avancer de 15s"
-            >
-              <RotateCw className="w-4 h-4" />
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={() => podcastStore.skip(15)}
+                className="p-2 rounded-xl text-sphera-text-muted hover:text-white hover:bg-sphera-surface border border-sphera-border/60 transition-colors cursor-pointer"
+                title="Avancer de 15s"
+              >
+                <RotateCw className="w-4 h-4" />
+              </button>
+            </div>
 
-          {/* Right: Playback Speed Button */}
-          <div className="flex items-center">
             <button
               type="button"
               onClick={handleSpeedChange}
-              className="px-3 py-1.5 rounded-xl bg-sphera-surface border border-sphera-border text-xs font-mono font-medium text-sphera-text-muted hover:text-white hover:border-purple-500/30 transition-colors shrink-0 cursor-pointer"
+              className="px-2.5 py-1.5 rounded-xl bg-sphera-surface border border-sphera-border text-xs font-mono font-medium text-sphera-text-muted hover:text-white hover:border-purple-500/30 transition-colors shrink-0 cursor-pointer"
               title="Vitesse de lecture"
             >
               {playbackSpeed}x
             </button>
           </div>
+        </div>,
+        workspaceSlots.footerSlot
+      )
+    : null
+
+  return (
+    <div className="flex flex-col gap-5">
+      {audioHeaderPortal}
+      {audioFooterDock}
+
+      {/* Sleek Podcast Header fallback when outside StudyWorkspacePanel */}
+      {!workspaceSlots?.headerSlot && (
+        <div className="flex items-center justify-between gap-3 pb-3 border-b border-sphera-border/60">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-0.5">
+              <AudioLines className="w-4 h-4 text-purple-400 shrink-0" />
+              <span className="text-xs font-bold uppercase tracking-wider text-purple-400">
+                {t('resultViews.podcastTitle')}
+              </span>
+            </div>
+            {audioData?.titre && (
+              <h2 className="text-base sm:text-lg font-semibold text-white truncate">
+                {audioData.titre}
+              </h2>
+            )}
+          </div>
+
+          {audioUrl && (
+            <a
+              href={audioUrl}
+              download="podcast-revision.mp3"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sphera-surface-2 border border-sphera-border text-xs font-medium text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors shrink-0"
+              title={t('resultViews.downloadMp3')}
+            >
+              <Download className="w-3.5 h-3.5 text-purple-400" />
+              <span>MP3</span>
+            </a>
+          )}
         </div>
-      </div>
+      )}
+
+      {/* Voice Visualizer (compact when docked, full Studio Player when standalone) */}
+      {workspaceSlots?.footerSlot ? (
+        <LiveVoiceVisualizer isPlaying={isPlaying} />
+      ) : (
+        <div className="p-5 sm:p-6 rounded-2xl bg-sphera-surface-2 border border-sphera-border relative overflow-hidden shadow-sm space-y-5">
+          {/* Dynamic Voice Visualizer connected to voice harmonics & word boundaries */}
+          <LiveVoiceVisualizer isPlaying={isPlaying} />
+
+          {/* Audio Scrubber & Progress */}
+          <div className="space-y-1.5">
+            {audioUrl ? (
+              <input
+                type="range"
+                min={0}
+                max={duration || 100}
+                value={currentTime}
+                onChange={handleSeek}
+                className="w-full accent-purple-400 cursor-pointer h-1.5 bg-sphera-surface rounded-lg appearance-none"
+              />
+            ) : (
+              <div className="h-1.5 w-full bg-sphera-surface rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-purple-500 transition-all duration-300"
+                  style={{
+                    width: `${
+                      dialogue.length > 0
+                        ? Math.min(100, ((currentTime + 1) / dialogue.length) * 100)
+                        : 0
+                    }%`,
+                  }}
+                />
+              </div>
+            )}
+            <div className="flex justify-between text-[11px] font-mono text-sphera-text-muted">
+              <span>
+                {audioUrl
+                  ? formatTime(currentTime)
+                  : (dialogue.length > 0
+                      ? `Réplique ${Math.min(currentTime + 1, dialogue.length)}`
+                      : '0:00')}
+              </span>
+              <span>
+                {audioUrl ? formatTime(duration) : `${dialogue.length} répliques`}
+              </span>
+            </div>
+          </div>
+
+          {/* Audio Controls (Left Mute, Center Play/Pause & Skip, Right Speed) */}
+          <div className="flex items-center justify-between pt-1">
+            {/* Left: Sound Mute / Unmute Button */}
+            <div className="flex items-center">
+              <button
+                type="button"
+                onClick={() => podcastStore.toggleMute()}
+                className={`p-2.5 rounded-xl border transition-colors cursor-pointer ${
+                  podcast.isMuted
+                    ? 'bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20'
+                    : 'bg-sphera-surface border-sphera-border text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2'
+                }`}
+                title={podcast.isMuted ? 'Activer le son' : 'Couper le son'}
+              >
+                {podcast.isMuted ? <SpeakerSimpleSlash className="w-4 h-4" /> : <SpeakerSimpleHigh className="w-4 h-4" />}
+              </button>
+            </div>
+
+            {/* Center: Transport Controls (Reculer 15s, Play/Pause, Avancer 15s) */}
+            <div className="flex items-center gap-2.5 sm:gap-3.5">
+              <button
+                type="button"
+                onClick={() => podcastStore.skip(-15)}
+                className="p-2.5 rounded-xl text-sphera-text-muted hover:text-white hover:bg-sphera-surface border border-sphera-border/60 transition-colors cursor-pointer"
+                title="Reculer de 15s"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={toggleAudioPlay}
+                className="w-12 h-12 rounded-full bg-purple-500 hover:bg-purple-400 text-white flex items-center justify-center font-bold shadow-lg shadow-purple-500/25 active:scale-95 transition-all shrink-0 cursor-pointer"
+                title={isPlaying ? 'Pause' : 'Lecture'}
+              >
+                {isPlaying ? (
+                  <Pause className="w-5 h-5 fill-current" />
+                ) : (
+                  <Play className="w-5 h-5 ml-0.5 fill-current" />
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => podcastStore.skip(15)}
+                className="p-2.5 rounded-xl text-sphera-text-muted hover:text-white hover:bg-sphera-surface border border-sphera-border/60 transition-colors cursor-pointer"
+                title="Avancer de 15s"
+              >
+                <RotateCw className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Right: Playback Speed Button */}
+            <div className="flex items-center">
+              <button
+                type="button"
+                onClick={handleSpeedChange}
+                className="px-3 py-1.5 rounded-xl bg-sphera-surface border border-sphera-border text-xs font-mono font-medium text-sphera-text-muted hover:text-white hover:border-purple-500/30 transition-colors shrink-0 cursor-pointer"
+                title="Vitesse de lecture"
+              >
+                {playbackSpeed}x
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dialogue Script */}
       <div className="space-y-4">
