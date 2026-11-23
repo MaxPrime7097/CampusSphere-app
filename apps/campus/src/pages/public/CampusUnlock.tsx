@@ -1,30 +1,37 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { AnimatePresence, motion } from "motion/react";
 import {
-  LockKey as Lock,
-  LockKeyOpen as LockOpen,
-  Copy,
-  Check,
-  SignOut,
-  Books,
-  Sparkle,
-  Users,
-  Trophy,
   ArrowRight,
   ArrowsLeftRight,
+  BellRinging,
+  Books,
+  Check,
+  Copy,
+  LockKey,
+  LockKeyOpen,
+  SignOut,
+  Sparkle,
+  Trophy,
+  UsersThree,
+  WhatsappLogo,
 } from "@phosphor-icons/react";
-import { FaWhatsapp } from "react-icons/fa";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { getCampusStatus, updateUserProfile, type CampusStatusData } from "@/services/api";
 import { UniversityCombobox } from "@/components/forms/UniversityCombobox";
 import { normalizeUniversity } from "@/lib/profileMetadata";
+import {
+  PUBLIC_EASE,
+  PublicMotionProvider,
+  Reveal,
+  StaggerGrid,
+  StaggerItem,
+} from "@/components/public/PublicMotion";
 
 export function CampusUnlock(): JSX.Element {
   const navigate = useNavigate();
@@ -32,8 +39,8 @@ export function CampusUnlock(): JSX.Element {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user, isAuthenticated, logout, refreshUser } = useAuth();
+  const { t } = useTranslation("public");
 
-  // Determine campus slug from query param or user profile
   const initialSlug = () => {
     const fromQuery = searchParams.get("campus") || searchParams.get("ref");
     if (fromQuery) return normalizeUniversity(fromQuery);
@@ -68,7 +75,6 @@ export function CampusUnlock(): JSX.Element {
     }
   }, [user, searchParams, setSearchParams]);
 
-  // Live polling (every 5s) with staleTime: 0 so palier increments live without page refresh
   const { data: campusData, refetch } = useQuery<CampusStatusData>({
     queryKey: ["campus-status", selectedSlug],
     queryFn: () => getCampusStatus(selectedSlug),
@@ -79,12 +85,17 @@ export function CampusUnlock(): JSX.Element {
   const currentCount = campusData?.currentCount ?? 0;
   const targetCount = campusData?.targetCount ?? 50;
   const remainingCount = campusData?.remainingCount ?? Math.max(0, targetCount - currentCount);
-  const percentage = campusData?.percentage ?? Math.min(100, Math.round((currentCount / targetCount) * 100));
+  const percentage =
+    campusData?.percentage ?? Math.min(100, Math.round((currentCount / targetCount) * 100));
   const isOpen = campusData?.isOpen ?? false;
 
-  const campusName = campusData?.name || "Votre établissement";
+  const campusName = campusData?.name || t("campusUnlock.defaultCampusName");
   const referralUrl = `${window.location.origin}/register?campus=${selectedSlug}`;
-  const shareMessage = `🚨 Les gars, CampusSphere arrive sur notre campus (${campusName}) !\n\nOn a besoin de 50 inscrits pour débloquer l'accès officiel (anciens examens avec corrigés, Sphera AI pour réviser, et les sphères de notre promo).\n\nInscrivez-vous ici pour qu'on ouvre notre campus :\n${referralUrl}`;
+  const shareMessage = t("campusUnlock.locked.shareMessage", {
+    campus: campusName,
+    target: targetCount,
+    url: referralUrl,
+  });
 
   const handleWhatsAppShare = () => {
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareMessage)}`;
@@ -96,12 +107,16 @@ export function CampusUnlock(): JSX.Element {
       await navigator.clipboard.writeText(referralUrl);
       setCopySuccess(true);
       toast({
-        title: "Lien copié !",
-        description: "Partagez-le directement dans vos groupes WhatsApp de classe.",
+        title: t("campusUnlock.toasts.copiedTitle"),
+        description: t("campusUnlock.toasts.copiedDesc"),
       });
       setTimeout(() => setCopySuccess(false), 3000);
     } catch {
-      toast({ title: "Erreur", description: "Impossible de copier le lien.", variant: "destructive" });
+      toast({
+        title: t("campusUnlock.toasts.errorTitle"),
+        description: t("campusUnlock.toasts.copyError"),
+        variant: "destructive",
+      });
     }
   };
 
@@ -109,7 +124,11 @@ export function CampusUnlock(): JSX.Element {
     e.preventDefault();
     const cleanPhone = phoneNumber.trim();
     if (!cleanPhone) {
-      toast({ title: "Numéro requis", description: "Veuillez entrer un numéro WhatsApp valide.", variant: "destructive" });
+      toast({
+        title: t("campusUnlock.toasts.phoneRequiredTitle"),
+        description: t("campusUnlock.toasts.phoneRequiredDesc"),
+        variant: "destructive",
+      });
       return;
     }
 
@@ -127,13 +146,13 @@ export function CampusUnlock(): JSX.Element {
       await refreshUser();
       setPhoneSaved(true);
       toast({
-        title: "Numéro enregistré ✓",
-        description: "Vous recevrez une alerte WhatsApp dès que votre promo aura atteint les 50 inscrits.",
+        title: t("campusUnlock.toasts.phoneSavedTitle"),
+        description: t("campusUnlock.toasts.phoneSavedDesc", { target: targetCount }),
       });
     } catch (err: any) {
       toast({
-        title: "Erreur",
-        description: err?.message || "Impossible d'enregistrer le numéro. Veuillez réessayer.",
+        title: t("campusUnlock.toasts.errorTitle"),
+        description: err?.message || t("campusUnlock.toasts.phoneError"),
         variant: "destructive",
       });
     } finally {
@@ -145,8 +164,8 @@ export function CampusUnlock(): JSX.Element {
     const finalVal = tempUniversity === "other" ? customTempUniversity.trim() : tempUniversity;
     if (!finalVal) {
       toast({
-        title: "Nom requis",
-        description: "Veuillez renseigner le nom complet de votre établissement.",
+        title: t("campusUnlock.toasts.nameRequiredTitle"),
+        description: t("campusUnlock.toasts.nameRequiredDesc"),
         variant: "destructive",
       });
       return;
@@ -173,13 +192,13 @@ export function CampusUnlock(): JSX.Element {
         await queryClient.invalidateQueries({ queryKey: ["campus-status"] });
         await refetch();
         toast({
-          title: "Établissement mis à jour",
-          description: "Votre campus a été mis à jour avec succès.",
+          title: t("campusUnlock.toasts.updatedTitle"),
+          description: t("campusUnlock.toasts.updatedDesc"),
         });
       } catch (err: any) {
         toast({
-          title: "Erreur",
-          description: err?.message || "Erreur de mise à jour.",
+          title: t("campusUnlock.toasts.errorTitle"),
+          description: err?.message || t("campusUnlock.toasts.updateError"),
           variant: "destructive",
         });
       }
@@ -187,337 +206,454 @@ export function CampusUnlock(): JSX.Element {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 flex flex-col justify-between">
-      <Helmet>
-        <title>{`Débloquer ${campusName} - CampusSphere`}</title>
-        <meta
-          name="description"
-          content={`Plus que ${remainingCount} inscriptions pour ouvrir CampusSphere à ${campusName}. Partagez sur WhatsApp et débloquez votre promo !`}
-        />
-      </Helmet>
+    <PublicMotionProvider>
+      <div className="cs-pub-font min-h-screen bg-[#f6f4ee] text-[#18181b] flex flex-col justify-between font-nunito">
+        <Helmet>
+          <title>{t("campusUnlock.meta.title", { campus: campusName })}</title>
+          <meta
+            name="description"
+            content={t("campusUnlock.meta.description", {
+              remaining: remainingCount,
+              campus: campusName,
+            })}
+          />
+        </Helmet>
 
-      {/* Navigation Top Bar */}
-      <header className="border-b border-border/40 backdrop-blur-md bg-background/80 sticky top-0 z-50 px-4 sm:px-8 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-xl sm:text-2xl font-bold font-automata campus-gradient bg-clip-text text-transparent">
-            CampusSphere
-          </span>
-          <Badge variant="outline" className="text-xs border-primary/30 text-primary">
-            {isOpen ? "Campus Débloqué ✓" : "Liste d'attente"}
-          </Badge>
-        </div>
+        {/* Barre supérieure sombre cohérente avec le Header public */}
+        <header className="sticky top-0 z-50 bg-[#09090b]/95 backdrop-blur-md border-b border-white/10">
+          <div className="max-w-[1040px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+            <Link to="/cs" className="inline-flex items-center gap-2.5 min-w-0">
+              <img src="/CS.svg" alt="CampusSphere" className="w-8 h-8 shrink-0" />
+              <span className="font-automata text-lg font-bold campus-gradient bg-clip-text text-transparent truncate">
+                CampusSphere
+              </span>
+            </Link>
 
-        <div className="flex items-center gap-2">
-          {isAuthenticated ? (
-            <>
-              <div className="text-right hidden sm:block mr-2">
-                <p className="text-xs font-semibold leading-none">{user?.firstName} {user?.lastName}</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">En attente d'ouverture</p>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={logout}
-                className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1.5 h-8 px-2.5"
-              >
-                <SignOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Déconnexion</span>
-              </Button>
-            </>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/login")}
-              className="text-xs h-8"
-            >
-              Se connecter
-            </Button>
-          )}
-        </div>
-      </header>
-
-      {/* Main Content: Sleek, compact, no heavy cards */}
-      <main className="w-full max-w-2xl mx-auto px-4 py-6 sm:py-8 space-y-6 flex-1">
-        {/* Campus Header & Title */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center p-3 rounded-full bg-primary/10 text-primary mb-1">
-            {isOpen ? (
-              <LockOpen className="h-7 w-7 text-emerald-500 animate-bounce" />
-            ) : (
-              <Lock className="h-7 w-7 text-primary animate-pulse" />
-            )}
-          </div>
-
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-            {campusName}
-          </h1>
-
-          <div className="pt-0.5">
-            <button
-              type="button"
-              onClick={() => setIsSwitchingUniversity(!isSwitchingUniversity)}
-              className="text-xs text-primary hover:underline inline-flex items-center gap-1 font-medium"
-            >
-              <ArrowsLeftRight className="h-3.5 w-3.5" />
-              {isSwitchingUniversity ? "Annuler" : "Ce n'est pas votre établissement ? Changer"}
-            </button>
-          </div>
-
-          {isSwitchingUniversity && (
-            <div className="pt-2 max-w-sm mx-auto space-y-2 animate-in fade-in">
-              <UniversityCombobox
-                value={tempUniversity}
-                onValueChange={setTempUniversity}
-              />
-              {tempUniversity === "other" && (
-                <Input
-                  type="text"
-                  placeholder="Nom complet de votre établissement *"
-                  value={customTempUniversity}
-                  onChange={(e) => setCustomTempUniversity(e.target.value)}
-                  className="text-xs h-9"
-                />
-              )}
-              <Button
-                size="sm"
-                onClick={handleApplyCampusChange}
-                className="w-full text-xs h-8 font-semibold text-white bg-primary hover:bg-primary/90"
-              >
-                Confirmer mon établissement
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {/* Status Section: Unlocked vs Locked Gauge */}
-        {isOpen ? (
-          <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-3">
-            <p className="text-base font-bold text-emerald-700 dark:text-emerald-300">
-              Félicitations ! Votre campus est officiellement ouvert ! 🎉
-            </p>
-            <p className="text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">
-              Votre établissement a franchi le palier des 50 étudiants inscrits. Vous pouvez désormais accéder à l'ensemble du réseau, aux annales et à Sphera AI.
-            </p>
-            <Button
-              size="lg"
-              onClick={() => navigate("/")}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm px-6 shadow-md"
-            >
-              Accéder à mon espace
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4 text-center">
-            {/* The explanation the user loves */}
-            <p className="text-sm text-foreground/80 max-w-lg mx-auto leading-relaxed">
-              Pour garantir des échanges actifs et assez d'annales d'examens avec corrigés dans votre filière, nous ouvrons CampusSphere dès que <strong className="text-foreground">50 étudiants</strong> de votre établissement sont inscrits.
-            </p>
-
-            {/* Compact Progress Gauge */}
-            <div className="space-y-2 max-w-md mx-auto pt-1">
-              <div className="flex justify-between items-end text-xs font-medium">
-                <span className="text-foreground">
-                  <strong className="text-primary text-xl font-extrabold">{currentCount}</strong>
-                  <span className="text-muted-foreground text-sm font-semibold"> / {targetCount} inscrits</span>
-                </span>
-                <span className="text-primary font-bold text-sm">{percentage}%</span>
-              </div>
-              <Progress value={percentage} className="h-2.5 rounded-full bg-primary/10" />
-              <p className="text-xs text-muted-foreground text-right font-medium">
-                Plus que <strong className="text-foreground">{remainingCount}</strong> inscriptions pour débloquer votre promo !
-              </p>
-            </div>
-
-            {/* Primary Viral Action: WhatsApp Share */}
-            <div className="pt-2 space-y-2.5 max-w-md mx-auto">
-              <Button
-                size="lg"
-                onClick={handleWhatsAppShare}
-                className="w-full bg-[#25D366] hover:bg-[#20ba59] text-white font-bold text-sm sm:text-base h-11 shadow-md shadow-[#25D366]/20 transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
-              >
-                <FaWhatsapp className="h-5 w-5 text-white" />
-                Partager sur WhatsApp pour débloquer
-              </Button>
-              <p className="text-[11px] text-muted-foreground">
-                Partagez le lien dans le groupe WhatsApp de votre classe ou de votre filière.
-              </p>
-
-              <div className="flex items-center gap-2 pt-0.5">
-                <Input
-                  readOnly
-                  value={referralUrl}
-                  className="text-xs h-8 bg-background/60 font-mono text-muted-foreground"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCopyLink}
-                  className="h-8 px-3 shrink-0 text-xs gap-1.5"
-                >
-                  {copySuccess ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-                  <span>{copySuccess ? "Copié !" : "Copier"}</span>
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* WhatsApp Notification Form (Compact, white text on orange button) */}
-        {!isOpen && (
-          <div className="pt-2 border-t border-border/50 max-w-md mx-auto text-center space-y-2.5">
-            <div className="space-y-0.5">
-              <h2 className="text-sm font-bold text-foreground">
-                Être alerté sur WhatsApp dès l'ouverture 📱
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Laissez votre numéro WhatsApp pour être prévenu dès que votre promo atteint les 50 inscrits.
-              </p>
-            </div>
-
-            <form onSubmit={handleSavePhone} className="flex gap-2">
-              <Input
-                type="tel"
-                placeholder="Ex: 699404759"
-                value={phoneNumber}
-                onChange={(e) => {
-                  setPhoneNumber(e.target.value);
-                  setPhoneSaved(false);
-                }}
-                className="text-xs h-9 flex-1"
-              />
-              <Button
-                type="submit"
-                disabled={isSavingPhone}
-                className="h-9 px-4 text-xs font-bold whitespace-nowrap bg-primary hover:bg-primary/90 !text-white shadow-sm"
-              >
-                {isSavingPhone ? "Enregistrement..." : phoneSaved ? "Enregistré ✓" : "M'avertir"}
-              </Button>
-            </form>
-
-            {phoneSaved && (
-              <p className="text-xs text-emerald-600 font-medium">
-                Numéro enregistré ✓ Vous recevrez une alerte prioritaire.
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Ce que vous débloquez : Flat, clean, no card wrappers */}
-        <div className="pt-4 border-t border-border/50 space-y-3">
-          <h2 className="text-xs uppercase tracking-wider font-bold text-muted-foreground text-center">
-            Ce que votre promo débloque à 50 inscrits
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
-            <div className="space-y-1">
-              <div className="flex items-center gap-1.5 text-foreground font-semibold text-xs">
-                <Books className="h-4 w-4 text-primary shrink-0" />
-                <span>Annales & corrigés</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground leading-snug">
-                Sujets d'examens et partiels résolus par les étudiants des promos supérieures.
-              </p>
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex items-center gap-1.5 text-foreground font-semibold text-xs">
-                <Sparkle className="h-4 w-4 text-primary shrink-0" />
-                <span>Sphera AI</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground leading-snug">
-                Assistant d'études pour résumer vos cours et s'entraîner aux examens.
-              </p>
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex items-center gap-1.5 text-foreground font-semibold text-xs">
-                <Users className="h-4 w-4 text-primary shrink-0" />
-                <span>Sphères de promo</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground leading-snug">
-                Espace d'entraide, partage de résumés et collaboration avec vos camarades.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Leaderboard / Course au déblocage (Compact list) */}
-        <div className="pt-4 border-t border-border/50 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <Trophy className="h-4 w-4 text-amber-500" />
-              <h2 className="text-xs uppercase tracking-wider font-bold text-foreground">
-                Course au déblocage des campus
-              </h2>
-            </div>
-            <span className="text-[11px] text-muted-foreground">Objectif : 50 inscrits</span>
-          </div>
-
-          <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
-            {campusData?.campuses?.map((c) => {
-              const isSelected = c.slug === selectedSlug;
-              return (
-                <div
-                  key={c.slug}
-                  onClick={() => {
-                    setSelectedSlug(c.slug);
-                    setTempUniversity(c.slug);
-                    setSearchParams({ campus: c.slug }, { replace: true });
-                  }}
-                  className={`py-2 px-3 rounded-md flex items-center justify-between gap-3 text-xs cursor-pointer transition-colors ${
-                    isSelected ? "bg-primary/10 font-medium" : "hover:bg-muted/60"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="font-semibold truncate text-foreground">
-                      {c.name}
-                    </span>
-                    {isSelected && (
-                      <Badge variant="outline" className="text-[10px] py-0 px-1 border-primary text-primary h-4">
-                        Mon campus
-                      </Badge>
-                    )}
+            <div className="flex items-center gap-3 shrink-0">
+              {isAuthenticated ? (
+                <>
+                  <div className="text-right hidden sm:block">
+                    <p className="font-poppins text-xs font-semibold text-white leading-none">
+                      {user?.firstName} {user?.lastName}
+                    </p>
+                    <p className="text-[11px] text-zinc-400 mt-1">
+                      {isOpen
+                        ? t("campusUnlock.header.statusOpen")
+                        : t("campusUnlock.header.statusPending")}
+                    </p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={logout}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 text-zinc-200 font-poppins text-xs font-medium transition-colors"
+                  >
+                    <SignOut size={15} weight="duotone" aria-hidden="true" />
+                    <span className="hidden sm:inline">{t("campusUnlock.header.logout")}</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => navigate("/login")}
+                  className="px-4 py-1.5 rounded-full bg-[#ff9800] hover:bg-[#f57c00] text-white font-poppins text-xs font-semibold transition-colors"
+                >
+                  {t("campusUnlock.header.login")}
+                </button>
+              )}
+            </div>
+          </div>
+        </header>
 
-                  <div className="flex items-center gap-2.5 shrink-0">
-                    <span className="text-[11px] text-muted-foreground">
-                      {c.isOpen ? "Ouvert ✓" : `${c.currentCount} / ${c.targetCount}`}
-                    </span>
-                    <Badge
-                      variant={c.isOpen ? "default" : "secondary"}
-                      className={`text-[10px] py-0 px-1.5 h-4 ${
-                        c.isOpen ? "bg-emerald-600 text-white" : ""
-                      }`}
+        {/* Contenu principal */}
+        <main className="w-full max-w-[760px] mx-auto px-3.5 sm:px-6 py-7 sm:py-10 space-y-6 flex-1">
+          {/* Carte centrale de déblocage */}
+          <motion.section
+            className="rounded-3xl bg-white border border-black/10 p-5 sm:p-8 shadow-sm space-y-6"
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: PUBLIC_EASE }}
+          >
+            {/* En-tête campus */}
+            <div className="text-center space-y-2.5">
+              <motion.div
+                className={`w-14 h-14 mx-auto rounded-2xl flex items-center justify-center ${
+                  isOpen
+                    ? "bg-emerald-500/12 text-emerald-600"
+                    : "bg-[#fff7ed] text-[#ff9800]"
+                }`}
+                initial={{ scale: 0.75, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 320, damping: 20, delay: 0.08 }}
+              >
+                {isOpen ? (
+                  <LockKeyOpen size={28} weight="duotone" aria-hidden="true" />
+                ) : (
+                  <LockKey size={28} weight="duotone" aria-hidden="true" />
+                )}
+              </motion.div>
+
+              <h1 className="font-poppins text-2xl sm:text-3xl font-extrabold text-[#18181b] tracking-tight">
+                {campusName}
+              </h1>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setIsSwitchingUniversity(!isSwitchingUniversity)}
+                  className="inline-flex items-center gap-1.5 font-poppins text-xs font-semibold text-[#e65100] hover:underline"
+                >
+                  <ArrowsLeftRight size={14} weight="duotone" aria-hidden="true" />
+                  {isSwitchingUniversity
+                    ? t("campusUnlock.switcher.cancel")
+                    : t("campusUnlock.switcher.change")}
+                </button>
+              </div>
+
+              <AnimatePresence>
+                {isSwitchingUniversity && (
+                  <motion.div
+                    className="pt-2 max-w-sm mx-auto space-y-2.5 overflow-hidden"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.24, ease: PUBLIC_EASE }}
+                  >
+                    <UniversityCombobox value={tempUniversity} onValueChange={setTempUniversity} />
+                    {tempUniversity === "other" && (
+                      <Input
+                        type="text"
+                        placeholder={t("campusUnlock.switcher.otherPlaceholder")}
+                        value={customTempUniversity}
+                        onChange={(e) => setCustomTempUniversity(e.target.value)}
+                        className="h-10 text-sm bg-white border-black/15"
+                      />
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleApplyCampusChange}
+                      className="w-full h-10 rounded-full bg-[#09090b] hover:bg-zinc-800 text-white font-poppins text-xs font-semibold transition-colors"
                     >
-                      {c.isOpen ? "100%" : `${c.percentage}%`}
-                    </Badge>
+                      {t("campusUnlock.switcher.confirm")}
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* État Ouvert vs Verrouillé */}
+            {isOpen ? (
+              <motion.div
+                className="p-5 sm:p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-3"
+                initial={{ opacity: 0, scale: 0.97 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.35, ease: PUBLIC_EASE }}
+              >
+                <p className="font-poppins text-lg font-bold text-emerald-900">
+                  {t("campusUnlock.open.title")}
+                </p>
+                <p className="text-sm text-emerald-800 max-w-md mx-auto leading-relaxed">
+                  {t("campusUnlock.open.desc", { target: targetCount })}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => navigate("/")}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-poppins text-sm font-semibold shadow-sm transition-all active:scale-[0.98]"
+                >
+                  {t("campusUnlock.open.cta")}
+                  <ArrowRight size={16} weight="bold" aria-hidden="true" />
+                </button>
+              </motion.div>
+            ) : (
+              <div className="space-y-6">
+                <p className="text-sm sm:text-[0.95rem] text-zinc-600 text-center max-w-lg mx-auto leading-relaxed">
+                  {t("campusUnlock.locked.introPrefix")}{" "}
+                  <strong className="text-[#18181b]">
+                    {t("campusUnlock.locked.introBold", { target: targetCount })}
+                  </strong>{" "}
+                  {t("campusUnlock.locked.introSuffix")}
+                </p>
+
+                {/* Jauge de progression animée */}
+                <div className="rounded-2xl bg-[#faf8f5] border border-black/8 p-4 sm:p-5 max-w-lg mx-auto space-y-2.5">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <div>
+                      <span className="font-poppins text-2xl sm:text-3xl font-extrabold text-[#ff9800]">
+                        {currentCount}
+                      </span>
+                      <span className="font-poppins text-sm font-semibold text-zinc-500">
+                        {" "}
+                        {t("campusUnlock.locked.registeredOf", { target: targetCount })}
+                      </span>
+                    </div>
+                    <span className="font-poppins text-sm font-bold text-[#18181b]">
+                      {percentage}%
+                    </span>
+                  </div>
+                  <div className="w-full h-3 rounded-full bg-black/8 overflow-hidden">
+                    <motion.div
+                      className="h-full rounded-full bg-[#ff9800]"
+                      initial={{ width: "4%" }}
+                      animate={{ width: `${Math.max(4, percentage)}%` }}
+                      transition={{ duration: 0.75, ease: PUBLIC_EASE }}
+                    />
+                  </div>
+                  <p className="text-xs sm:text-sm text-zinc-500 text-right">
+                    {t("campusUnlock.locked.remainingPrefix")}{" "}
+                    <strong className="text-[#18181b]">{remainingCount}</strong>{" "}
+                    {remainingCount > 1
+                      ? t("campusUnlock.locked.remainingOther")
+                      : t("campusUnlock.locked.remainingOne")}
+                  </p>
+                </div>
+
+                {/* Action virale principale : Partage WhatsApp + Copier */}
+                <div className="max-w-lg mx-auto space-y-3">
+                  <button
+                    type="button"
+                    onClick={handleWhatsAppShare}
+                    className="w-full h-12 px-5 rounded-full bg-[#25D366] hover:bg-[#1fb857] hover:-translate-y-0.5 text-white font-poppins text-sm sm:text-base font-semibold shadow-md shadow-[#25D366]/20 inline-flex items-center justify-center gap-2.5 transition-all active:scale-[0.98]"
+                  >
+                    <WhatsappLogo size={22} weight="duotone" aria-hidden="true" />
+                    {t("campusUnlock.locked.whatsappBtn")}
+                  </button>
+                  <p className="text-xs text-zinc-500 text-center">
+                    {t("campusUnlock.locked.whatsappHint")}
+                  </p>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <Input
+                      readOnly
+                      value={referralUrl}
+                      aria-label={t("campusUnlock.locked.inviteLinkAria")}
+                      className="h-10 text-xs bg-[#faf8f5] border-black/10 font-mono text-zinc-600"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCopyLink}
+                      className="h-10 px-4 rounded-xl border border-black/12 bg-white hover:bg-[#faf8f5] text-[#18181b] font-poppins text-xs font-semibold inline-flex items-center gap-1.5 shrink-0 transition-all active:scale-[0.97]"
+                    >
+                      <AnimatePresence mode="wait" initial={false}>
+                        {copySuccess ? (
+                          <motion.span
+                            key="copied"
+                            className="inline-flex items-center gap-1.5 text-emerald-700"
+                            initial={{ opacity: 0, scale: 0.85 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.85 }}
+                            transition={{ duration: 0.16 }}
+                          >
+                            <Check size={15} weight="bold" className="text-emerald-600" aria-hidden="true" />
+                            {t("campusUnlock.locked.copied")}
+                          </motion.span>
+                        ) : (
+                          <motion.span
+                            key="copy"
+                            className="inline-flex items-center gap-1.5"
+                            initial={{ opacity: 0, scale: 0.85 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.85 }}
+                            transition={{ duration: 0.16 }}
+                          >
+                            <Copy size={15} weight="duotone" aria-hidden="true" />
+                            {t("campusUnlock.locked.copy")}
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
+                    </button>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      </main>
 
-      {/* Footer with user's verified contact phone */}
-      <footer className="border-t border-border/40 py-4 px-4 text-center text-xs text-muted-foreground">
-        <p>© {new Date().getFullYear()} CampusSphere Cameroun.</p>
-        <p className="mt-0.5">
-          Besoin d'aide ? WhatsApp :{" "}
-          <a
-            href="https://wa.me/237699404759"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline font-semibold"
-          >
-            +237 699 40 47 59
-          </a>
-        </p>
-      </footer>
-    </div>
+                {/* Alerte WhatsApp dès l'ouverture */}
+                <div className="pt-5 border-t border-black/8 max-w-lg mx-auto space-y-3">
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#fff7ed] text-[#ff9800] flex items-center justify-center shrink-0 mt-0.5">
+                      <BellRinging size={17} weight="duotone" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <h2 className="font-poppins text-sm font-bold text-[#18181b]">
+                        {t("campusUnlock.alert.title")}
+                      </h2>
+                      <p className="text-xs text-zinc-500 mt-0.5">
+                        {t("campusUnlock.alert.desc", { target: targetCount })}
+                      </p>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleSavePhone} className="flex flex-col sm:flex-row gap-2">
+                    <Input
+                      type="tel"
+                      placeholder={t("campusUnlock.alert.phonePlaceholder")}
+                      value={phoneNumber}
+                      onChange={(e) => {
+                        setPhoneNumber(e.target.value);
+                        setPhoneSaved(false);
+                      }}
+                      className="h-10 text-sm bg-white border-black/15 flex-1 focus-visible:ring-[#ff9800] focus-visible:border-[#ff9800]"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isSavingPhone}
+                      className="h-10 px-5 rounded-full bg-[#ff9800] hover:bg-[#f57c00] text-white font-poppins text-xs font-semibold whitespace-nowrap transition-all active:scale-[0.98] disabled:opacity-60"
+                    >
+                      {isSavingPhone
+                        ? t("campusUnlock.alert.saving")
+                        : phoneSaved
+                        ? t("campusUnlock.alert.saved")
+                        : t("campusUnlock.alert.notifyMe")}
+                    </button>
+                  </form>
+
+                  {phoneSaved && (
+                    <motion.p
+                      className="text-xs text-emerald-700 font-semibold flex items-center gap-1.5"
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.25 }}
+                    >
+                      <Check size={14} weight="bold" aria-hidden="true" />
+                      {t("campusUnlock.alert.savedConfirm")}
+                    </motion.p>
+                  )}
+                </div>
+              </div>
+            )}
+          </motion.section>
+
+          {/* Ce que ta promo débloque */}
+          <section className="space-y-3.5">
+            <Reveal>
+              <h2 className="font-poppins text-xs font-bold uppercase tracking-[0.12em] text-zinc-500 text-center">
+                {t("campusUnlock.perks.heading", { target: targetCount })}
+              </h2>
+            </Reveal>
+            <StaggerGrid className="grid grid-cols-1 sm:grid-cols-3 gap-3.5" stagger={0.08}>
+              <StaggerItem className="rounded-2xl bg-white border border-black/8 p-4 space-y-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#ff9800]/40 hover:shadow-sm">
+                <div className="w-9 h-9 rounded-xl bg-[#fff7ed] text-[#ff9800] flex items-center justify-center">
+                  <Books size={19} weight="duotone" aria-hidden="true" />
+                </div>
+                <h3 className="font-poppins text-sm font-bold text-[#18181b]">
+                  {t("campusUnlock.perks.p1Title")}
+                </h3>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  {t("campusUnlock.perks.p1Desc")}
+                </p>
+              </StaggerItem>
+
+              <StaggerItem className="rounded-2xl bg-white border border-black/8 p-4 space-y-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#ff9800]/40 hover:shadow-sm">
+                <div className="w-9 h-9 rounded-xl bg-[#fff7ed] text-[#ff9800] flex items-center justify-center">
+                  <Sparkle size={19} weight="duotone" aria-hidden="true" />
+                </div>
+                <h3 className="font-poppins text-sm font-bold text-[#18181b]">
+                  {t("campusUnlock.perks.p2Title")}
+                </h3>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  {t("campusUnlock.perks.p2Desc")}
+                </p>
+              </StaggerItem>
+
+              <StaggerItem className="rounded-2xl bg-white border border-black/8 p-4 space-y-2 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#ff9800]/40 hover:shadow-sm">
+                <div className="w-9 h-9 rounded-xl bg-[#fff7ed] text-[#ff9800] flex items-center justify-center">
+                  <UsersThree size={19} weight="duotone" aria-hidden="true" />
+                </div>
+                <h3 className="font-poppins text-sm font-bold text-[#18181b]">
+                  {t("campusUnlock.perks.p3Title")}
+                </h3>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  {t("campusUnlock.perks.p3Desc")}
+                </p>
+              </StaggerItem>
+            </StaggerGrid>
+          </section>
+
+          {/* Course au déblocage des campus */}
+          <Reveal className="rounded-3xl bg-white border border-black/10 p-5 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-[#fff7ed] text-[#ff9800] flex items-center justify-center">
+                  <Trophy size={17} weight="duotone" aria-hidden="true" />
+                </div>
+                <h2 className="font-poppins text-sm font-bold text-[#18181b]">
+                  {t("campusUnlock.race.title")}
+                </h2>
+              </div>
+              <span className="font-poppins text-xs font-medium text-zinc-500">
+                {t("campusUnlock.race.goal", { target: targetCount })}
+              </span>
+            </div>
+
+            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+              {campusData?.campuses?.map((c) => {
+                const isSelected = c.slug === selectedSlug;
+                const barPct = c.isOpen ? 100 : Math.min(100, c.percentage);
+                return (
+                  <button
+                    key={c.slug}
+                    type="button"
+                    onClick={() => {
+                      setSelectedSlug(c.slug);
+                      setTempUniversity(c.slug);
+                      setSearchParams({ campus: c.slug }, { replace: true });
+                    }}
+                    className={`w-full text-left p-3 rounded-xl border transition-all duration-200 hover:-translate-y-[1px] ${
+                      isSelected
+                        ? "bg-[#fff7ed] border-[#ff9800]/45"
+                        : "bg-[#faf8f5] border-black/5 hover:border-black/15"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3 mb-1.5">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-poppins text-xs sm:text-sm font-semibold text-[#18181b] truncate">
+                          {c.name}
+                        </span>
+                        {isSelected && (
+                          <span className="font-poppins text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-[#ff9800]/15 text-[#e65100] shrink-0">
+                            {t("campusUnlock.race.myCampus")}
+                          </span>
+                        )}
+                      </div>
+                      <span
+                        className={`font-poppins text-xs font-bold shrink-0 ${
+                          c.isOpen ? "text-emerald-600" : "text-zinc-600"
+                        }`}
+                      >
+                        {c.isOpen
+                          ? t("campusUnlock.race.open")
+                          : `${c.currentCount} / ${c.targetCount}`}
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full bg-black/8 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          c.isOpen ? "bg-emerald-500" : "bg-[#ff9800]"
+                        }`}
+                        style={{ width: `${Math.max(4, barPct)}%` }}
+                      />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </Reveal>
+        </main>
+
+        {/* Footer sombre compact */}
+        <footer className="bg-[#09090b] text-zinc-400 border-t border-white/10 py-5 px-4 text-center text-xs">
+          <p>{t("campusUnlock.footer.rights", { year: new Date().getFullYear() })}</p>
+          <p className="mt-1">
+            {t("campusUnlock.footer.needHelp")}{" "}
+            <a
+              href="https://wa.me/237699404759"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#ff9800] hover:underline font-poppins font-semibold"
+            >
+              +237 699 40 47 59
+            </a>
+          </p>
+        </footer>
+      </div>
+    </PublicMotionProvider>
   );
 }
+
 export default CampusUnlock;

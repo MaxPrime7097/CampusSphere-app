@@ -62,7 +62,6 @@ const CookiePolicy = lazy(() => import("./pages/public/CookiePolicy").then(m => 
 const DataDeletion = lazy(() => import("./pages/public/DataDeletion").then(m => ({ default: m.DataDeletion })));
 const LegalNotice = lazy(() => import("./pages/public/LegalNotice").then(m => ({ default: m.LegalNotice })));
 const TermsOfSale = lazy(() => import("./pages/public/TermsOfSale").then(m => ({ default: m.TermsOfSale })));
-const Waitinglist = lazy(() => import("./pages/public/Waitinglist").then(m => ({ default: m.Waitinglist })));
 const CampusUnlock = lazy(() => import("./pages/public/CampusUnlock").then(m => ({ default: m.CampusUnlock })));
 const Policies = lazy(() => import("./pages/public/Policies").then(m => ({ default: m.Policies })));
 const ImpactScoreInfo = lazy(() => import("./pages/public/ImpactScoreInfo").then(m => ({ default: m.ImpactScoreInfo })));
@@ -169,12 +168,18 @@ const HomeOrLanding = () => {
   );
 };
 
+const LegacyCsIncRedirect = () => {
+  const { pathname, search, hash } = useLocation();
+  const nextPath = pathname.replace(/^\/cs-inc(?=\/|$)/, "/cs") || "/cs";
+  return <Navigate to={`${nextPath}${search}${hash}`} replace />;
+};
+
 const ScrollToTop = (): null => {
   const { pathname } = useLocation();
   const { isAuthenticated } = useAuth();
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-    const isPublic = pathname.startsWith('/cs-inc') || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/onboarding' || pathname === '/campus-unlock' || pathname === '/waitinglist' || (!isAuthenticated && pathname === '/');
+    const isPublic = pathname === '/cs' || pathname.startsWith('/cs/') || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/onboarding' || pathname === '/campus-unlock' || (!isAuthenticated && pathname === '/');
     if (isPublic) {
       document.documentElement.classList.remove('dark');
     }
@@ -212,7 +217,6 @@ const App = (): React.ReactElement => (
             } />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/campus-unlock" element={<CampusUnlock />} />
-            <Route path="/waitinglist" element={<Navigate to="/campus-unlock" replace />} />
 
             {/* SSO endpoints for Sphera cross-app authentication */}
             <Route path="/sso/bridge" element={<SSOBridge />} />
@@ -419,7 +423,7 @@ const App = (): React.ReactElement => (
             </Route>
 
             {/* Legacy admin route */}
-            <Route path="/cs-inc/private/admin" element={
+            <Route path="/cs/private/admin" element={
               <Protected>
                 <RequireAdminRole>
                   <AdminDashboard />
@@ -428,28 +432,32 @@ const App = (): React.ReactElement => (
             } />
 
             {/* Public pages */}
-            <Route path="/cs-inc" element={<Landing />} />
-            <Route path="/cs-inc/about" element={<About />} />
+            <Route path="/cs" element={<Landing />} />
+            <Route path="/cs/about" element={<About />} />
             <Route path="/become-partner" element={<BecomePartner />} />
-            <Route path="/cs-inc/become-partner" element={<BecomePartner />} />
-            <Route path="/cs-inc/impact-score" element={<ImpactScoreInfo />} />
-            <Route path="/impact-score" element={<Navigate to="/cs-inc/impact-score" replace />} />
-            <Route path="/contact" element={<Navigate to="/cs-inc/contact" replace />} />
-            <Route path="/cs-inc/contact" element={<Contact />} />
-            <Route path="/cs-inc/faq" element={<FAQ />} />
-            <Route path="/cs-inc/policies" element={<Policies />} />
-            <Route path="/cs-inc/policies/privacy" element={<Privacy />} />
-            <Route path="/cs-inc/policies/terms" element={<Terms />} />
-            <Route path="/cs-inc/policies/community-guidelines" element={<CommunityGuidelines />} />
-            <Route path="/cs-inc/policies/copyright" element={<Copyright />} />
-            <Route path="/cs-inc/policies/cookiepolicy" element={<CookiePolicy />} />
-            <Route path="/cs-inc/policies/cookie-policy" element={<Navigate to="/cs-inc/policies/cookiepolicy" replace />} />
-            <Route path="/cs-inc/policies/datadeletion" element={<DataDeletion />} />
-            <Route path="/cs-inc/policies/legal-notice" element={<LegalNotice />} />
-            <Route path="/cs-inc/policies/mentions-legales" element={<LegalNotice />} />
-            <Route path="/cs-inc/policies/terms-of-sale" element={<TermsOfSale />} />
-            <Route path="/cs-inc/policies/cgv" element={<TermsOfSale />} />
-            <Route path="/cs-inc/waitlist" element={<Waitinglist />} />
+            <Route path="/cs/become-partner" element={<BecomePartner />} />
+            <Route path="/cs/impact-score" element={<ImpactScoreInfo />} />
+            <Route path="/impact-score" element={<Navigate to="/cs/impact-score" replace />} />
+            <Route path="/contact" element={<Navigate to="/cs/contact" replace />} />
+            <Route path="/cs/contact" element={<Contact />} />
+            <Route path="/cs/faq" element={<FAQ />} />
+            <Route path="/cs/policies" element={<Policies />} />
+            <Route path="/cs/policies/privacy" element={<Privacy />} />
+            <Route path="/cs/policies/terms" element={<Terms />} />
+            <Route path="/cs/policies/community-guidelines" element={<CommunityGuidelines />} />
+            <Route path="/cs/policies/copyright" element={<Copyright />} />
+            <Route path="/cs/policies/cookiepolicy" element={<CookiePolicy />} />
+            <Route path="/cs/policies/cookie-policy" element={<Navigate to="/cs/policies/cookiepolicy" replace />} />
+            <Route path="/cs/policies/datadeletion" element={<DataDeletion />} />
+            <Route path="/cs/policies/legal-notice" element={<LegalNotice />} />
+            <Route path="/cs/policies/mentions-legales" element={<LegalNotice />} />
+            <Route path="/cs/policies/terms-of-sale" element={<TermsOfSale />} />
+            <Route path="/cs/policies/cgv" element={<TermsOfSale />} />
+
+            {/* Rétrocompatibilité SEO & liens existants : /cs-inc/* → /cs/* */}
+            <Route path="/cs-inc" element={<LegacyCsIncRedirect />} />
+            <Route path="/cs-inc/*" element={<LegacyCsIncRedirect />} />
+
             <Route path="/403" element={<Forbidden />} />
 
             {/* 404 */}

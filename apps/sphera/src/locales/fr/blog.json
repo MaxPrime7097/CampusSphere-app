@@ -1,13 +1,14 @@
 {
   "seo": {
     "listTitle": "Le Blog Sphera — Méthodes de Révision, IA & Réussite Étudiante",
-    "listDescription": "Découvrez nos guides complets pour réviser efficacement vos examens : Active Recall, répétition espacée, révisions de partiels et utilisation intelligente de l'IA.",
+    "listDescription": "Découvre nos guides complets pour réviser efficacement tes examens : Active Recall, répétition espacée et utilisation intelligente de l'IA.",
     "ogTitle": "Le Blog Sphera — Méthodes de Révision & Réussite Étudiante",
-    "ogDescription": "Guides, méthodologies et astuces cognitives pour valider ses examens et réviser sans stress."
+    "ogDescription": "Guides, méthodologies et astuces cognitives pour valider tes examens et réviser sans stress."
   },
   "list": {
+    "eyebrow": "Ressources & méthodes",
     "title": "Le Blog Sphera",
-    "subtitle": "Des guides complets et des méthodes prouvées par les sciences cognitives pour réussir vos partiels et réviser plus efficacement.",
+    "subtitle": "Guides pratiques et méthodes issues des sciences cognitives pour réviser plus efficacement et réussir tes examens.",
     "featured": "À la une",
     "allCategory": "Tous",
     "readArticle": "Lire l'article",
@@ -16,9 +17,9 @@
   "detail": {
     "back": "Retour au blog",
     "cta": {
-      "badge": "Passez à l'action",
-      "title": "Automatisez vos révisions avec Sphera",
-      "description": "Importez vos polycopiés et PDF de cours. Obtenez des questions de quiz, flashcards et une fiche de synthèse en 30 secondes.",
+      "badge": "Passe à l'action",
+      "title": "Automatise tes révisions avec Sphera",
+      "description": "Importe tes polycopiés et cours PDF. Obtiens des quiz, flashcards et une fiche structurée en 30 secondes.",
       "button": "Commencer gratuitement"
     },
     "related": {

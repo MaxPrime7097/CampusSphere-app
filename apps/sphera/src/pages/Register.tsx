@@ -1,10 +1,9 @@
 import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { LanguageSwitcher } from '@cs/i18n'
 import { registerOnSphera, getCurrentUser, setTokens, clearTokens } from '../services/spheraApi'
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
-import { SpheraAuthSidePanel } from '../components/auth/SpheraAuthSidePanel'
+import { SpheraAuthSidePanel, SpheraAuthLanguageToggle } from '../components/auth/SpheraAuthSidePanel'
 import { openSsoPopup } from '@cs/sso'
 import { GoogleIcon } from '../components/icons/GoogleIcon'
 import { Eye, EyeSlash as EyeOff, Spinner as Loader2, User, Envelope as Mail, Lock, WarningCircle as AlertCircle } from "@phosphor-icons/react";
@@ -84,9 +83,9 @@ export default function Register() {
       clearTokens()
       const msg = err?.message || ''
       if (msg.includes('blocked') || msg.includes('popup')) {
-        setError("La fenêtre d'inscription CampusSphere a été bloquée par votre navigateur. Veuillez autoriser les fenêtres pop-up pour continuer.")
+        setError(t('errors.csPopupBlocked'))
       } else if (msg.includes('cancelled') || msg.includes('closed')) {
-        setError("L'inscription via CampusSphere a été annulée.")
+        setError(t('errors.csPopupCancelled'))
       } else {
         setError(msg || t('register.ssoError'))
       }
@@ -114,9 +113,9 @@ export default function Register() {
       clearTokens()
       const msg = err?.message || ''
       if (msg.includes('blocked') || msg.includes('popup')) {
-        setError("La fenêtre d'inscription Google a été bloquée par votre navigateur. Veuillez autoriser les fenêtres pop-up pour continuer.")
+        setError(t('errors.googlePopupBlocked'))
       } else if (msg.includes('cancelled') || msg.includes('closed')) {
-        setError("L'inscription via Google a été annulée.")
+        setError(t('errors.googlePopupCancelled'))
       } else {
         setError(msg || t('register.ssoError'))
       }
@@ -130,17 +129,19 @@ export default function Register() {
       {/* ── Left Column: Auth Form ──────────────────────────────── */}
       <div className="flex flex-col justify-between p-6 sm:p-12 overflow-y-auto relative z-10">
         
-        {/* Top Header Bar: Logo + Sélecteur de langue */}
+        {/* Top Header Bar: Logo + Mobile Language Switcher */}
         <div className="flex items-center justify-between w-full max-w-md mx-auto pt-2 pb-6 border-b border-sphera-border/40 mb-6">
           <Link to="/" className="inline-flex items-center gap-3 group">
             <img src="/sphera_logo.svg" alt="Sphera logo" className="h-9 w-auto group-hover:scale-105 transition-transform" />
             <span className="font-display font-bold text-2xl tracking-tight text-white">Sphera</span>
-            <span className="text-[10px] font-bold text-sphera-green bg-sphera-green/10 border border-sphera-green/30 px-2 py-0.5 rounded-full uppercase tracking-wider">
-              Bêta
+            <span className="text-[10px] font-mono font-bold text-sphera-green bg-sphera-green/10 border border-sphera-green/30 px-2 py-0.5 rounded-full uppercase tracking-wider">
+              {t('beta')}
             </span>
           </Link>
 
-            <LanguageSwitcher variant="toggle" />
+          <div className="lg:hidden">
+            <SpheraAuthLanguageToggle />
+          </div>
         </div>
 
         {/* Center Form Body */}

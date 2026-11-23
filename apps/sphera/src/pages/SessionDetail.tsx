@@ -247,8 +247,8 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
     try {
       const res = await createArtefact(id, {
         type: 'flashcards',
-        title: `Flashcards - ${chapterTitle}`,
-        subtitle: `Flashcards • ${chapterTitle}`,
+        title: `Cartes mémoire - ${chapterTitle}`,
+        subtitle: `Cartes mémoire • ${chapterTitle}`,
         target_chapter: chapterTitle,
         selection_text: chapterSummary,
       })

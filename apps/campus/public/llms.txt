@@ -7,13 +7,13 @@
 CampusSphere facilite la transition et la vie quotidienne des étudiants du supérieur. La plateforme élimine la dispersion de l'information entre de multiples canaux non officiels en centralisant les discussions de promotion, les événements de campus et les documents d'études.
 
 - Site officiel : https://campussphere.app
-- Landing page publique : https://campussphere.app/cs-inc
+- Landing page publique : https://campussphere.app/cs
 - Assistante IA de révision : https://sphera.campussphere.app
 - Inscription : https://campussphere.app/register
 - Connexion : https://campussphere.app/login
-- À propos : https://campussphere.app/cs-inc/about
-- FAQ : https://campussphere.app/cs-inc/faq
-- Contact : https://campussphere.app/cs-inc/contact
+- À propos : https://campussphere.app/cs/about
+- FAQ : https://campussphere.app/cs/faq
+- Contact : https://campussphere.app/cs/contact
 
 ## Fonctionnalités Principales
 
@@ -40,7 +40,7 @@ CampusSphere facilite la transition et la vie quotidienne des étudiants du sup�
 
 ## Liens Utiles
 - Page d'accueil : https://campussphere.app/
-- Découvrir l'écosystème : https://campussphere.app/cs-inc
+- Découvrir l'écosystème : https://campussphere.app/cs
 - Sphera IA : https://sphera.campussphere.app/
-- Foire aux questions (FAQ) : https://campussphere.app/cs-inc/faq
-- Contact de l'équipe : https://campussphere.app/cs-inc/contact
+- Foire aux questions (FAQ) : https://campussphere.app/cs/faq
+- Contact de l'équipe : https://campussphere.app/cs/contact

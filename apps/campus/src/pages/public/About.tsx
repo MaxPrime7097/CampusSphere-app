@@ -1,515 +1,413 @@
 import React from "react";
 import { Helmet } from "react-helmet-async";
-import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { motion } from "motion/react";
+import {
+  ArrowDown,
+  ArrowUpRight,
+  CheckCircle,
+  Compass,
+  GraduationCap,
+  Handshake,
+  Heart,
+  Lightbulb,
+  Medal,
+  ShieldCheck,
+  Target,
+  UsersThree,
+} from "@phosphor-icons/react";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
-import { UsersThree as Users, Heart, Lightning as Zap, BookOpen, ChatCircleDots as MessageCircle, Medal as Award, Globe, Star, Sparkle as Sparkles, Target, Eye, Users as Users2, Trophy, CaretDown as ChevronDown, BugBeetle as Bug, LinkedinLogo as Linkedin, GithubLogo as Github, Envelope as Mail, ArrowRight, GraduationCap } from "@phosphor-icons/react";
+import { Team01, type TeamMember } from "@/components/ui/team-01";
+import {
+  PUBLIC_EASE,
+  PublicMotionProvider,
+  Reveal,
+  StaggerGrid,
+  StaggerItem,
+} from "@/components/public/PublicMotion";
+import "@/styles/public-pages.css";
+
+const TEAM_MEMBERS: TeamMember[] = [
+  {
+    name: "Nlend Max",
+    role: "CEO & Full-Stack Dev",
+    image: "/team/Max.webp",
+    initials: "NM",
+    shape: "arch",
+    accentBg: "#ffe0b2",
+    socials: {
+      linkedin: "https://www.linkedin.com/in/max-prime-96b651239/",
+      github: "https://github.com/MaxPrime7097",
+      email: "mailto:contact@campussphere.app",
+    },
+  },
+  {
+    name: "Kana Tommi",
+    role: "CMO & Graphic Designer",
+    image: "/team/Tommi.webp",
+    initials: "KT",
+    shape: "peanut",
+    accentBg: "#ffedd5",
+    socials: {
+      linkedin: "https://www.linkedin.com/",
+      email: "mailto:contact@campussphere.app",
+    },
+  },
+  {
+    name: "Hussein Boris",
+    role: "CTO & Full-Stack Dev",
+    image: "/team/Boris.webp",
+    initials: "HB",
+    shape: "oval",
+    accentBg: "#fef3c7",
+    socials: {
+      github: "https://github.com/",
+      email: "mailto:contact@campussphere.app",
+    },
+  },
+  {
+    name: "Nounga Nathan",
+    role: "CPO & Head of Design",
+    image: "/team/Nathan.webp",
+    initials: "NN",
+    shape: "triple",
+    accentBg: "#fed7aa",
+    socials: {
+      linkedin: "https://www.linkedin.com/",
+      email: "mailto:contact@campussphere.app",
+    },
+  },
+  {
+    name: "Gwenaëlle Stelvana",
+    role: "CFO & Community Manager",
+    image: "/team/Gwen.webp",
+    initials: "GS",
+    shape: "leaf",
+    accentBg: "#fde68a",
+    socials: {
+      linkedin: "https://www.linkedin.com/",
+      email: "mailto:contact@campussphere.app",
+    },
+  },
+  {
+    name: "Otti Jacques",
+    role: "Backend Developer",
+    image: "/team/Jacques.webp",
+    initials: "OJ",
+    shape: "pill",
+    accentBg: "#ffedd5",
+    socials: {
+      github: "https://github.com/",
+      email: "mailto:contact@campussphere.app",
+    },
+  },
+];
+
+const VALUE_ICONS = [UsersThree, ShieldCheck, Handshake, Lightbulb, Heart, Medal] as const;
 
 export function About(): JSX.Element {
+  const { t } = useTranslation("public");
   const navigate = useNavigate();
-  const teamMembers = [
-    {
-      name: "Nlend Max",
-      role: "CEO & Full-Stack Dev",
-      description: "Étudiant et développeur, Max a conçu CampusSphere pour simplifier le quotidien universitaire. Il développe la plateforme et coordonne l'équipe.",
-      avatar: "/Team/Nlend.jpg",
-      initials: "NM",
-      socials: {
-        linkedin: "https://www.linkedin.com/in/max-prime-96b651239/",
-        github: "https://github.com/MaxPrime7097",
-        email: "mailto:contact@campussphere.app"
-      }
-    },
-    {
-      name: "Kana Tommi",
-      role: "CMO & Graphic Designer",
-      description: "Passionné de graphisme et de communication, Tommi a créé l'univers visuel de CampusSphere et anime la communauté étudiante.",
-      avatar: "/Team/Tommi.jpg",
-      initials: "KT",
-      socials: {
-        linkedin: "https://www.linkedin.com/",
-        email: "mailto:contact@campussphere.app"
-      }
-    },
-    {
-      name: "Hussein Boris",
-      role: "CTO & Full-Stack Dev",
-      description: "Féru de code et d'architecture, Boris assure le bon fonctionnement technique de la plateforme pour qu'elle reste fluide et sécurisée.",
-      avatar: "/Team/Boris.jpg",
-      initials: "HB",
-      socials: {
-        github: "https://github.com/",
-        email: "mailto:contact@campussphere.app"
-      }
-    },
-    {
-      name: "Nounga Nathan",
-      role: "CPO & Head of Design",
-      description: "Toujours à l'écoute des retours étudiants, Nathan façonne des interfaces claires et agréables pour rendre les révisions faciles.",
-      avatar: "/Team/Nathan.jpg",
-      initials: "NN",
-      socials: {
-        linkedin: "https://www.linkedin.com/",
-        email: "mailto:contact@campussphere.app"
-      }
-    },
-    {
-      name: "Gwenaëlle Stelvana",
-      role: "CFO & Community Manager",
-      description: "Proche des étudiants sur les campus, Gwenaëlle gère les ressources du projet et veille à la convivialité au sein des sphères.",
-      avatar: "/Team/Gwen.png",
-      initials: "GS",
-      socials: {
-        linkedin: "https://www.linkedin.com/",
-        email: "mailto:contact@campussphere.app"
-      }
-    }
-  ];
+
+  const heroPillars = t("about.hero.pillars", { returnObjects: true }) as {
+    num: string;
+    title: string;
+    desc: string;
+  }[];
+  const storySteps = t("about.story.steps", { returnObjects: true }) as {
+    num: string;
+    tag: string;
+    title: string;
+    desc: string;
+  }[];
+  const card1Points = t("about.mission.card1Points", { returnObjects: true }) as string[];
+  const card2Points = t("about.mission.card2Points", { returnObjects: true }) as string[];
+  const values = t("about.values.items", { returnObjects: true }) as {
+    title: string;
+    desc: string;
+  }[];
 
   const teamSchema = {
     "@context": "https://schema.org",
     "@type": "AboutPage",
-    "mainEntity": {
+    mainEntity: {
       "@type": "Organization",
-      "name": "CampusSphere",
-      "url": "https://campussphere.app",
-      "logo": "https://campussphere.app/CS.svg",
-      "description": "Le réseau social académique et collaboratif conçu pour les étudiants.",
-      "founders": teamMembers.map((member) => ({
+      name: "CampusSphere",
+      url: "https://campussphere.app",
+      logo: "https://campussphere.app/CS.svg",
+      description: t("about.meta.schemaDescription"),
+      founders: TEAM_MEMBERS.map((member) => ({
         "@type": "Person",
-        "name": member.name,
-        "jobTitle": member.role,
-        "image": `https://campussphere.app${member.avatar}`,
-        "description": member.description
-      }))
-    }
+        name: member.name,
+        jobTitle: member.role,
+        image: `https://campussphere.app${member.image}`,
+      })),
+    },
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5">
+    <PublicMotionProvider>
       <Helmet>
-        <title>À Propos - Notre Histoire & Vision | CampusSphere</title>
-        <meta name="description" content="Découvrez l'histoire de CampusSphere, l'équipe fondatrice et notre mission : révolutionner la vie étudiante et l'entraide académique." />
-        <link rel="canonical" href="https://campussphere.app/cs-inc/about" />
+        <title>{t("about.meta.title")}</title>
+        <meta name="description" content={t("about.meta.description")} />
+        <link rel="canonical" href="https://campussphere.app/cs/about" />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="À Propos de CampusSphere - Notre Équipe et Vision" />
-        <meta property="og:description" content="Découvrez les coulisses de CampusSphere, la plateforme qui connecte et dynamise les étudiants dans leur quotidien académique." />
-        <meta property="og:url" content="https://campussphere.app/cs-inc/about" />
+        <meta property="og:title" content={t("about.meta.ogTitle")} />
+        <meta property="og:description" content={t("about.meta.ogDescription")} />
+        <meta property="og:url" content="https://campussphere.app/cs/about" />
         <meta property="og:image" content="https://campussphere.app/CS.svg" />
         <meta property="og:site_name" content="CampusSphere" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="À Propos de CampusSphere - Notre Équipe et Vision" />
-        <meta name="twitter:description" content="Découvrez les coulisses de CampusSphere, la plateforme qui connecte et dynamise les étudiants dans leur quotidien académique." />
-        <meta name="twitter:image" content="https://campussphere.app/CS.svg" />
-        <script type="application/ld+json">
-          {JSON.stringify(teamSchema)}
-        </script>
+        <script type="application/ld+json">{JSON.stringify(teamSchema)}</script>
       </Helmet>
-      {/* Navigation: brand + links + CTA */}
+
       <Header />
 
-      {/* Hero Section */}
-      <section className="relative py-10 md:py-4 px-0 overflow-hidden">
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-20 left-10 w-72 h-72 campus-gradient opacity-20 blur-3xl rounded-full"></div>
-          <div className="absolute bottom-20 right-10 w-96 h-96 campus-gradient opacity-20 blur-3xl rounded-full"></div>
-        </div>
-
-        <div className="container mx-auto max-w-9xl">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="text-center lg:text-left space-y-8 campus-animate-fade-in">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5">
-                <span className="text-sm font-medium font-poppins">Notre histoire depuis 2025</span>
-              </div>
-
-              <h1 className="text-4xl font-automata md:text-6xl lg:text-7xl font-bold leading-tight">
-                <span className="campus-gradient bg-clip-text text-transparent">
-                  À Propos de
-                </span>
-                <br />
-                <span className="text-foreground">CampusSphere</span>
-              </h1>
-
-              <p className="font-nunito font-semibold text-xl md:text-2xl text-muted-foreground leading-relaxed">
-                La plateforme qui révolutionne l'apprentissage collaboratif et connecte
-                les étudiants dans une communauté d'entraide et d'excellence.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Button
-                  onClick={() => navigate('/register')}
-                  className="font-poppins campus-gradient text-white hover:opacity-90 text-lg px-8 py-8 rounded-lg transition-all duration-300 hover:scale-105"
-                >
-                  Rejoindre la communauté
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => navigate('/cs-inc/contact')}
-                  className="font-poppins border border-border text-foreground hover:bg-accent text-lg px-8 py-8 rounded-lg transition-all duration-300"
-                >
-                  En savoir plus
-                </Button>
-              </div>
-            </div>
-
-            <div className="relative hidden lg:block campus-animate-slide-up">
-              <div className="absolute inset-0 campus-gradient opacity-15 blur-3xl"></div>
-              <div className="relative campus-glass rounded-3xl p-8 shadow-sm">
-                <img
-                  src="/Illustrations/About us page-amico.svg"
-                  alt="CampusSphere illustration"
-                  loading="lazy"
-                  className="w-full h-auto rounded-2xl"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Notre Histoire */}
-      <section className="py-20 px-4 bg-card/30">
-        <div className="container mx-auto max-w-9xl">
-          <div className="text-center mb-16">
-            <h2 className="font-raleway text-3xl md:text-4xl font-bold mb-4 campus-animate-fade-in">
-              <span className="text-foreground">Notre </span>
-              <span className="campus-gradient bg-clip-text text-transparent">Histoire</span>
-            </h2>
-            <p className="text-xl text-muted-foreground font-nunito font-semibold">
-              L'aventure qui a donné naissance à CampusSphere
-            </p>
-          </div>
-
-          <div className="space-y-8"> 
-            <div className="campus-animate-slide-up">
-              <div className="flex items-start gap-6">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <img src="/icons/vision.png" alt="Vision" />
-                </div>
-                <div>
-                  <h3 className="font-poppins font-semibold text-xl mb-3">La Vision Originelle (2025)</h3>
-                  <p className="text-muted-foreground leading-relaxed font-nunito font-semibold">
-                    CampusSphere est né en 2025 de la vision d'une communauté étudiante plus connectée et collaborative.
-                    Fondée par des étudiants passionnés par l'innovation technologique et l'éducation, notre plateforme
-                    est le fruit d'observations des défis auxquels font face les étudiants modernes.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="campus-animate-slide-up">
-              <div className="flex items-start gap-6">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <img src="/icons/probleme.png" alt="Problème" />
-                </div>
-                <div>
-                  <h3 className="font-poppins font-semibold text-xl mb-3">Le Problème Identifié</h3>
-                  <p className="text-muted-foreground leading-relaxed font-nunito font-semibold">
-                    Nous avons constaté que malgré la richesse du savoir disponible dans nos universités, il manquait
-                    un espace numérique dédié au partage et à la collaboration entre étudiants. Les ressources restaient
-                    souvent isolées et les opportunités d'entraide limitées par des contraintes géographiques.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="campus-animate-slide-up">
-              <div className="flex items-start gap-6">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <img src="/icons/solution.png" alt="Solution" />
-                </div>
-                <div>
-                  <h3 className="font-poppins font-semibold text-xl mb-3">La Solution CampusSphere</h3>
-                  <p className="text-muted-foreground leading-relaxed font-nunito font-semibold">
-                    C'est ainsi qu'est né CampusSphere : une plateforme qui brise ces barrières et crée un écosystème
-                    numérique où chaque étudiant peut contribuer, partager et grandir ensemble. Une communauté
-                    d'entraide et d'excellence académique.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Notre Mission & Objectif */}
-      <section className="py-10 px-0 bg-gradient-to-r from-primary/10 to-primary/5">
-        <div className="container mx-auto max-w-9xl">
-          <div className="grid md:grid-cols-2 gap-12">
-            {/* Mission */}
-            <div className="campus-animate-fade-in">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center">
-                  <img src="/icons/mission.png" alt="Mission" />
-                </div>
-                <h2 className="text-2xl font-semibold font-poppins">Notre Mission</h2>
-              </div>
-              <div className="space-y-4 text-muted-foreground font-nunito font-semibold">
-                <p className="leading-relaxed">
-                  <strong className="text-foreground">Notre mission est simple mais ambitieuse :</strong> démocratiser l'accès au savoir et créer
-                  une communauté étudiante unie par la collaboration et l'entraide.
-                </p>
-                <p className="leading-relaxed">
-                  Nous croyons que le partage de connaissances est la clé du succès académique et professionnel.
-                  En connectant les étudiants, nous construisons un réseau d'intelligence collective bénéfique pour tous.
-                </p>
-                <p className="leading-relaxed">
-                  CampusSphere n'est pas seulement une plateforme technologique, c'est un mouvement
-                  qui transforme la façon dont les étudiants apprennent, partagent et grandissent.
-                </p>
-              </div>
-            </div>
-
-            {/* Objectif */}
-            <div className="campus-animate-slide-up">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center">
-                  <img src="/icons/objectif.png" alt="Objectif" />
-                </div>
-                <h2 className="text-2xl font-semibold font-poppins">Notre Objectif</h2>
-              </div>
-              <div className="space-y-4 text-muted-foreground font-nunito font-semibold">
-                <p className="leading-relaxed">
-                  <strong className="text-foreground">Notre objectif pour l'avenir est ambitieux :</strong> faire de CampusSphere la référence
-                  de l'éducation collaborative en Afrique francophone, avec des outils avancés et des partenariats
-                  stratégiques pour l'insertion professionnelle.
-                </p>
-                <p className="leading-relaxed">
-                  Nous imaginons un écosystème où chaque étudiant peut accéder aux meilleures ressources,
-                  collaborer avec des pairs passionnés et développer les compétences nécessaires pour réussir
-                  dans leur carrière future.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Nos Valeurs */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto max-w-9xl">
-          <div className="text-center mb-16">
-            <h2 className="font-raleway text-3xl md:text-4xl font-bold mb-4 campus-animate-fade-in">
-              <span className="text-foreground">Nos </span>
-              <span className="campus-gradient bg-clip-text text-transparent">Valeurs</span>
-            </h2>
-            <p className="text-xl text-muted-foreground font-nunito font-semibold">
-              Les principes qui guident notre action
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="cs-card p-6 group hover:scale-[1.02] transition-all duration-300 campus-animate-slide-up">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center">
-                  <img src="/icons/collaboration.png" alt="Collaboration" />
-                </div>
-                <h3 className="font-semibold text-lg">Collaboration</h3>
-              </div>
-              <p className="text-muted-foreground">Nous croyons en la force du travail d'équipe et de l'entraide mutuelle.</p>
-            </div>
-
-            <div className="cs-card p-6 group hover:scale-[1.02] transition-all duration-300 campus-animate-slide-up animation-delay-1s">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center">
-                  <img src="/icons/qualite.png" alt="Quality" />
-                </div>
-                <h3 className="font-semibold text-lg">Qualité</h3>
-              </div>
-              <p className="text-muted-foreground">Nous maintenons des standards élevés pour toutes nos ressources partagées.</p>
-            </div>
-
-            <div className="cs-card p-6 group hover:scale-[1.02] transition-all duration-300 campus-animate-slide-up animation-delay-2s">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center">
-                  <img src="/icons/inclusion.png" alt="Inclusion" />
-                </div>
-                <h3 className="font-semibold text-lg">Inclusion</h3>
-              </div>
-              <p className="text-muted-foreground">Ouvert à tous les étudiants, peu importe leur filière ou niveau d'études.</p>
-            </div>
-
-            <div className="cs-card p-6 group hover:scale-[1.02] transition-all duration-300 campus-animate-slide-up animation-delay-3s">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center">
-                  <img src="/icons/innovation.png" alt="Innovation" />
-                </div>
-                <h3 className="font-semibold text-lg">Innovation</h3>
-              </div>
-              <p className="text-muted-foreground">Nous repoussons constamment les limites pour améliorer l'expérience utilisateur.</p>
-            </div>
-
-            <div className="cs-card p-6 group hover:scale-[1.02] transition-all duration-300 campus-animate-slide-up animation-delay-4s">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center">
-                  <img src="/icons/le-respect.png" alt="Respect" />
-                </div>
-                <h3 className="font-semibold text-lg">Respect</h3>
-              </div>
-              <p className="text-muted-foreground">Nous cultivons un environnement respectueux où chaque voix compte et est écoutée.</p>
-            </div>
-
-            <div className="cs-card p-6 group hover:scale-[1.02] transition-all duration-300 campus-animate-slide-up animation-delay-5s">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center">
-                  <img src="/icons/excellence.png" alt="Excellence" />
-                </div>
-                <h3 className="font-semibold text-lg">Excellence</h3>
-              </div>
-              <p className="text-muted-foreground">Nous visons l'excellence dans tout ce que nous entreprenons et proposons.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Notre Équipe */}
-      <section className="py-20 px-4 bg-card/30">
-        <div className="container mx-auto max-w-9xl">
-          <div className="text-center mb-16">
-            <h2 className="font-raleway text-3xl md:text-4xl font-bold mb-4 campus-animate-fade-in">
-              <span className="text-foreground">Notre </span>
-              <span className="campus-gradient bg-clip-text text-transparent">Équipe</span>
-            </h2>
-            <p className="text-xl text-muted-foreground font-nunito font-semibold">
-              Les passionnés derrière CampusSphere
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-            {teamMembers.map((member) => (
-              <div
-                key={member.name}
-                className="group bg-card border border-border/80 rounded-2xl flex flex-col justify-between transition-all duration-300 hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1.5 overflow-hidden"
+      <main className="cs-public">
+        {/* ── 01. Hero éditorial centré ─────────────────────────────── */}
+        <section className="pub-hero" aria-labelledby="about-title">
+          <div className="pub-hero-grid-bg" aria-hidden="true" />
+          <div className="pub-hero-glow" aria-hidden="true" />
+          <div className="pub-container">
+            <div className="pub-hero-center">
+              <motion.h1
+                id="about-title"
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.54, ease: PUBLIC_EASE }}
               >
-                {/* Full-width photo */}
-                <div className="relative w-full aspect-[4/5] overflow-hidden bg-muted">
-                  <img
-                    src={member.avatar}
-                    alt={member.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    loading="lazy"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                      if (fallback) fallback.classList.remove('hidden');
-                    }}
-                  />
-                  <div className="hidden absolute inset-0 flex items-center justify-center text-3xl font-bold font-automata campus-gradient bg-clip-text text-transparent">
-                    {member.initials}
-                  </div>
-                  {/* Subtle bottom shadow overlay */}
-                  <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
-                </div>
+                {t("about.hero.titleLine1")}<br />
+                <em>{t("about.hero.titleLine2")}</em>
+              </motion.h1>
+              <motion.p
+                className="pub-hero-lede"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.08, ease: PUBLIC_EASE }}
+              >
+                {t("about.hero.lede")}
+              </motion.p>
+              <motion.div
+                className="pub-hero-actions"
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.48, delay: 0.16, ease: PUBLIC_EASE }}
+              >
+                <button
+                  type="button"
+                  className="pub-btn pub-btn-orange"
+                  onClick={() => navigate("/register")}
+                >
+                  {t("about.hero.ctaPrimary")}{" "}
+                  <ArrowUpRight size={16} weight="duotone" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="pub-btn pub-btn-ghost-light"
+                  onClick={() =>
+                    document.getElementById("histoire")?.scrollIntoView({ behavior: "smooth" })
+                  }
+                >
+                  {t("about.hero.ctaSecondary")}{" "}
+                  <ArrowDown size={16} weight="duotone" className="pub-icon-down" aria-hidden="true" />
+                </button>
+              </motion.div>
+            </div>
 
-                {/* Details (Name, Role, Socials) */}
-                <div className="p-5 flex flex-col items-center text-center">
-                  <h3 className="font-bold text-lg text-foreground font-poppins mb-1">
-                    {member.name}
-                  </h3>
-                  <span className="text-xs font-semibold text-primary font-poppins mb-4 tracking-wide">
-                    {member.role}
+            <StaggerGrid className="pub-hero-pillars" mount delayChildren={0.2} stagger={0.07}>
+              {heroPillars.map((pillar) => (
+                <StaggerItem key={pillar.num} className="pub-hero-pillar" y={14}>
+                  <span className="pub-hero-pillar-num">{pillar.num}</span>
+                  <b>{pillar.title}</b>
+                  <p>{pillar.desc}</p>
+                </StaggerItem>
+              ))}
+            </StaggerGrid>
+          </div>
+        </section>
+
+        {/* ── 02. Notre histoire en 3 temps ─────────────────────────── */}
+        <section
+          className="pub-section pub-light"
+          id="histoire"
+          aria-label={t("about.story.ariaLabel")}
+        >
+          <div className="pub-container">
+            <Reveal className="pub-split-head">
+              <h2 className="pub-h2">
+                {t("about.story.titleLine1")}<br />
+                <em>{t("about.story.titleLine2")}</em>
+              </h2>
+              <p className="pub-lede">{t("about.story.lede")}</p>
+            </Reveal>
+
+            <StaggerGrid className="pub-story-steps" stagger={0.08}>
+              {storySteps.map((step) => (
+                <StaggerItem key={step.num} as="article" className="pub-story-step">
+                  <div className="pub-story-step-top">
+                    <span className="pub-story-num">{step.num}</span>
+                    <span className="pub-story-tag">{step.tag}</span>
+                  </div>
+                  <h3>{step.title}</h3>
+                  <p>{step.desc}</p>
+                </StaggerItem>
+              ))}
+            </StaggerGrid>
+          </div>
+        </section>
+
+        {/* ── 03. Mission & Cap (2 cartes contrastées) ──────────────── */}
+        <section className="pub-section pub-paper" aria-label={t("about.mission.ariaLabel")}>
+          <div className="pub-container">
+            <StaggerGrid className="pub-mission-grid" stagger={0.1}>
+              <StaggerItem as="article" className="pub-mission-card pub-mission-card-light">
+                <div>
+                  <div className="pub-mission-icon" aria-hidden="true">
+                    <Compass size={24} weight="duotone" />
+                  </div>
+                  <h2>
+                    {t("about.mission.card1TitleStart")}{" "}
+                    <em>{t("about.mission.card1TitleHighlight")}</em>
+                  </h2>
+                  <p>{t("about.mission.card1Body")}</p>
+                </div>
+                <ul className="pub-mission-points">
+                  {card1Points.map((point) => (
+                    <li key={point}>
+                      <CheckCircle size={18} weight="duotone" aria-hidden="true" />
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </StaggerItem>
+
+              <StaggerItem as="article" className="pub-mission-card pub-mission-card-dark">
+                <div>
+                  <div className="pub-mission-icon" aria-hidden="true">
+                    <Target size={24} weight="duotone" />
+                  </div>
+                  <h2>
+                    {t("about.mission.card2TitleStart")}{" "}
+                    <em>{t("about.mission.card2TitleHighlight")}</em>
+                  </h2>
+                  <p>{t("about.mission.card2Body")}</p>
+                </div>
+                <ul className="pub-mission-points">
+                  {card2Points.map((point) => (
+                    <li key={point}>
+                      <CheckCircle size={18} weight="duotone" aria-hidden="true" />
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </StaggerItem>
+            </StaggerGrid>
+          </div>
+        </section>
+
+        {/* ── 04. Nos valeurs ───────────────────────────────────────── */}
+        <section className="pub-section pub-light" aria-label={t("about.values.ariaLabel")}>
+          <div className="pub-container">
+            <Reveal className="pub-split-head">
+              <h2 className="pub-h2">
+                {t("about.values.titleLine1")}<br />
+                <em>{t("about.values.titleLine2")}</em>
+              </h2>
+              <p className="pub-lede">{t("about.values.lede")}</p>
+            </Reveal>
+
+            <StaggerGrid className="pub-values-grid" stagger={0.055}>
+              {values.map((val, idx) => {
+                const Icon = VALUE_ICONS[idx] ?? UsersThree;
+                return (
+                  <StaggerItem key={val.title} as="article" className="pub-value-card">
+                    <div className="pub-value-icon" aria-hidden="true">
+                      <Icon size={22} weight="duotone" />
+                    </div>
+                    <h3>{val.title}</h3>
+                    <p>{val.desc}</p>
+                  </StaggerItem>
+                );
+              })}
+            </StaggerGrid>
+          </div>
+        </section>
+
+        {/* ── 05. L'Équipe (design Team01) + Programme Ambassadeurs ─── */}
+        <section
+          className="pub-section pub-paper"
+          id="equipe"
+          aria-label={t("about.team.ariaLabel")}
+        >
+          <div className="pub-container">
+            <Team01
+              title={t("about.team.title")}
+              highlight={t("about.team.highlight")}
+              subtitle={t("about.team.subtitle")}
+              members={TEAM_MEMBERS}
+            />
+
+            <Reveal delay={0.08}>
+              <div className="pub-ambassador">
+                <div>
+                  <span className="pub-ambassador-badge">
+                    <GraduationCap size={15} weight="duotone" aria-hidden="true" />
+                    {t("about.team.ambassadorBadge")}
                   </span>
-
-                  {/* Social links row */}
-                  <div className="flex items-center justify-center gap-2">
-                    {'linkedin' in member.socials && member.socials.linkedin && (
-                      <a
-                        href={member.socials.linkedin}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`LinkedIn de ${member.name}`}
-                        className="w-9 h-9 rounded-xl bg-secondary/80 hover:bg-primary/15 hover:text-primary flex items-center justify-center transition-all text-muted-foreground"
-                      >
-                        <Linkedin className="w-4 h-4" />
-                      </a>
-                    )}
-                    {member.socials.github && (
-                      <a
-                        href={member.socials.github}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`GitHub de ${member.name}`}
-                        className="w-9 h-9 rounded-xl bg-secondary/80 hover:bg-primary/15 hover:text-primary flex items-center justify-center transition-all text-muted-foreground"
-                      >
-                        <Github className="w-4 h-4" />
-                      </a>
-                    )}
-                    {member.socials.email && (
-                      <a
-                        href={member.socials.email}
-                        aria-label={`Envoyer un email à ${member.name}`}
-                        className="w-9 h-9 rounded-xl bg-secondary/80 hover:bg-primary/15 hover:text-primary flex items-center justify-center transition-all text-muted-foreground"
-                      >
-                        <Mail className="w-4 h-4" />
-                      </a>
-                    )}
-                  </div>
+                  <h3>{t("about.team.ambassadorTitle")}</h3>
+                  <p>{t("about.team.ambassadorDesc")}</p>
                 </div>
+                <button
+                  type="button"
+                  className="pub-btn pub-btn-orange shrink-0"
+                  onClick={() => navigate("/cs/contact")}
+                >
+                  {t("about.team.ambassadorCta")}{" "}
+                  <ArrowUpRight size={16} weight="duotone" aria-hidden="true" />
+                </button>
               </div>
-            ))}
+            </Reveal>
           </div>
+        </section>
 
-          {/* Programme Campus Ambassadeurs */}
-          <div className="mt-14 p-8 rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/10 via-background to-primary/5 text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 border border-primary/30 text-xs font-semibold text-primary">
-                <GraduationCap className="w-3.5 h-3.5" />
-                <span>Programme Campus Ambassadeurs</span>
+        {/* ── 06. CTA Final Orange ──────────────────────────────────── */}
+        <section className="pub-section pub-orange" aria-label={t("about.cta.ariaLabel")}>
+          <div className="pub-container">
+            <Reveal className="pub-cta-inner">
+              <div className="pub-cta-copy">
+                <h2>
+                  {t("about.cta.titleLine1")}<br />
+                  <em>{t("about.cta.titleLine2")}</em>
+                </h2>
+                <p>{t("about.cta.body")}</p>
               </div>
-              <h3 className="text-xl md:text-2xl font-bold font-poppins text-foreground">
-                Envie de représenter CampusSphere dans votre université ?
-              </h3>
-              <p className="text-sm md:text-base text-muted-foreground font-nunito max-w-2xl">
-                Rejoignez notre réseau d'étudiants ambassadeurs, animez les sphères de votre établissement, partagez vos retours et contribuez directement à l'expansion de la communauté.
-              </p>
-            </div>
-            <Button
-              onClick={() => navigate('/cs-inc/contact')}
-              className="campus-gradient text-white font-poppins px-6 py-6 rounded-xl hover:scale-105 transition-all duration-300 shadow-md whitespace-nowrap"
-            >
-              Devenir Ambassadeur
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
+              <div className="pub-cta-actions">
+                <button
+                  type="button"
+                  className="pub-btn pub-btn-dark"
+                  onClick={() => navigate("/register")}
+                >
+                  {t("about.cta.ctaPrimary")}{" "}
+                  <ArrowUpRight size={16} weight="duotone" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="pub-btn pub-btn-ghost-light"
+                  onClick={() => navigate("/cs/contact")}
+                >
+                  {t("about.cta.ctaSecondary")}
+                </button>
+              </div>
+            </Reveal>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
-      {/* Rejoignez-nous CTA */}
-      <section className="py-20 px-4 bg-gradient-to-r from-primary/10 to-primary/5">
-        <div className="container mx-auto max-w-4xl text-center">
-          <div className="campus-animate-fade-in">
-            <h2 className="font-raleway text-3xl md:text-4xl font-bold mb-4">
-              <span className="text-foreground">Rejoignez </span>
-              <span className="campus-gradient bg-clip-text text-transparent">l'Aventure</span>
-            </h2>
-            <p className="text-xl text-muted-foreground mb-8 font-nunito font-semibold">
-              CampusSphere est plus qu'une plateforme, c'est un mouvement. Rejoignez des milliers d'étudiants
-              qui transforment leur expérience universitaire.
-            </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Button
-                onClick={() => navigate('/register')}
-                className="campus-gradient text-white hover:opacity-90 text-lg px-8 py-8 rounded-lg transition-all duration-300 hover:scale-105"
-              >
-                Rejoindre la communauté
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => navigate('/cs-inc/contact')}
-                className="border border-border text-foreground hover:bg-accent text-lg px-8 py-8 rounded-lg transition-all duration-300"
-              >
-                Nous Contacter
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-      {/* Footer */}
       <Footer />
-    </div>
+    </PublicMotionProvider>
   );
 }
 
 export default About;
-

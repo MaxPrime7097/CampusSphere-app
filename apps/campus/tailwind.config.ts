@@ -26,6 +26,8 @@ export default {
     extend: {
       fontFamily: {
         automata: ['Automata', 'sans-serif'],
+        display: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+        manrope: ['Manrope', 'system-ui', 'sans-serif'],
         raleway: ['Raleway', 'sans-serif'],
         poppins: ['Poppins', 'sans-serif'],
         nunito: ['"Nunito Sans"', 'sans-serif'],

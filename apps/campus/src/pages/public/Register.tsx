@@ -1,30 +1,37 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
-import { CaretRight as ChevronRight, Check, Spinner as Loader2, WarningCircle as AlertCircle, Eye, EyeSlash as EyeOff, X, Envelope as Mail, ArrowClockwise as RefreshCw } from "@phosphor-icons/react";
-import { FaFacebook } from "react-icons/fa";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  ArrowClockwise,
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Envelope,
+  Eye,
+  EyeSlash,
+  Spinner,
+  WarningCircle,
+  X,
+} from "@phosphor-icons/react";
 import { FcGoogle } from "react-icons/fc";
-import { Button } from "@/components/ui/button";
+import { z } from "zod";
 import { Input, REGISTRATION_MAX_LENGTHS } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { z } from "zod";
 import {
   supabaseSignUp,
   supabaseSignInWithGoogle,
-  supabaseSignInWithFacebook,
   exchangeSupabaseToken,
   getSupabaseRateLimitMetadata,
   supabaseResendSignupEmail,
   checkUserAvailability,
 } from "@/services/api";
 import { supabase } from "@/lib/supabase";
-import { AuthSidePanel } from "@/components/auth/AuthSidePanel";
+import { AuthLanguageToggle, AuthSidePanel } from "@/components/auth/AuthSidePanel";
 import { useAuth } from "@/contexts/AuthContext";
 
 type Step = 1 | "verify";
@@ -52,12 +59,17 @@ export function Register() {
   const resendLastSubmitAtRef = useRef(0);
 
   const [formData, setFormData] = useState({
-    firstName: "", lastName: "", username: "", email: "",
-    password: "", confirmPassword: "",
+    firstName: "",
+    lastName: "",
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
 
   const getPasswordStrength = (password: string) => {
-    if (!password) return { score: 0, label: t("register.strengthWeak"), color: "text-muted-foreground" };
+    if (!password)
+      return { score: 0, label: t("register.strengthWeak"), color: "text-zinc-400" };
 
     let score = 0;
     if (password.length >= 8) score += 35;
@@ -71,38 +83,53 @@ export function Register() {
 
     const cappedScore = Math.min(score, 100);
 
-    if (cappedScore >= 75) return { score: cappedScore, label: t("register.strengthStrong"), color: "text-emerald-600" };
-    if (cappedScore >= 45) return { score: cappedScore, label: t("register.strengthMedium"), color: "text-amber-600" };
+    if (cappedScore >= 75)
+      return { score: cappedScore, label: t("register.strengthStrong"), color: "text-emerald-600" };
+    if (cappedScore >= 45)
+      return { score: cappedScore, label: t("register.strengthMedium"), color: "text-amber-600" };
     return { score: cappedScore, label: t("register.strengthWeak"), color: "text-red-500" };
   };
 
   const passwordStrength = getPasswordStrength(formData.password);
-  const passwordsMatch = !!formData.password && !!formData.confirmPassword && formData.password === formData.confirmPassword;
+  const passwordsMatch =
+    !!formData.password &&
+    !!formData.confirmPassword &&
+    formData.password === formData.confirmPassword;
   const hasConfirmInput = formData.confirmPassword.length > 0;
 
   const { refreshUser } = useAuth();
 
   useEffect(() => {
-    const campusParam = searchParams.get('campus') || searchParams.get('ref');
+    const campusParam = searchParams.get("campus") || searchParams.get("ref");
     if (campusParam) {
       try {
-        localStorage.setItem('campus_ref', campusParam.toLowerCase().trim());
+        localStorage.setItem("campus_ref", campusParam.toLowerCase().trim());
       } catch {}
     }
 
-    const verified = searchParams.get('verified');
-    if (verified === 'true') {
+    const verified = searchParams.get("verified");
+    if (verified === "true") {
       (async () => {
         try {
-          const { data: { session } } = await supabase.auth.getSession();
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
           if (session) {
             await exchangeSupabaseToken(session.access_token);
             await refreshUser();
             navigate("/onboarding");
-            toast({ title: t("register.toast.emailVerifiedTitle"), description: t("register.toast.continueRegistrationDesc"), duration: 3000 });
+            toast({
+              title: t("register.toast.emailVerifiedTitle"),
+              description: t("register.toast.continueRegistrationDesc"),
+              duration: 3000,
+            });
           }
         } catch (err: any) {
-          toast({ title: t("register.toast.error"), description: err?.message, variant: "destructive" });
+          toast({
+            title: t("register.toast.error"),
+            description: err?.message,
+            variant: "destructive",
+          });
         }
       })();
     }
@@ -111,15 +138,25 @@ export function Register() {
   useEffect(() => {
     if (step !== "verify") return;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session) {
         try {
           await exchangeSupabaseToken(session.access_token);
           await refreshUser();
           navigate("/onboarding");
-          toast({ title: t("register.toast.emailVerifiedTitle"), description: t("register.toast.continueRegistrationDesc"), duration: 3000 });
+          toast({
+            title: t("register.toast.emailVerifiedTitle"),
+            description: t("register.toast.continueRegistrationDesc"),
+            duration: 3000,
+          });
         } catch (err: any) {
-          toast({ title: t("register.toast.error"), description: err?.message, variant: "destructive" });
+          toast({
+            title: t("register.toast.error"),
+            description: err?.message,
+            variant: "destructive",
+          });
         }
       }
     });
@@ -135,25 +172,27 @@ export function Register() {
     return () => window.clearTimeout(timeoutId);
   }, [resendCooldownRemaining]);
 
-  const step1Schema = z.object({
-    firstName: z.string().trim().min(2, t("validation.minChars", { count: 2 })),
-    lastName: z.string().trim().min(2, t("validation.minChars", { count: 2 })),
-    username: z.string().trim().min(3, t("validation.minChars", { count: 3 })),
-    email: z.string().email(t("validation.emailInvalid")),
-    password: z.string().min(8, t("validation.passwordMinChars", { count: 8 })),
-    confirmPassword: z.string(),
-  }).refine(d => d.password === d.confirmPassword, {
-    message: t("validation.passwordsMismatch"),
-    path: ["confirmPassword"],
-  });
+  const step1Schema = z
+    .object({
+      firstName: z.string().trim().min(2, t("validation.minChars", { count: 2 })),
+      lastName: z.string().trim().min(2, t("validation.minChars", { count: 2 })),
+      username: z.string().trim().min(3, t("validation.minChars", { count: 3 })),
+      email: z.string().email(t("validation.emailInvalid")),
+      password: z.string().min(8, t("validation.passwordMinChars", { count: 8 })),
+      confirmPassword: z.string(),
+    })
+    .refine((d) => d.password === d.confirmPassword, {
+      message: t("validation.passwordsMismatch"),
+      path: ["confirmPassword"],
+    });
 
   const handleInputChange = (field: string, value: string) => {
     const sensitiveFields = new Set(["username", "email"]);
     const sanitizedValue = sensitiveFields.has(field) ? value.trim() : value;
-    setFormData(prev => ({ ...prev, [field]: sanitizedValue }));
-    
+    setFormData((prev) => ({ ...prev, [field]: sanitizedValue }));
+
     if (errors[field]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
@@ -164,24 +203,34 @@ export function Register() {
   useEffect(() => {
     const username = formData.username.trim();
     if (step !== 1 || username.length < 3) {
-      setAvailability(prev => ({ ...prev, username: { checking: false, available: true, checkedValue: "" } }));
+      setAvailability((prev) => ({
+        ...prev,
+        username: { checking: false, available: true, checkedValue: "" },
+      }));
       return;
     }
 
     const timeout = setTimeout(async () => {
-      setAvailability(prev => ({ ...prev, username: { ...prev.username, checking: true } }));
+      setAvailability((prev) => ({ ...prev, username: { ...prev.username, checking: true } }));
       try {
         const response = await checkUserAvailability({ username });
         const isAvailable = response?.data?.username?.available ?? true;
-        setAvailability(prev => ({ ...prev, username: { checking: false, available: isAvailable, checkedValue: username } }));
-        
+        setAvailability((prev) => ({
+          ...prev,
+          username: { checking: false, available: isAvailable, checkedValue: username },
+        }));
+
         if (!isAvailable) {
-          setErrors(prev => ({ ...prev, username: t("register.usernameTaken") }));
+          setErrors((prev) => ({ ...prev, username: t("register.usernameTaken") }));
         } else if (errors.username === t("register.usernameTaken")) {
-          setErrors(prev => { const e = { ...prev }; delete e.username; return e; });
+          setErrors((prev) => {
+            const e = { ...prev };
+            delete e.username;
+            return e;
+          });
         }
       } catch {
-        setAvailability(prev => ({ ...prev, username: { ...prev.username, checking: false } }));
+        setAvailability((prev) => ({ ...prev, username: { ...prev.username, checking: false } }));
       }
     }, 400);
 
@@ -191,24 +240,34 @@ export function Register() {
   useEffect(() => {
     const email = formData.email.trim().toLowerCase();
     if (step !== 1 || !email || !z.string().email().safeParse(email).success) {
-      setAvailability(prev => ({ ...prev, email: { checking: false, available: true, checkedValue: "" } }));
+      setAvailability((prev) => ({
+        ...prev,
+        email: { checking: false, available: true, checkedValue: "" },
+      }));
       return;
     }
 
     const timeout = setTimeout(async () => {
-      setAvailability(prev => ({ ...prev, email: { ...prev.email, checking: true } }));
+      setAvailability((prev) => ({ ...prev, email: { ...prev.email, checking: true } }));
       try {
         const response = await checkUserAvailability({ email });
         const isAvailable = response?.data?.email?.available ?? true;
-        setAvailability(prev => ({ ...prev, email: { checking: false, available: isAvailable, checkedValue: email } }));
-        
+        setAvailability((prev) => ({
+          ...prev,
+          email: { checking: false, available: isAvailable, checkedValue: email },
+        }));
+
         if (!isAvailable) {
-          setErrors(prev => ({ ...prev, email: t("register.emailTaken") }));
+          setErrors((prev) => ({ ...prev, email: t("register.emailTaken") }));
         } else if (errors.email === t("register.emailTaken")) {
-          setErrors(prev => { const e = { ...prev }; delete e.email; return e; });
+          setErrors((prev) => {
+            const e = { ...prev };
+            delete e.email;
+            return e;
+          });
         }
       } catch {
-        setAvailability(prev => ({ ...prev, email: { ...prev.email, checking: false } }));
+        setAvailability((prev) => ({ ...prev, email: { ...prev.email, checking: false } }));
       }
     }, 400);
 
@@ -220,12 +279,17 @@ export function Register() {
     try {
       await supabaseSignInWithGoogle();
     } catch (err: any) {
-      toast({ title: t("register.toast.error"), description: err?.message, variant: "destructive" });
+      toast({
+        title: t("register.toast.error"),
+        description: err?.message,
+        variant: "destructive",
+      });
       setIsGoogleLoading(false);
     }
   };
 
-  const handleStep1Submit = async () => {
+  const handleStep1Submit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     const now = Date.now();
     if (now - signupLastSubmitAtRef.current < SUBMIT_DEBOUNCE_MS || isLoading) {
       return;
@@ -235,7 +299,7 @@ export function Register() {
     const validation = step1Schema.safeParse(formData);
     if (!validation.success) {
       const fieldErrors: Record<string, string> = {};
-      validation.error.issues.forEach(issue => {
+      validation.error.issues.forEach((issue) => {
         if (issue.path[0]) fieldErrors[issue.path[0].toString()] = issue.message;
       });
       setErrors(fieldErrors);
@@ -243,12 +307,12 @@ export function Register() {
     }
 
     if (!availability.username.available) {
-      setErrors(prev => ({ ...prev, username: t("register.usernameTaken") }));
+      setErrors((prev) => ({ ...prev, username: t("register.usernameTaken") }));
       return;
     }
 
     if (!availability.email.available) {
-      setErrors(prev => ({ ...prev, email: t("register.emailTaken") }));
+      setErrors((prev) => ({ ...prev, email: t("register.emailTaken") }));
       return;
     }
 
@@ -264,7 +328,11 @@ export function Register() {
 
       setResendCooldownRemaining(RESEND_COOLDOWN_SECONDS);
       setStep("verify");
-      toast({ title: t("register.toast.accountCreatedTitle"), description: t("register.toast.accountCreatedDesc"), duration: 3000 });
+      toast({
+        title: t("register.toast.accountCreatedTitle"),
+        description: t("register.toast.accountCreatedDesc"),
+        duration: 3000,
+      });
     } catch (err: any) {
       const rateLimit = getSupabaseRateLimitMetadata(err);
       if (rateLimit) {
@@ -276,7 +344,11 @@ export function Register() {
           variant: "destructive",
         });
       } else {
-        toast({ title: t("register.toast.error"), description: err?.message, variant: "destructive" });
+        toast({
+          title: t("register.toast.error"),
+          description: err?.message,
+          variant: "destructive",
+        });
       }
     } finally {
       setIsLoading(false);
@@ -310,7 +382,11 @@ export function Register() {
           variant: "destructive",
         });
       } else {
-        toast({ title: t("register.toast.error"), description: err?.message, variant: "destructive" });
+        toast({
+          title: t("register.toast.error"),
+          description: err?.message,
+          variant: "destructive",
+        });
       }
     } finally {
       setIsResending(false);
@@ -318,175 +394,387 @@ export function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 grid lg:grid-cols-2 overflow-hidden">
+    <div className="cs-pub-font min-h-screen bg-white text-[#18181b] grid lg:grid-cols-2">
       <Helmet>
         <title>{t("register.metaTitle")}</title>
         <meta name="description" content={t("register.metaDesc")} />
         <link rel="canonical" href="https://campussphere.app/register" />
       </Helmet>
-      <div className="flex flex-col items-center justify-center p-4 sm:p-8 overflow-y-auto">
-        <div className="w-full max-w-xl">
-        <div className="text-center mb-8 cursor-pointer" onClick={() => navigate("/cs-inc")}>
-          <span className="text-2xl font-bold font-automata text-primary">CampusSphere</span>
-          <p className="text-muted-foreground mt-2">
-            {step === "verify" ? t("register.verifyEmailTitle") : t("register.joinCampusSphere")}
-          </p>
+
+      {/* Colonne Formulaire (Blanc pur) */}
+      <div className="flex flex-col justify-between px-4 sm:px-10 lg:px-14 py-6 sm:py-8 overflow-y-auto">
+        {/* Barre supérieure : logo cliquable → accueil + retour accueil (desktop) / langue (mobile) */}
+        <div className="flex items-center justify-between max-w-lg w-full mx-auto gap-2">
+          <Link
+            to="/cs"
+            aria-label={`CampusSphere — ${t("sidePanel.backHome", { defaultValue: "Accueil" })}`}
+            className="inline-flex items-center gap-2.5 hover:opacity-90 transition-opacity"
+          >
+            <img src="/CS.svg" alt="CampusSphere" className="w-8 h-8" />
+            <span className="font-automata text-lg font-bold campus-gradient bg-clip-text text-transparent">
+              CampusSphere
+            </span>
+          </Link>
+          <div className="flex items-center gap-2.5">
+            <AuthLanguageToggle tone="light" className="lg:hidden" />
+            <Link
+              to="/cs"
+              className="hidden lg:inline-flex items-center gap-1.5 font-poppins text-xs font-semibold text-zinc-500 hover:text-[#18181b] transition-colors"
+            >
+              <ArrowLeft size={14} weight="bold" aria-hidden="true" />
+              {t("sidePanel.backHome", { defaultValue: "Accueil" })}
+            </Link>
+          </div>
         </div>
 
-        <div className="space-y-6 p-5 pt-0 mt-4">
-          {Object.keys(errors).length > 0 && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{t("register.validationError")}</AlertDescription>
-            </Alert>
-          )}
-
-          {/* ── ÉTAPE 1 : Infos personnelles ── */}
+        {/* Bloc inscription */}
+        <div className="w-full max-w-lg mx-auto my-8">
           {step === 1 && (
-            <div className="space-y-4">
-              <CardTitle className="text-center text-2xl">{t("register.createAccount")}</CardTitle>
-
-              {/* Boutons OAuth */}
-              <div className="space-y-2">
-                <Button variant="outline" className="w-full" onClick={handleGoogle} disabled={isGoogleLoading || isLoading} type="button">
-                  {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FcGoogle className="mr-2 h-4 w-4" />}
-                  {t("login.google")}
-                </Button>
-                <Button variant="outline" className="hidden w-full disabled" onClick={() => supabaseSignInWithFacebook()} type="button">
-                  <FaFacebook className="mr-2 h-4 w-4 text-blue-600" />
-                  {t("login.facebook")}
-                </Button>
-              </div>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center"><Separator /></div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">{t("register.orWithEmail")}</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="min-w-0">
-                  <Label>{t("register.lastNameLabel")} *</Label>
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.firstName} value={formData.firstName} onChange={e => handleInputChange("firstName", e.target.value)} className={`w-full min-w-0 ${errors.firstName ? "border-destructive" : ""}`} />
-                  {errors.firstName && <p className="text-xs text-destructive mt-1">{errors.firstName}</p>}
-                </div>
-                <div className="min-w-0">
-                  <Label>{t("register.firstNameLabel")} *</Label>
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.lastName} value={formData.lastName} onChange={e => handleInputChange("lastName", e.target.value)} className={`w-full min-w-0 ${errors.lastName ? "border-destructive" : ""}`} />
-                  {errors.lastName && <p className="text-xs text-destructive mt-1">{errors.lastName}</p>}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="min-w-0">
-                  <Label>{t("register.usernameLabel")} *</Label>
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.username} value={formData.username} onChange={e => handleInputChange("username", e.target.value)} className={`w-full min-w-0 ${errors.username ? "border-destructive" : ""}`} />
-                  {availability.username.checking && <p className="text-xs text-muted-foreground mt-1">{t("register.checkingUsername")}</p>}
-                  {errors.username && <p className="text-xs text-destructive mt-1">{errors.username}</p>}
-                </div>
-                <div className="min-w-0">
-                  <Label>{t("register.emailLabel")} *</Label>
-                  <Input maxLength={REGISTRATION_MAX_LENGTHS.email} type="email" value={formData.email} onChange={e => handleInputChange("email", e.target.value)} className={`w-full min-w-0 ${errors.email ? "border-destructive" : ""}`} />
-                  {availability.email.checking && <p className="text-xs text-muted-foreground mt-1">{t("register.checkingEmail")}</p>}
-                  {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="min-w-0">
-                  <Label>{t("register.passwordLabel")} *</Label>
-                  <div className="relative">
-                    <Input maxLength={REGISTRATION_MAX_LENGTHS.password} type={showPassword ? "text" : "password"} value={formData.password} onChange={e => handleInputChange("password", e.target.value)} className={`w-full min-w-0 pr-10 ${errors.password ? "border-destructive" : ""}`} />
-                    <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0" onClick={() => setShowPassword(!showPassword)}>
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                  <div className="mt-2 space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">{t("register.passwordStrength")}</span>
-                      <span className={`font-medium ${passwordStrength.color}`}>{passwordStrength.label}</span>
-                    </div>
-                    <Progress value={passwordStrength.score} className="h-1.5" />
-                  </div>
-                  {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
-                </div>
-                <div className="min-w-0">
-                  <Label>{t("register.confirmLabel")} *</Label>
-                  <div className="relative">
-                    <Input maxLength={REGISTRATION_MAX_LENGTHS.password} type={showConfirmPassword ? "text" : "password"} value={formData.confirmPassword} onChange={e => handleInputChange("confirmPassword", e.target.value)} className={`w-full min-w-0 pr-10 ${errors.confirmPassword ? "border-destructive" : ""}`} />
-                    <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                  {hasConfirmInput && (
-                    <p className={`mt-1 flex items-center gap-1 text-xs ${passwordsMatch ? "text-emerald-600" : "text-red-500"}`}>
-                      {passwordsMatch ? <Check className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
-                      {passwordsMatch ? t("register.passwordsMatch") : t("register.passwordsDoNotMatch")}
-                    </p>
-                  )}
-                  {errors.confirmPassword && <p className="text-xs text-destructive mt-1">{errors.confirmPassword}</p>}
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-4">
-                <Button onClick={handleStep1Submit} disabled={isLoading || availability.email.checking || availability.username.checking} className="campus-gradient text-white hover:opacity-90">
-                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  {t("register.next")} <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-
-              <div className="text-center mt-8 text-sm text-muted-foreground">
-                <p>
-                  {t("legalAgreement.byContinuing")}{" "}
-                  <Button variant="link" className="px-0 h-auto text-primary" onClick={() => navigate("/cs-inc/policies/terms")}>{t("legalAgreement.terms")}</Button>
-                  {" "}{t("legalAgreement.and")}{" "}
-                  <Button variant="link" className="px-0 h-auto text-primary" onClick={() => navigate("/cs-inc/policies/privacy")}>{t("legalAgreement.privacy")}</Button>
+            <>
+              <div className="mb-6">
+                <h1 className="font-poppins text-2xl sm:text-3xl font-bold text-[#18181b] tracking-tight">
+                  {t("register.createAccount")}
+                </h1>
+                <p className="font-nunito text-sm sm:text-base text-zinc-500 mt-1.5">
+                  {t("register.joinCampusSphere")}
                 </p>
               </div>
-            </div>
+
+              <div className="space-y-5">
+                {Object.keys(errors).length > 0 && (
+                  <Alert variant="destructive">
+                    <WarningCircle size={16} weight="duotone" className="h-4 w-4" />
+                    <AlertDescription>{t("register.validationError")}</AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Google OAuth */}
+                <button
+                  type="button"
+                  onClick={handleGoogle}
+                  disabled={isGoogleLoading || isLoading}
+                  className="w-full h-11 px-4 rounded-xl border border-black/15 bg-white hover:bg-[#faf8f5] hover:border-black/25 text-[#18181b] font-poppins text-sm font-semibold inline-flex items-center justify-center gap-2.5 transition-colors disabled:opacity-60 disabled:pointer-events-none"
+                >
+                  {isGoogleLoading ? (
+                    <Spinner size={18} className="animate-spin text-[#ff9800]" aria-hidden="true" />
+                  ) : (
+                    <FcGoogle className="h-5 w-5" aria-hidden="true" />
+                  )}
+                  {t("login.google")}
+                </button>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <Separator className="bg-black/10" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-3 font-poppins font-medium text-zinc-400">
+                      {t("register.orWithEmail")}
+                    </span>
+                  </div>
+                </div>
+
+                <form onSubmit={handleStep1Submit} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div className="space-y-1.5 min-w-0">
+                      <Label
+                        htmlFor="reg-firstName"
+                        className="font-poppins text-sm font-semibold text-[#18181b]"
+                      >
+                        {t("register.firstNameLabel")} *
+                      </Label>
+                      <Input
+                        id="reg-firstName"
+                        autoComplete="given-name"
+                        maxLength={REGISTRATION_MAX_LENGTHS.firstName}
+                        value={formData.firstName}
+                        onChange={(e) => handleInputChange("firstName", e.target.value)}
+                        className={`h-11 w-full min-w-0 bg-white border-black/15 text-[#18181b] focus-visible:ring-[#ff9800] focus-visible:border-[#ff9800] ${
+                          errors.firstName ? "border-destructive" : ""
+                        }`}
+                      />
+                      {errors.firstName && (
+                        <p className="text-xs text-destructive">{errors.firstName}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5 min-w-0">
+                      <Label
+                        htmlFor="reg-lastName"
+                        className="font-poppins text-sm font-semibold text-[#18181b]"
+                      >
+                        {t("register.lastNameLabel")} *
+                      </Label>
+                      <Input
+                        id="reg-lastName"
+                        autoComplete="family-name"
+                        maxLength={REGISTRATION_MAX_LENGTHS.lastName}
+                        value={formData.lastName}
+                        onChange={(e) => handleInputChange("lastName", e.target.value)}
+                        className={`h-11 w-full min-w-0 bg-white border-black/15 text-[#18181b] focus-visible:ring-[#ff9800] focus-visible:border-[#ff9800] ${
+                          errors.lastName ? "border-destructive" : ""
+                        }`}
+                      />
+                      {errors.lastName && (
+                        <p className="text-xs text-destructive">{errors.lastName}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div className="space-y-1.5 min-w-0">
+                      <Label
+                        htmlFor="reg-username"
+                        className="font-poppins text-sm font-semibold text-[#18181b]"
+                      >
+                        {t("register.usernameLabel")} *
+                      </Label>
+                      <Input
+                        id="reg-username"
+                        autoComplete="username"
+                        maxLength={REGISTRATION_MAX_LENGTHS.username}
+                        value={formData.username}
+                        onChange={(e) => handleInputChange("username", e.target.value)}
+                        className={`h-11 w-full min-w-0 bg-white border-black/15 text-[#18181b] focus-visible:ring-[#ff9800] focus-visible:border-[#ff9800] ${
+                          errors.username ? "border-destructive" : ""
+                        }`}
+                      />
+                      {availability.username.checking && (
+                        <p className="text-xs text-zinc-500">{t("register.checkingUsername")}</p>
+                      )}
+                      {errors.username && (
+                        <p className="text-xs text-destructive">{errors.username}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5 min-w-0">
+                      <Label
+                        htmlFor="reg-email"
+                        className="font-poppins text-sm font-semibold text-[#18181b]"
+                      >
+                        {t("register.emailLabel")} *
+                      </Label>
+                      <Input
+                        id="reg-email"
+                        type="email"
+                        autoComplete="email"
+                        maxLength={REGISTRATION_MAX_LENGTHS.email}
+                        value={formData.email}
+                        onChange={(e) => handleInputChange("email", e.target.value)}
+                        className={`h-11 w-full min-w-0 bg-white border-black/15 text-[#18181b] focus-visible:ring-[#ff9800] focus-visible:border-[#ff9800] ${
+                          errors.email ? "border-destructive" : ""
+                        }`}
+                      />
+                      {availability.email.checking && (
+                        <p className="text-xs text-zinc-500">{t("register.checkingEmail")}</p>
+                      )}
+                      {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div className="space-y-1.5 min-w-0">
+                      <Label
+                        htmlFor="reg-password"
+                        className="font-poppins text-sm font-semibold text-[#18181b]"
+                      >
+                        {t("register.passwordLabel")} *
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="reg-password"
+                          type={showPassword ? "text" : "password"}
+                          autoComplete="new-password"
+                          maxLength={REGISTRATION_MAX_LENGTHS.password}
+                          value={formData.password}
+                          onChange={(e) => handleInputChange("password", e.target.value)}
+                          className={`h-11 w-full min-w-0 pr-10 bg-white border-black/15 text-[#18181b] focus-visible:ring-[#ff9800] focus-visible:border-[#ff9800] ${
+                            errors.password ? "border-destructive" : ""
+                          }`}
+                        />
+                        <button
+                          type="button"
+                          aria-label={
+                            showPassword
+                              ? t("sidePanel.hidePassword", { defaultValue: "Masquer le mot de passe" })
+                              : t("sidePanel.showPassword", { defaultValue: "Afficher le mot de passe" })
+                          }
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-[#18181b] transition-colors"
+                        >
+                          {showPassword ? (
+                            <EyeSlash size={18} weight="duotone" aria-hidden="true" />
+                          ) : (
+                            <Eye size={18} weight="duotone" aria-hidden="true" />
+                          )}
+                        </button>
+                      </div>
+                      <div className="pt-1 space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-zinc-500">{t("register.passwordStrength")}</span>
+                          <span className={`font-medium ${passwordStrength.color}`}>
+                            {passwordStrength.label}
+                          </span>
+                        </div>
+                        <Progress value={passwordStrength.score} className="h-1.5" />
+                      </div>
+                      {errors.password && (
+                        <p className="text-xs text-destructive">{errors.password}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5 min-w-0">
+                      <Label
+                        htmlFor="reg-confirmPassword"
+                        className="font-poppins text-sm font-semibold text-[#18181b]"
+                      >
+                        {t("register.confirmLabel")} *
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="reg-confirmPassword"
+                          type={showConfirmPassword ? "text" : "password"}
+                          autoComplete="new-password"
+                          maxLength={REGISTRATION_MAX_LENGTHS.password}
+                          value={formData.confirmPassword}
+                          onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                          className={`h-11 w-full min-w-0 pr-10 bg-white border-black/15 text-[#18181b] focus-visible:ring-[#ff9800] focus-visible:border-[#ff9800] ${
+                            errors.confirmPassword ? "border-destructive" : ""
+                          }`}
+                        />
+                        <button
+                          type="button"
+                          aria-label={
+                            showConfirmPassword
+                              ? t("sidePanel.hidePassword", { defaultValue: "Masquer le mot de passe" })
+                              : t("sidePanel.showPassword", { defaultValue: "Afficher le mot de passe" })
+                          }
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-[#18181b] transition-colors"
+                        >
+                          {showConfirmPassword ? (
+                            <EyeSlash size={18} weight="duotone" aria-hidden="true" />
+                          ) : (
+                            <Eye size={18} weight="duotone" aria-hidden="true" />
+                          )}
+                        </button>
+                      </div>
+                      {hasConfirmInput && (
+                        <p
+                          className={`flex items-center gap-1 text-xs ${
+                            passwordsMatch ? "text-emerald-600" : "text-red-500"
+                          }`}
+                        >
+                          {passwordsMatch ? (
+                            <Check size={14} weight="bold" aria-hidden="true" />
+                          ) : (
+                            <X size={14} weight="bold" aria-hidden="true" />
+                          )}
+                          {passwordsMatch
+                            ? t("register.passwordsMatch")
+                            : t("register.passwordsDoNotMatch")}
+                        </p>
+                      )}
+                      {errors.confirmPassword && (
+                        <p className="text-xs text-destructive">{errors.confirmPassword}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={
+                      isLoading || availability.email.checking || availability.username.checking
+                    }
+                    className="w-full h-11 mt-2 rounded-full bg-[#ff9800] hover:bg-[#f57c00] text-white font-poppins text-sm font-semibold shadow-md shadow-[#ff9800]/25 inline-flex items-center justify-center gap-2 transition-all disabled:opacity-60 disabled:pointer-events-none"
+                  >
+                    {isLoading ? (
+                      <Spinner size={17} className="animate-spin" aria-hidden="true" />
+                    ) : null}
+                    <span>{t("register.next")}</span>
+                    <ArrowRight size={16} weight="bold" aria-hidden="true" />
+                  </button>
+                </form>
+
+                <p className="text-center font-nunito text-sm text-zinc-500">
+                  {t("register.alreadyHaveAccount")}{" "}
+                  <Link
+                    to="/login"
+                    className="font-poppins font-semibold text-[#e65100] hover:underline"
+                  >
+                    {t("register.signIn")}
+                  </Link>
+                </p>
+              </div>
+            </>
           )}
 
           {/* ── ÉCRAN VÉRIFICATION EMAIL ── */}
           {step === "verify" && (
-            <div className="text-center space-y-6 py-8">
-              <div className="w-20 h-20 campus-gradient rounded-full flex items-center justify-center mx-auto">
-                <Mail className="h-10 w-10 text-white" />
+            <div className="text-center space-y-6 py-6 rounded-3xl bg-[#faf8f5] border border-black/8 p-6 sm:p-8">
+              <div className="w-16 h-16 rounded-2xl bg-[#fff7ed] text-[#ff9800] flex items-center justify-center mx-auto">
+                <Envelope size={32} weight="duotone" aria-hidden="true" />
               </div>
               <div>
-                <h2 className="text-xl font-bold mb-2">{t("register.verifyStep.title")}</h2>
-                <p className="text-muted-foreground text-sm">
-                  {t("register.verifyStep.sentTo")}<br />
-                  <strong className="text-foreground">{formData.email}</strong>
+                <h1 className="font-poppins text-2xl font-bold text-[#18181b] mb-2">
+                  {t("register.verifyStep.title")}
+                </h1>
+                <p className="font-nunito text-zinc-600 text-sm">
+                  {t("register.verifyStep.sentTo")}
+                  <br />
+                  <strong className="text-[#18181b]">{formData.email}</strong>
                 </p>
               </div>
-              <div className="bg-muted/50 rounded-lg p-4 text-sm text-muted-foreground">
+              <div className="bg-white border border-black/8 rounded-2xl p-4 text-sm text-zinc-600 space-y-1">
                 <p>{t("register.verifyStep.clickLink")}</p>
-                <p className="mt-1">{t("register.verifyStep.autoUpdate")}</p>
+                <p>{t("register.verifyStep.autoUpdate")}</p>
               </div>
-              <div className="flex flex-col gap-2">
-                <Button variant="outline" onClick={handleResendEmail} disabled={isResending || resendCooldownRemaining > 0}>
-                  {isResending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                  {resendCooldownRemaining > 0 ? t("register.verifyStep.resendCooldown", { seconds: resendCooldownRemaining }) : t("register.verifyStep.resend")}
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setStep(1)}>
+              <div className="flex flex-col gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleResendEmail}
+                  disabled={isResending || resendCooldownRemaining > 0}
+                  className="w-full h-11 rounded-full bg-[#09090b] hover:bg-zinc-800 text-white font-poppins text-sm font-semibold inline-flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                >
+                  {isResending ? (
+                    <Spinner size={16} className="animate-spin" aria-hidden="true" />
+                  ) : (
+                    <ArrowClockwise size={16} weight="bold" aria-hidden="true" />
+                  )}
+                  {resendCooldownRemaining > 0
+                    ? t("register.verifyStep.resendCooldown", { seconds: resendCooldownRemaining })
+                    : t("register.verifyStep.resend")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="font-poppins text-xs font-semibold text-zinc-500 hover:text-[#18181b] py-2 transition-colors"
+                >
                   {t("register.verifyStep.changeEmail")}
-                </Button>
+                </button>
               </div>
             </div>
           )}
         </div>
 
-        <div className="text-center mt-6">
-          <p className="text-muted-foreground text-sm">
-            {t("register.alreadyHaveAccount")}{" "}
-            <Button variant="link" className="p-0 text-primary" onClick={() => navigate("/login")}>
-              {t("register.signIn")}
-            </Button>
-          </p>
-        </div>
+        {/* Mention légale en bas */}
+        <p className="text-center font-nunito text-xs text-zinc-400 max-w-lg mx-auto leading-relaxed">
+          {t("legalAgreement.byContinuing")}{" "}
+          <Link to="/cs/policies/terms" className="text-zinc-600 hover:text-[#e65100] underline">
+            {t("legalAgreement.terms")}
+          </Link>{" "}
+          {t("legalAgreement.and")}{" "}
+          <Link
+            to="/cs/policies/privacy"
+            className="text-zinc-600 hover:text-[#e65100] underline"
+          >
+            {t("legalAgreement.privacy")}
+          </Link>
+          .
+        </p>
       </div>
-      </div>
+
+      {/* Panneau latéral Encre sombre */}
       <AuthSidePanel />
     </div>
   );

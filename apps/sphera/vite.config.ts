@@ -33,7 +33,7 @@ function prerenderBlogsPlugin(): Plugin {
       ensureDir(blogsDir);
 
       const blogsTitle = 'Le Blog Sphera — Méthodes de Révision, IA & Réussite Étudiante';
-      const blogsDesc = 'Guides complets et méthodes scientifiques pour réviser efficacement vos examens : Active Recall, répétition espacée, gestion des partiels et utilisation de l\'IA.';
+      const blogsDesc = 'Guides complets et méthodes scientifiques pour réviser efficacement tes examens : Active Recall, répétition espacée et utilisation intelligente de l\'IA.';
       const blogsUrl = 'https://sphera.campussphere.app/blogs';
 
       const blogsJsonLd = {
@@ -215,8 +215,8 @@ function prerenderBlogsPlugin(): Plugin {
       // ─────────────────────────────────────────────────────────────
       const pricingDir = path.join(distDir, 'pricing');
       ensureDir(pricingDir);
-      const pricingTitle = 'Tarifs Sphera — Accès 100% Gratuit Bêta & Outils de Révision IA';
-      const pricingDesc = 'Sphera est actuellement 100% gratuit pendant toute la période de bêta ouverte. Profitez de générations illimitées de fiches, quiz interactifs de 20 questions et flashcards par IA.';
+      const pricingTitle = 'Tarifs Sphera — 10 Générations Gratuites / Semaine & Outils de Révision IA';
+      const pricingDesc = 'Sphera est gratuit pendant la bêta ouverte : 10 générations offertes chaque semaine (fiches de cours, corrigés d\'examens, quiz, cartes mémoire, cours en audio, schémas) et tuteur IA illimité.';
       const pricingHtml = template
         .replace(/<title>.*?<\/title>/, `<title>${pricingTitle}</title>`)
         .replace(/<meta name="description" content=".*?" \/>/, `<meta name="description" content="${escapeAttr(pricingDesc)}" />`)
@@ -278,14 +278,14 @@ function prerenderBlogsPlugin(): Plugin {
       const legalDir = path.join(distDir, 'legal-notice');
       ensureDir(legalDir);
       const legalTitle = "Mentions Légales — Sphera by CampusSphere";
-      const legalDesc = "Mentions légales de Sphera : éditeur, hébergeur cloud Render, Microsoft Azure, AWS et coordonnées légales.";
+      const legalDesc = "Mentions légales de Sphera : éditeur, hébergement cloud Vercel, AWS (EC2, S3, Bedrock), Supabase et coordonnées légales.";
       const legalHtml = template
         .replace(/<title>.*?<\/title>/, `<title>${legalTitle}</title>`)
         .replace(/<meta name="description" content=".*?" \/>/, `<meta name="description" content="${escapeAttr(legalDesc)}" />`)
         .replace(/<link rel="canonical" href=".*?" \/>/, `<link rel="canonical" href="https://sphera.campussphere.app/legal-notice" />`)
         .replace(/<div id="root"><\/div>/, `<div id="root"><main style="max-width: 800px; margin: 0 auto; padding: 6rem 1.5rem; color: #e4e4e7;">
           <h1 style="font-size: 2rem; color: #ffffff;">Mentions Légales</h1>
-          <p style="color: #a1a1aa; line-height: 1.6;">Informations légales, éditeur CampusSphere et hébergement cloud (Render, Azure, AWS).</p>
+          <p style="color: #a1a1aa; line-height: 1.6;">Informations légales, éditeur CampusSphere et hébergement cloud (Vercel, AWS EC2/S3/Bedrock, Supabase).</p>
         </main></div>`);
       fs.writeFileSync(path.join(legalDir, 'index.html'), legalHtml, 'utf-8');
       console.log('✓ [prerender-pages] Generated /dist/legal-notice/index.html');

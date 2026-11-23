@@ -1,64 +1,103 @@
 {
   "seo": {
-    "title": "Tarifs Sphera — Accès 100% Gratuit Bêta & Outils de Révision IA",
-    "description": "Sphera est actuellement 100% gratuit pendant toute la période de bêta ouverte. Profitez de générations illimitées de fiches, quiz interactifs et flashcards par IA.",
+    "title": "Tarifs Sphera — 10 Générations Gratuites / Semaine & Outils de Révision IA",
+    "description": "Sphera est gratuit pendant la bêta ouverte : 10 générations offertes chaque semaine (fiches de cours, corrigés d'examens, quiz, cartes mémoire, cours en audio, schémas) et tuteur IA illimité.",
     "ogTitle": "Tarifs Sphera — Accès Gratuit Bêta Ouverte",
-    "ogDescription": "Accédez gratuitement à tous les outils de révision IA : fiches, quiz, flashcards et corrections d'annales sans limite.",
-    "twitterTitle": "Tarifs Sphera — Accès 100% Gratuit Bêta",
-    "twitterDescription": "Générez vos fiches de révision, quiz et flashcards gratuitement avec Sphera pendant la bêta."
+    "ogDescription": "Accède gratuitement aux outils Sphera pendant la bêta : 10 générations par semaine, fiches, corrigés d'examens, cartes mémoire et tuteur IA illimité.",
+    "twitterTitle": "Tarifs Sphera — Accès Gratuit Bêta",
+    "twitterDescription": "10 générations offertes chaque semaine + tuteur IA illimité pendant toute la bêta ouverte Sphera."
   },
   "hero": {
-    "badge": "Bêta ouverte — accès 100% gratuit",
+    "eyebrow": "Tarification simple",
+    "badge": "Bêta ouverte — accès gratuit",
     "titlePart1": "Gratuit pendant",
     "titlePart2": "toute la bêta",
-    "subtitle": "Sphera est en bêta ouverte. Profitez de 5 générations complètes offertes chaque semaine (Fiches, Quiz, Flashcards, Annales) et du Q&A IA illimité, sans carte bancaire. Le plan illimité complet viendra très prochainement."
+    "subtitle": "Profite de 10 générations offertes chaque semaine (renouvelées chaque lundi) sur tous les outils Sphera, plus le tuteur IA et tes notes personnelles 100% gratuits et illimités."
   },
   "card": {
-    "badge": "Actuellement disponible",
+    "badge": "Disponible maintenant",
+    "planName": "Bêta Ouverte",
     "price": "0 XAF",
-    "pricePeriod": "pendant toute la durée de la bêta",
+    "pricePeriod": "10 générations / semaine · renouvelées chaque lundi",
+    "quotaTitle": "Comment ça se décompte",
+    "quotaFullLabel": "Outil complet (Fiche, Corrigé, Quiz, Audio, Schéma)",
+    "quotaFullCost": "1.0 gén",
+    "quotaTargetedLabel": "Par chapitre, surlignage ou régénération",
+    "quotaTargetedCost": "0.5 gén",
+    "quotaFreeLabel": "Tuteur IA illimité & Notes personnelles",
+    "quotaFreeCost": "Gratuit",
     "features": [
-      "5 générations complètes offertes / semaine (Bêta)",
-      "Q&A illimité avec l'IA sur tous tes cours",
-      "Tous les outils — Fiches, Quiz, Flashcards, Annales",
-      "Partage public de sessions et export PDF",
-      "Support pour PDFs scannés et photos (OCR)",
-      "Aucune carte bancaire requise"
+      "Fiches de cours par chapitres & Corrigés d'examens (Complet / Rapide)",
+      "Quiz d'entraînement & Cartes mémoire (cours entier, chapitre ou notion)",
+      "Cours en audio téléchargeables en MP3 & Schémas de cours visuels",
+      "Lecteur interactif, surlignage IA, scans/photos lisibles & notes collées",
+      "Accès complet à Sphera Live (quiz en direct entre camarades)",
+      "Partage par lien, exports PDF / MP3 / Image & suivi sur 14 semaines"
     ],
-    "cta": "Commencer gratuitement →"
+    "cta": "Commencer gratuitement"
+  },
+  "proCard": {
+    "badge": "Bientôt disponible",
+    "planName": "Sphera Pro & Pass Examen",
+    "priceLabel": "Tarif étudiant",
+    "pricePeriod": "Mobile Money (MTN MoMo & Orange Money)",
+    "description": "Pensé pour les semaines intensives de CC et d'examens finaux, avec des formules souples adaptées au budget étudiant.",
+    "features": [
+      "Générations illimitées sur tous les outils (Fiches, Corrigés, Quiz, Cartes mémoire, Audio)",
+      "Corrigés détaillés d'anciennes épreuves sans limite hebdomadaire",
+      "Traitement prioritaire sur les gros polycopiés (jusqu'à 50 Mo)",
+      "Pass Examen flexible sans abonnement obligatoire",
+      "Tarif de lancement réservé aux bêta-testeurs"
+    ],
+    "cta": "Rejoindre la liste d'attente"
   },
   "features": {
-    "title": "Tout ce qui est inclus gratuitement",
+    "eyebrow": "Tout est déjà inclus",
+    "title": "Tous les outils débloqués dès ton inscription",
     "items": {
       "sheets": {
-        "title": "Fiches de révision",
-        "description": "Résumé structuré + points clés + définitions générés automatiquement."
-      },
-      "quiz": {
-        "title": "Quiz interactif",
-        "description": "Des QCM avec explications pour te tester avant l'examen."
-      },
-      "flashcards": {
-        "title": "Flashcards",
-        "description": "Cartes recto/verso pour mémoriser en mode actif."
-      },
-      "qa": {
-        "title": "Q&A avec l'IA",
-        "description": "Pose n'importe quelle question sur ton cours, Sphera répond depuis le document."
+        "title": "Fiches de cours",
+        "description": "Résumé clair par chapitres, définitions, formules et téléchargement PDF."
       },
       "annales": {
-        "title": "Correction d'annales",
-        "description": "Upload ton épreuve, Sphera la corrige section par section avec explications."
+        "title": "Corrigés d'examens",
+        "description": "Correction étape par étape ou réponses rapides sur tes anciennes épreuves, avec export PDF."
       },
-      "ocr": {
-        "title": "OCR pour scans",
-        "description": "Sphera lit même les PDFs scannés et photos de cours."
+      "quiz": {
+        "title": "Quiz d'entraînement",
+        "description": "QCM chronométrés sur tout le cours, un chapitre précis ou une notion libre."
+      },
+      "flashcards": {
+        "title": "Cartes mémoire",
+        "description": "Cartes recto/verso (Question / Réponse) avec suivi Je savais / À revoir."
+      },
+      "qa": {
+        "title": "Tuteur IA sur ton cours",
+        "description": "Pose toutes tes questions gratuitement sur ton document ou dans le chat libre."
+      },
+      "reader": {
+        "title": "Surlignage IA & photos lisibles",
+        "description": "Surligne un passage pour l'expliquer en 1 clic. Lis aussi les polycopiés scannés et photos de tableau."
+      },
+      "audio": {
+        "title": "Cours en audio",
+        "description": "Écoute ton cours expliqué par 2 voix étudiantes, avec script et téléchargement MP3."
+      },
+      "mindmap": {
+        "title": "Schéma du cours",
+        "description": "Vue visuelle des chapitres et liens entre notions, ou plan structuré exportable en image."
+      },
+      "live": {
+        "title": "Sphera Live, suivi & confort",
+        "description": "Quiz en direct avec ta promo, suivi d'activité sur 14 semaines, style d'explication au choix et thèmes Sombre / Clair."
       }
     }
   },
   "waitlist": {
-    "title": "Sois notifié à l'arrivée du Premium",
-    "subtitle": "Laisse ton email. Quand le plan premium sortira, tu seras dans les premiers — avec une offre de lancement réservée aux bêta-testeurs.",
+    "eyebrow": "Accès anticipé",
+    "title": "Sois prévenu au lancement de Sphera Pro",
+    "subtitle": "Laisse ton email pour être informé en avant-première et profiter du tarif lancement réservé aux bêta-testeurs.",
+    "openExternal": "Ouvrir le formulaire dans un nouvel onglet",
     "noSpam": "Aucun spam. Désabonnement en un clic."
   }
 }

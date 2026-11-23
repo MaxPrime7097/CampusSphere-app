@@ -1,59 +1,158 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
-import { Envelope as Mail, MapPin, Clock, PaperPlaneTilt as Send, Sparkle as Sparkles, Heart, CheckCircle, CaretDown as ChevronDown, Spinner as Loader2 } from "@phosphor-icons/react";
-import { FaFacebook, FaInstagram, FaLinkedin, FaTiktok } from "react-icons/fa";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { useTranslation } from "react-i18next";
+import { AnimatePresence, motion } from "motion/react";
+import {
+  ArrowDown,
+  ArrowRight,
+  ArrowUpRight,
+  Check,
+  CheckCircle,
+  Copy,
+  Envelope,
+  FacebookLogo,
+  InstagramLogo,
+  LinkedinLogo,
+  PaperPlaneTilt,
+  Sparkle,
+  Spinner,
+  TiktokLogo,
+  WhatsappLogo,
+} from "@phosphor-icons/react";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { submitContactMessage } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import {
+  PUBLIC_EASE,
+  PublicMotionProvider,
+  Reveal,
+  StaggerGrid,
+  StaggerItem,
+} from "@/components/public/PublicMotion";
+import "@/styles/public-pages.css";
+
+const CONTACT_EMAIL = "contact@campussphere.app";
+
+const SUBJECT_KEYS = [
+  "general",
+  "partnership",
+  "bug",
+  "suggestion",
+  "account",
+  "other",
+] as const;
+
+const SHORTCUT_KEYS = ["partnership", "bug", "suggestion"] as const;
+
+const SOCIAL_LINKS = [
+  {
+    name: "WhatsApp",
+    href: "https://whatsapp.com/channel/0029Vb9I6hzDp2QIHVJYpM44",
+    icon: WhatsappLogo,
+  },
+  {
+    name: "Facebook",
+    href: "https://web.facebook.com/campussphereofficial",
+    icon: FacebookLogo,
+  },
+  {
+    name: "LinkedIn",
+    href: "https://www.linkedin.com/company/campussphere",
+    icon: LinkedinLogo,
+  },
+  {
+    name: "Instagram",
+    href: "https://www.instagram.com/campussphere",
+    icon: InstagramLogo,
+  },
+  {
+    name: "TikTok",
+    href: "https://www.tiktok.com/@campussphere.app",
+    icon: TiktokLogo,
+  },
+] as const;
 
 export function Contact(): JSX.Element {
+  const { t } = useTranslation("public");
   const navigate = useNavigate();
   const { toast } = useToast();
+  const formCardRef = useRef<HTMLDivElement | null>(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSent, setIsSent] = useState(false);
+  const [copiedEmail, setCopiedEmail] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     subject: "",
     message: "",
-    newsletter: false
+    newsletter: false,
   });
+
+  const handleCopyEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(CONTACT_EMAIL);
+      setCopiedEmail(true);
+      setTimeout(() => setCopiedEmail(false), 2000);
+    } catch {
+      window.location.href = `mailto:${CONTACT_EMAIL}`;
+    }
+  };
+
+  const handlePickShortcut = (subjectKey: string) => {
+    setIsSent(false);
+    setFormData((prev) => ({ ...prev, subject: subjectKey }));
+    formCardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.subject || !formData.message) {
-      toast({ variant: "destructive", title: "Erreur", description: "Veuillez remplir tous les champs obligatoires." });
+    if (!formData.name.trim() || !formData.email.trim() || !formData.subject || !formData.message.trim()) {
+      toast({
+        variant: "destructive",
+        title: t("contact.toasts.requiredTitle"),
+        description: t("contact.toasts.requiredDesc"),
+      });
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await submitContactMessage(formData);
-      toast({
-        title: "Message envoyé !",
-        description: "Nous avons bien reçu votre message et vous répondrons dans les plus brefs délais.",
+      await submitContactMessage({
+        ...formData,
+        subject: t(`contact.subjects.${formData.subject}`),
       });
+      toast({
+        title: t("contact.toasts.sentTitle"),
+        description: t("contact.toasts.sentDesc"),
+      });
+      setIsSent(true);
       setFormData({
         name: "",
         email: "",
         subject: "",
         message: "",
-        newsletter: false
+        newsletter: false,
       });
     } catch (error) {
       console.error("Error submitting contact form:", error);
       toast({
         variant: "destructive",
-        title: "Erreur d'envoi",
-        description: "Une erreur est survenue lors de l'envoi de votre message. Veuillez réessayer plus tard.",
+        title: t("contact.toasts.errorTitle"),
+        description: t("contact.toasts.errorDesc"),
       });
     } finally {
       setIsSubmitting(false);
@@ -61,261 +160,430 @@ export function Contact(): JSX.Element {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5">
+    <PublicMotionProvider>
       <Helmet>
-        <title>Contactez l'Équipe CampusSphere | Support & Partenariats</title>
-        <meta name="description" content="Une question, une idée de partenariat ou besoin d'aide sur CampusSphere ? Contactez notre équipe via notre formulaire ou par email." />
-        <link rel="canonical" href="https://campussphere.app/cs-inc/contact" />
+        <title>{t("contact.meta.title")}</title>
+        <meta name="description" content={t("contact.meta.description")} />
+        <link rel="canonical" href="https://campussphere.app/cs/contact" />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="Contact - CampusSphere" />
-        <meta property="og:description" content="Contactez l'équipe CampusSphere pour toute question, retour ou proposition de partenariat campus." />
-        <meta property="og:url" content="https://campussphere.app/cs-inc/contact" />
+        <meta property="og:title" content={t("contact.meta.ogTitle")} />
+        <meta property="og:description" content={t("contact.meta.ogDescription")} />
+        <meta property="og:url" content="https://campussphere.app/cs/contact" />
         <meta property="og:image" content="https://campussphere.app/CS.svg" />
         <meta property="og:site_name" content="CampusSphere" />
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content="Contact - CampusSphere" />
-        <meta name="twitter:description" content="Contactez l'équipe CampusSphere pour toute question, retour ou proposition de partenariat campus." />
+        <meta name="twitter:title" content={t("contact.meta.ogTitle")} />
+        <meta name="twitter:description" content={t("contact.meta.ogDescription")} />
         <meta name="twitter:image" content="https://campussphere.app/CS.svg" />
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "ContactPage",
-            "name": "Contactez l'Équipe CampusSphere",
-            "url": "https://campussphere.app/cs-inc/contact",
-            "description": "Une question, une idée de partenariat ou besoin d'aide sur CampusSphere ? Contactez notre équipe via notre formulaire ou par email."
+            name: t("contact.meta.ogTitle"),
+            url: "https://campussphere.app/cs/contact",
+            description: t("contact.meta.description"),
           })}
         </script>
       </Helmet>
-      {/* Navigation: brand + links + CTA */}
+
       <Header />
 
-      {/* Hero Section */}
-      <section className="relative py-10 md:py-4 px-0 overflow-hidden">
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-20 left-10 w-72 h-72 campus-gradient opacity-20 blur-3xl rounded-full"></div>
-          <div className="absolute bottom-20 right-10 w-96 h-96 campus-gradient opacity-20 blur-3xl rounded-full"></div>
-        </div>
-
-        <div className="container mx-auto max-w-9xl">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="text-center lg:text-left space-y-8 campus-animate-fade-in">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5">
-                <span className="text-sm font-medium font-poppins">Nous sommes là pour vous aider</span>
-              </div>
-
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight font-automata text-spacing-1">
-                <span className="campus-gradient bg-clip-text text-transparent">
-                  Contactez-
-                </span>
-                <span className="text-foreground">nous</span>
-              </h1>
-
-              <p className="font-nunito font-semibold text-xl md:text-2xl text-muted-foreground leading-relaxed">
-                Nous sommes là pour vous aider ! N'hésitez pas à nous contacter pour toute question ou suggestion.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Button
-                  onClick={() => navigate('/register')}
-                  className="font-poppins campus-gradient text-white hover:opacity-90 text-lg px-8 py-8 rounded-lg transition-all duration-300 hover:scale-105"
+      <main className="cs-public">
+        {/* ── 01. Hero éditorial centré ─────────────────────────────── */}
+        <section className="pub-hero" aria-labelledby="contact-title">
+          <div className="pub-hero-grid-bg" aria-hidden="true" />
+          <div className="pub-hero-glow" aria-hidden="true" />
+          <div className="pub-container">
+            <div className="pub-hero-center">
+              <motion.h1
+                id="contact-title"
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.54, ease: PUBLIC_EASE }}
+              >
+                {t("contact.hero.titleLine1")}<br />
+                <em>{t("contact.hero.titleLine2")}</em>
+              </motion.h1>
+              <motion.p
+                className="pub-hero-lede"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.08, ease: PUBLIC_EASE }}
+              >
+                {t("contact.hero.lede")}
+              </motion.p>
+              <motion.div
+                className="pub-hero-actions"
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.48, delay: 0.16, ease: PUBLIC_EASE }}
+              >
+                <button
+                  type="button"
+                  className="pub-btn pub-btn-orange"
+                  onClick={() =>
+                    document.getElementById("formulaire")?.scrollIntoView({ behavior: "smooth" })
+                  }
                 >
-                  Rejoindre la communauté
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => navigate('/cs-inc/faq')}
-                  className="font-poppins border border-border text-foreground hover:bg-accent text-lg px-8 py-8 rounded-lg transition-all duration-300"
+                  {t("contact.hero.ctaPrimary")}{" "}
+                  <ArrowDown size={16} weight="duotone" className="pub-icon-down" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="pub-btn pub-btn-ghost-light"
+                  onClick={() => navigate("/cs/faq")}
                 >
-                  Questions fréquentes
-                </Button>
-              </div>
+                  {t("contact.hero.ctaSecondary")}{" "}
+                  <ArrowUpRight size={16} weight="duotone" aria-hidden="true" />
+                </button>
+              </motion.div>
             </div>
 
-            <div className="relative hidden lg:block campus-animate-slide-up">
-              <div className="absolute inset-0 campus-gradient opacity-15 blur-3xl"></div>
-              <div className="relative campus-glass rounded-3xl p-8 shadow-sm">
-                <img
-                  src="/Illustrations/Contact us-amico.svg"
-                  alt="Contact CampusSphere"
-                  loading="lazy"
-                  className="w-full h-auto rounded-2xl"
-                />
-              </div>
-            </div>
+            <StaggerGrid className="pub-hero-pillars" mount delayChildren={0.2} stagger={0.07}>
+              <StaggerItem className="pub-hero-pillar" y={14}>
+                <span className="pub-hero-pillar-num">01</span>
+                <b>{t("contact.hero.pillars.emailTitle")}</b>
+                <p>
+                  {t("contact.hero.pillars.emailPrefix")}{" "}
+                  <a href={`mailto:${CONTACT_EMAIL}`} className="pub-hero-pillar-link">
+                    {CONTACT_EMAIL}
+                  </a>
+                </p>
+              </StaggerItem>
+              <StaggerItem className="pub-hero-pillar" y={14}>
+                <span className="pub-hero-pillar-num">02</span>
+                <b>{t("contact.hero.pillars.responseTitle")}</b>
+                <p>{t("contact.hero.pillars.responseDesc")}</p>
+              </StaggerItem>
+              <StaggerItem className="pub-hero-pillar" y={14}>
+                <span className="pub-hero-pillar-num">03</span>
+                <b>{t("contact.hero.pillars.listenTitle")}</b>
+                <p>{t("contact.hero.pillars.listenDesc")}</p>
+              </StaggerItem>
+            </StaggerGrid>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Contact Form Section */}
-      <section className="py-20 px-0 bg-gradient-to-r from-primary/10 to-primary/5">
-        <div className="container mx-auto max-w-9xl">
-          <div className="grid lg:grid-cols-2 gap-12">
-            <div className="space-y-6 campus-animate-fade-in">
-              <h2 className="font-raleway text-3xl font-bold mb-6">Envoyez-nous <span className="campus-gradient bg-clip-text text-transparent">un message</span></h2>
-              <p className="font-semibold text-lg text-muted-foreground leading-relaxed">
-                Vous avez des questions, suggestions ou souhaitez collaborer avec nous ?
-                Remplissez le formulaire ci-contre et nous vous répondrons dans les plus brefs délais.
-              </p>
-
-              <div className="cs-card p-6">
-                <h5 className="font-semibold mb-4 text-foreground">Conseils pour un message efficace :</h5>
-                <ul className="font-medium space-y-3 text-sm text-muted-foreground">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>Précisez clairement le sujet de votre demande</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>Incluez tous les détails nécessaires</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>Vérifiez votre adresse email</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>Nous répondons généralement sous 24h</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="p-0 campus-animate-slide-up animation-delay-2s lg:cs-card">
-              <form onSubmit={handleSubmit} className="font-poppins space-y-6 p-0 md:p-8">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="text-foreground font-semibold">Nom complet *</Label>
-                    <Input
-                      id="name"
-                      placeholder="Votre nom complet"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      required
-                      className="border-2 focus:border-primary"
-                    />
+        {/* ── 02. Canaux directs & Formulaire ───────────────────────── */}
+        <section
+          className="pub-section pub-light"
+          id="formulaire"
+          aria-label={t("contact.form.ariaLabel")}
+        >
+          <div className="pub-container">
+            <div className="pub-contact-grid">
+              {/* Colonne gauche : repères directs & raccourcis */}
+              <StaggerGrid className="pub-contact-aside" stagger={0.08}>
+                <StaggerItem className="pub-contact-card">
+                  <div className="pub-contact-card-head">
+                    <div className="pub-contact-card-icon" aria-hidden="true">
+                      <Envelope size={20} weight="duotone" />
+                    </div>
+                    <h3>{t("contact.aside.emailTitle")}</h3>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-foreground font-semibold">Email *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="votre.email@exemple.com"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      required
-                      className="border-2 focus:border-primary"
-                    />
+                  <p>{t("contact.aside.emailDesc")}</p>
+                  <div className="pub-contact-email-row">
+                    <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+                    <button
+                      type="button"
+                      className="pub-copy-btn"
+                      onClick={handleCopyEmail}
+                      aria-label={t("contact.aside.copyAria")}
+                    >
+                      <AnimatePresence mode="wait" initial={false}>
+                        {copiedEmail ? (
+                          <motion.span
+                            key="copied"
+                            className="inline-flex items-center gap-1.5 text-emerald-700"
+                            initial={{ opacity: 0, scale: 0.85 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.85 }}
+                            transition={{ duration: 0.16 }}
+                          >
+                            <Check size={14} weight="bold" aria-hidden="true" />
+                            {t("contact.aside.copied")}
+                          </motion.span>
+                        ) : (
+                          <motion.span
+                            key="copy"
+                            className="inline-flex items-center gap-1.5"
+                            initial={{ opacity: 0, scale: 0.85 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.85 }}
+                            transition={{ duration: 0.16 }}
+                          >
+                            <Copy size={14} weight="duotone" aria-hidden="true" />
+                            {t("contact.aside.copy")}
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
+                    </button>
                   </div>
-                </div>
+                </StaggerItem>
 
-                <div className="space-y-2">
-                  <Label htmlFor="subject" className="text-foreground font-semibold">Sujet *</Label>
-                  <Select
-                    value={formData.subject}
-                    onValueChange={(value) => setFormData({ ...formData, subject: value })}
-                  >
-                    <SelectTrigger className="border-2 focus:border-primary">
-                      <SelectValue placeholder="Sélectionnez un sujet" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Question générale">Question générale</SelectItem>
-                      <SelectItem value="Problème technique">Problème technique</SelectItem>
-                      <SelectItem value="Suggestion d'amélioration">Suggestion d'amélioration</SelectItem>
-                      <SelectItem value="Signalement de bug">Signalement de bug</SelectItem>
-                      <SelectItem value="Demande de fonctionnalité">Demande de fonctionnalité</SelectItem>
-                      <SelectItem value="Partenariat">Partenariat</SelectItem>
-                      <SelectItem value="Autre">Autre</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <StaggerItem className="pub-contact-card">
+                  <div className="pub-contact-card-head">
+                    <div className="pub-contact-card-icon" aria-hidden="true">
+                      <Sparkle size={20} weight="duotone" />
+                    </div>
+                    <h3>{t("contact.aside.shortcutsTitle")}</h3>
+                  </div>
+                  <p>{t("contact.aside.shortcutsDesc")}</p>
+                  <div className="pub-contact-shortcuts">
+                    {SHORTCUT_KEYS.map((key) => {
+                      const active = formData.subject === key;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          className={`pub-shortcut-btn${active ? " is-active" : ""}`}
+                          onClick={() => handlePickShortcut(key)}
+                        >
+                          <span>{t(`contact.shortcuts.${key}`)}</span>
+                          <ArrowRight size={16} weight="duotone" aria-hidden="true" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </StaggerItem>
 
-                <div className="space-y-2">
-                  <Label htmlFor="message" className="text-foreground font-semibold">Message *</Label>
-                  <Textarea
-                    id="message"
-                    placeholder="Décrivez votre demande en détail..."
-                    rows={6}
-                    value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    required
-                    className="border-2 focus:border-primary resize-none"
-                  />
-                </div>
+                <StaggerItem className="pub-contact-card">
+                  <div className="pub-contact-card-head">
+                    <div className="pub-contact-card-icon" aria-hidden="true">
+                      <WhatsappLogo size={20} weight="duotone" />
+                    </div>
+                    <h3>{t("contact.aside.socialsTitle")}</h3>
+                  </div>
+                  <p>{t("contact.aside.socialsDesc")}</p>
+                  <div className="pub-contact-socials">
+                    {SOCIAL_LINKS.map(({ name, href, icon: Icon }) => (
+                      <a
+                        key={name}
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`${name} CampusSphere`}
+                        className="pub-social-pill"
+                      >
+                        <Icon size={17} weight="duotone" aria-hidden="true" />
+                        <span>{name}</span>
+                      </a>
+                    ))}
+                  </div>
+                </StaggerItem>
+              </StaggerGrid>
 
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="newsletter"
-                    checked={formData.newsletter}
-                    onCheckedChange={(checked) => setFormData({ ...formData, newsletter: checked as boolean })}
-                  />
-                  <Label htmlFor="newsletter" className="text-sm text-muted-foreground">
-                    Je souhaite recevoir les actualités de CampusSphere
-                  </Label>
-                </div>
+              {/* Colonne droite : formulaire de contact */}
+              <Reveal delay={0.08}>
+                <div ref={formCardRef} className="pub-contact-form-card">
+                  <AnimatePresence mode="wait">
+                    {isSent ? (
+                      <motion.div
+                        key="sent"
+                        className="pub-contact-sent"
+                        role="status"
+                        aria-live="polite"
+                        initial={{ opacity: 0, scale: 0.96, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.96 }}
+                        transition={{ duration: 0.35, ease: PUBLIC_EASE }}
+                      >
+                        <motion.div
+                          className="pub-contact-sent-icon"
+                          aria-hidden="true"
+                          initial={{ scale: 0.5, rotate: -10 }}
+                          animate={{ scale: 1, rotate: 0 }}
+                          transition={{ type: "spring", stiffness: 360, damping: 18, delay: 0.08 }}
+                        >
+                          <CheckCircle size={32} weight="duotone" />
+                        </motion.div>
+                        <h3>{t("contact.form.sentTitle")}</h3>
+                        <p>{t("contact.form.sentDesc")}</p>
+                        <button
+                          type="button"
+                          className="pub-btn pub-btn-dark"
+                          onClick={() => setIsSent(false)}
+                        >
+                          {t("contact.form.sendAnother")}
+                        </button>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="form"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <h2>
+                          {t("contact.form.titleStart")}{" "}
+                          <em>{t("contact.form.titleHighlight")}</em>
+                        </h2>
+                        <p className="pub-contact-form-sub">{t("contact.form.subtitle")}</p>
 
-                <Button
-                  type="submit"
-                  size="lg"
-                  disabled={isSubmitting}
-                  className="w-full campus-gradient text-white hover:opacity-90 text-lg py-8 transition-all duration-300 hover:scale-105 gap-2"
-                >
-                  {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
-                  {isSubmitting ? "Envoi en cours..." : "Envoyer le message"}
-                </Button>
-              </form>
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                          <div className="grid sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label
+                                htmlFor="contact-name"
+                                className="font-poppins text-sm font-semibold text-[#18181b]"
+                              >
+                                {t("contact.form.nameLabel")}
+                              </Label>
+                              <Input
+                                id="contact-name"
+                                placeholder={t("contact.form.namePlaceholder")}
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                required
+                                className="h-11 bg-white border-black/15 text-[#18181b] placeholder:text-zinc-400 focus-visible:ring-[#ff9800] focus-visible:border-[#ff9800]"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label
+                                htmlFor="contact-email"
+                                className="font-poppins text-sm font-semibold text-[#18181b]"
+                              >
+                                {t("contact.form.emailLabel")}
+                              </Label>
+                              <Input
+                                id="contact-email"
+                                type="email"
+                                placeholder={t("contact.form.emailPlaceholder")}
+                                value={formData.email}
+                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                required
+                                className="h-11 bg-white border-black/15 text-[#18181b] placeholder:text-zinc-400 focus-visible:ring-[#ff9800] focus-visible:border-[#ff9800]"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label
+                              htmlFor="contact-subject"
+                              className="font-poppins text-sm font-semibold text-[#18181b]"
+                            >
+                              {t("contact.form.subjectLabel")}
+                            </Label>
+                            <Select
+                              value={formData.subject}
+                              onValueChange={(value) => setFormData({ ...formData, subject: value })}
+                            >
+                              <SelectTrigger
+                                id="contact-subject"
+                                className="h-11 bg-white border-black/15 text-[#18181b] focus:ring-[#ff9800] focus:border-[#ff9800]"
+                              >
+                                <SelectValue placeholder={t("contact.form.subjectPlaceholder")} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {SUBJECT_KEYS.map((key) => (
+                                  <SelectItem key={key} value={key}>
+                                    {t(`contact.subjects.${key}`)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label
+                              htmlFor="contact-message"
+                              className="font-poppins text-sm font-semibold text-[#18181b]"
+                            >
+                              {t("contact.form.messageLabel")}
+                            </Label>
+                            <Textarea
+                              id="contact-message"
+                              placeholder={t("contact.form.messagePlaceholder")}
+                              rows={6}
+                              value={formData.message}
+                              onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                              required
+                              className="bg-white border-black/15 text-[#18181b] placeholder:text-zinc-400 resize-y focus-visible:ring-[#ff9800] focus-visible:border-[#ff9800]"
+                            />
+                          </div>
+
+                          <div className="flex items-start gap-2.5 pt-1">
+                            <Checkbox
+                              id="contact-newsletter"
+                              checked={formData.newsletter}
+                              onCheckedChange={(checked) =>
+                                setFormData({ ...formData, newsletter: Boolean(checked) })
+                              }
+                              className="mt-0.5 border-black/25 data-[state=checked]:bg-[#ff9800] data-[state=checked]:border-[#ff9800]"
+                            />
+                            <Label
+                              htmlFor="contact-newsletter"
+                              className="font-nunito text-sm text-[#52525b] font-normal leading-snug cursor-pointer"
+                            >
+                              {t("contact.form.newsletterLabel")}
+                            </Label>
+                          </div>
+
+                          <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="pub-btn pub-btn-orange w-full disabled:opacity-60 disabled:pointer-events-none"
+                          >
+                            {isSubmitting ? (
+                              <>
+                                <Spinner size={18} className="animate-spin pub-icon-static" aria-hidden="true" />
+                                {t("contact.form.submitting")}
+                              </>
+                            ) : (
+                              <>
+                                {t("contact.form.submit")}
+                                <PaperPlaneTilt size={17} weight="duotone" aria-hidden="true" />
+                              </>
+                            )}
+                          </button>
+                        </form>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </Reveal>
             </div>
           </div>
-        </div>
-        {/* Social Media Section */}
-        <div className="container mx-auto max-w-9xl mt-5">
-          <div className="text-center mb-10">
-            <h2 className="font-raleway text-3xl md:text-4xl font-bold mb-4 campus-animate-fade-in">
-              Suivez<span className="campus-gradient bg-clip-text text-transparent">-nous</span>
-            </h2>
-            <p className="font-nunito font-semibold text-xl text-muted-foreground">
-              Restez connecté avec CampusSphere et découvrez nos dernières actualités
-            </p>
-          </div>
+        </section>
 
-          <div className="flex justify-center gap-5 mb-0">
-            <a href="https://web.facebook.com/campussphereofficial" target='blank' className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
-              <FaFacebook className="w-8 h-8 group-hover:animate-pulse" />
-            </a>
-            <a href="https://www.linkedin.com/company/campussphere" target='blank' className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
-              <FaLinkedin className="w-8 h-8 group-hover:animate-pulse" />
-            </a>
-            <a href="https://www.instagram.com/campussphere" target='blank' className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
-              <FaInstagram className="w-8 h-8 group-hover:animate-pulse" />
-            </a>
-            <a href="https://www.tiktok.com/@campussphere.app" target='blank' className="w-16 h-16 campus-gradient rounded-full flex items-center justify-center text-white hover:scale-110 transition-all duration-300 hover:shadow-lg group">
-              <FaTiktok className="w-8 h-8 group-hover:animate-pulse" />
-            </a>
+        {/* ── 03. Bandeau final Orange (Relais FAQ) ─────────────────── */}
+        <section className="pub-section pub-orange" aria-label={t("contact.cta.ariaLabel")}>
+          <div className="pub-container">
+            <Reveal className="pub-cta-inner">
+              <div className="pub-cta-copy">
+                <h2>
+                  {t("contact.cta.titleLine1")}<br />
+                  <em>{t("contact.cta.titleLine2")}</em>
+                </h2>
+                <p>{t("contact.cta.body")}</p>
+              </div>
+              <div className="pub-cta-actions">
+                <button
+                  type="button"
+                  className="pub-btn pub-btn-dark"
+                  onClick={() => navigate("/cs/faq")}
+                >
+                  {t("contact.cta.ctaPrimary")}{" "}
+                  <ArrowUpRight size={16} weight="duotone" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="pub-btn pub-btn-ghost-light"
+                  onClick={() => navigate("/register")}
+                >
+                  {t("contact.cta.ctaSecondary")}
+                </button>
+              </div>
+            </Reveal>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
-
-      {/* FAQ Link Section */}
-      <section className="py-12 md:py-20 px-0">
-        <div className="container mx-auto max-w-9xl px-4 sm:px-6 lg:px-8 text-center">
-          <div className="cs-card p-6 sm:p-10 md:p-12 rounded-3xl border border-border/60 campus-animate-fade-in">
-            <h2 className="font-raleway text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
-              Questions <span className="campus-gradient bg-clip-text text-transparent">fréquentes ?</span>
-            </h2>
-            <p className="font-nunito font-semibold text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-              Consultez notre FAQ pour trouver rapidement des réponses aux questions les plus courantes.
-            </p>
-            <Button
-              onClick={() => navigate('/cs-inc/faq')}
-              className="font-poppins campus-gradient text-white hover:opacity-90 text-base sm:text-lg px-8 py-6 rounded-lg transition-all duration-300 hover:scale-105 gap-2"
-            >
-              Voir la FAQ
-            </Button>
-          </div>
-        </div>
-      </section>
-      {/* Footer */}
       <Footer />
-    </div>
+    </PublicMotionProvider>
   );
 }
+
+export default Contact;

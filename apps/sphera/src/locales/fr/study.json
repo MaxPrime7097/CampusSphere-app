@@ -76,28 +76,28 @@
     "directQaNoticeTitle": "Mode Q&A direct sélectionné",
     "directQaNoticeDesc": "La session sera créée immédiatement sans générer de fiches ni quiz (0 quota consommé). Vous pourrez les générer à la demande plus tard !",
     "fiche": {
-      "title": "Fiche de révision",
+      "title": "Fiche de cours",
       "desc": "Points clés, définitions, formules"
     },
     "quiz": {
-      "title": "Quiz interactif",
-      "desc": "QCM avec timer et score"
+      "title": "Quiz d'entraînement",
+      "desc": "QCM avec chrono et score"
     },
     "flashcards": {
-      "title": "Flashcards",
+      "title": "Cartes mémoire",
       "desc": "Cartes recto/verso pour mémoriser"
     },
     "mindmap": {
-      "title": "Carte mentale",
-      "desc": "Représentation visuelle des concepts clés"
+      "title": "Schéma du cours",
+      "desc": "Vue visuelle des concepts clés"
     },
     "audio": {
-      "title": "Résumé audio",
-      "desc": "Dialogue podcast pour réviser"
+      "title": "Cours en audio",
+      "desc": "Échange parlé pour réviser en écoutant"
     },
     "annale": {
-      "title": "Annale",
-      "desc": "Sujets d'examen et corrections"
+      "title": "Corrigé d'examen",
+      "desc": "Anciennes épreuves et corrections"
     }
   },
   "appPage": {
@@ -125,10 +125,10 @@
     "download": "Télécharger PDF",
     "newGeneration": "Nouvelle génération",
     "toolNames": {
-      "fiche": "Fiche de révision",
-      "quiz": "Quiz interactif",
-      "flashcards": "Flashcards",
-      "annale": "Correction d'annale",
+      "fiche": "Fiche de cours",
+      "quiz": "Quiz d'entraînement",
+      "flashcards": "Cartes mémoire",
+      "annale": "Corrigé d'examen",
       "default": "Génération"
     }
   },
@@ -228,12 +228,12 @@
     "commandMenu": {
       "title": "Commandes Sphera",
       "shortcutHint": "↑↓ pour naviguer • Entrée pour valider",
-      "ficheLabel": "Fiche de révision",
-      "ficheDesc": "Afficher ou générer ta fiche de révision",
-      "quizLabel": "Quiz interactif",
+      "ficheLabel": "Fiche de cours",
+      "ficheDesc": "Afficher ou générer ta fiche de cours",
+      "quizLabel": "Quiz d'entraînement",
       "quizDesc": "Afficher ou lancer ton quiz",
-      "flashcardsLabel": "Flashcards",
-      "flashcardsDesc": "Afficher ou réviser tes flashcards",
+      "flashcardsLabel": "Cartes mémoire",
+      "flashcardsDesc": "Afficher ou réviser tes cartes mémoire",
       "explainLabel": "Expliquer une notion",
       "explainDesc": "Explication pédagogique et détaillée pas à pas",
       "resumeLabel": "Résumer un point",
@@ -246,7 +246,7 @@
       "summarize": "Résumer",
       "example": "Exemple",
       "quiz": "Quiz",
-      "flashcard": "Flashcard",
+      "flashcard": "Carte mémoire",
       "actionTitle": "{{label}} ce passage"
     }
   },
@@ -303,7 +303,7 @@
     ]
   },
   "quotaIndicator": {
-    "freeWeekly": "5 gén. offertes / semaine",
+    "freeWeekly": "10 gén. offertes / semaine",
     "weeklyRemaining": "{{remaining}} / {{limit}} gén. semaine"
   },
   "downloadPdf": {
@@ -356,8 +356,8 @@
     "quizMessageGreat": "Excellent travail !",
     "quizMessageGood": "Bon score, mais tu peux faire mieux !",
     "quizMessageKeepGoing": "Continue tes efforts !",
-    "flashcardsTitle": "Flashcards",
-    "emptyFlashcards": "Aucune flashcard générée.",
+    "flashcardsTitle": "Cartes mémoire",
+    "emptyFlashcards": "Aucune carte mémoire générée.",
     "flashcardsCompleted": "Session terminée",
     "flashcardsAcquired": "Acquises",
     "flashcardsToReview": "À revoir",
@@ -402,20 +402,20 @@
     "searchQuestionPlaceholder": "Rechercher une question, un mot-clé...",
     "allQuestions": "Toutes",
     "noQuestionsFound": "Aucune question trouvée.",
-    "mindmapTitle": "Carte mentale",
+    "mindmapTitle": "Schéma du cours",
     "mindmapDesc": "Visualisez les connexions et la hiérarchie des concepts clés.",
     "mindmapDownload": "Exporter l'image",
     "themesCount": "{{count}} thème · Cliquer pour tout plier/déplier",
     "themesCount_plural": "{{count}} thèmes · Cliquer pour tout plier/déplier",
     "subBranchesCount": "{{count}} sous-branche",
     "subBranchesCount_plural": "{{count}} sous-branches",
-    "canvasMode": "Vue interactive (Canvas)",
-    "treeMode": "Vue hiérarchique (Arborescence)",
+    "canvasMode": "Vue visuelle (Schéma)",
+    "treeMode": "Vue plan (Arborescence)",
     "recenter": "Recentrer",
-    "audioTitle": "Résumé audio",
+    "audioTitle": "Cours en audio",
     "audioDesc": "Écoutez une synthèse claire et rythmée de votre cours.",
-    "audioListen": "Écouter le podcast",
-    "podcastTitle": "Podcast & Résumé Audio",
+    "audioListen": "Écouter le cours",
+    "podcastTitle": "Cours en audio",
     "downloadMp3": "Télécharger l'audio MP3",
     "webSpeechTitle": "Lecture audio du dialogue",
     "webSpeechSub": "Écouter la synthèse vocale des 2 étudiants",
@@ -460,11 +460,11 @@
     "pdf": "PDF",
     "document": "Document",
     "selectionGeneratingQuiz": "Génération du quiz sur la sélection...",
-    "selectionGeneratingFlashcards": "Génération des flashcards...",
+    "selectionGeneratingFlashcards": "Génération des cartes mémoire...",
     "selectionAddedQuiz": "✨ {{count}} question ajoutée avec succès au Quiz !",
     "selectionAddedQuiz_plural": "✨ {{count}} questions ajoutées avec succès au Quiz !",
-    "selectionAddedFlashcards": "✨ {{count}} flashcard ajoutée avec succès au paquet !",
-    "selectionAddedFlashcards_plural": "✨ {{count}} flashcards ajoutées avec succès au paquet !",
+    "selectionAddedFlashcards": "✨ {{count}} carte mémoire ajoutée avec succès au paquet !",
+    "selectionAddedFlashcards_plural": "✨ {{count}} cartes mémoire ajoutées avec succès au paquet !",
     "selectionError": "Erreur lors de la création de l'élément.",
     "explainAction": "Expliquer : \"{{text}}\"",
     "explainPrompt": "Explique-moi ce passage de cours de manière claire, concise et pédagogique :\n\n> \"{{text}}\"",
@@ -474,18 +474,18 @@
     "examplePrompt": "Donne-moi un exemple concret ou une mise en situation pratique illustrant ce concept :\n\n> \"{{text}}\"",
     "quizAction": "Quiz sur : \"{{text}}\"",
     "quizPrompt": "Génère une question de quiz à choix multiples (avec 4 options A, B, C, D, la bonne réponse et une brève explication) basée sur ce passage :\n\n> \"{{text}}\"",
-    "flashcardAction": "Flashcard pour : \"{{text}}\"",
-    "flashcardPrompt": "Crée une flashcard recto/verso (Question clé au recto, Réponse synthétique au verso) basée sur ce concept :\n\n> \"{{text}}\"",
+    "flashcardAction": "Carte mémoire pour : \"{{text}}\"",
+    "flashcardPrompt": "Crée une carte mémoire recto/verso (Question clé au recto, Réponse synthétique au verso) basée sur ce concept :\n\n> \"{{text}}\"",
     "promptRelatedToCourse": "En lien avec le cours, donne-moi les éléments nécessaires sur \"{{text}}\".",
     "promptSummarizePoints": "Résume les points essentiels du cours.",
     "promptDefaultEssential": "les points essentiels.",
     "tools": {
-      "fiche": "Fiche",
+      "fiche": "Fiche de cours",
       "quiz": "Quiz",
-      "flashcards": "Flashcards",
-      "mindmap": "Carte mentale",
-      "audio": "Résumé audio",
-      "annale": "Annale"
+      "flashcards": "Cartes mémoire",
+      "mindmap": "Schéma du cours",
+      "audio": "Cours en audio",
+      "annale": "Corrigé d'examen"
     }
   }
 }

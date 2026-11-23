@@ -2228,7 +2228,7 @@ export function MindmapView({ content }: { content: any }) {
       {branches.length === 0 ? (
         <div className="p-12 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border opacity-60">
           <GitFork className="w-12 h-12 text-sphera-text-muted mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-white mb-1">Carte mentale en cours de génération</h3>
+          <h3 className="text-lg font-medium text-white mb-1">Schéma du cours en cours de génération</h3>
           <p className="text-sm text-sphera-text-muted max-w-md mx-auto">
             Les branches de la carte mentale n'ont pas pu être extraites pour ce document.
           </p>
@@ -2429,7 +2429,7 @@ export function AudioSummaryView({
   const audioUrl: string | undefined = audioData?.audioUrl;
 
   const podcast = usePodcastPlayer();
-  const currentTitle = audioData?.titre || "Podcast de révision";
+  const currentTitle = audioData?.titre || "Cours en audio";
 
   const isCurrentAudio = podcast.isActive && (podcast.audioUrl === audioUrl || podcast.title === currentTitle);
   const isPlaying = isCurrentAudio && podcast.isPlaying;

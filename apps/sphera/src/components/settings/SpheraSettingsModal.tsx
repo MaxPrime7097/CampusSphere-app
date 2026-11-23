@@ -647,7 +647,7 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
                     <div className="p-5 rounded-xl border border-sphera-border bg-sphera-surface-2 space-y-4">
                       <div>
                         <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-medium text-white">Nombre de Flashcards</h4>
+                          <h4 className="text-sm font-medium text-white">Nombre de Cartes mémoire</h4>
                           <span className="text-xs font-semibold text-sphera-green">
                             {prefs?.flashcard_count ? `${prefs.flashcard_count} cartes` : 'Auto (recommandé)'}
                           </span>
@@ -749,7 +749,7 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-cyan-400 font-bold">•</span>
-                          <span><strong>0,5 unité :</strong> Génération ciblée par chapitre (Quiz ou Flashcards par bloc), régénération de fiche ou outil sur texte sélectionné.</span>
+                          <span><strong>0,5 unité :</strong> Génération ciblée par chapitre (Quiz ou Cartes mémoire par bloc), régénération de fiche ou outil sur texte sélectionné.</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <span className="text-emerald-400 font-bold">•</span>

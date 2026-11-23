@@ -1,30 +1,53 @@
 import React, { useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { AnimatePresence, motion } from "motion/react";
 import {
+  ArrowDown,
+  ArrowUpRight,
   Buildings,
-  CheckCircle,
-  PaperPlaneTilt as Send,
-  Sparkle as Sparkles,
-  Users,
   CalendarCheck,
+  CheckCircle,
+  Envelope,
+  PaperPlaneTilt,
   ShieldCheck,
-  Spinner as Loader2,
-  ArrowRight,
+  Spinner,
+  UsersThree,
 } from "@phosphor-icons/react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { submitPartnerApplication } from "@/services/api";
+import {
+  PUBLIC_EASE,
+  PublicMotionProvider,
+  Reveal,
+  StaggerGrid,
+  StaggerItem,
+} from "@/components/public/PublicMotion";
+import "@/styles/public-pages.css";
+
+const PARTNER_BENEFIT_SPECS = [
+  { key: "b1", icon: UsersThree },
+  { key: "b2", icon: CalendarCheck },
+  { key: "b3", icon: ShieldCheck },
+] as const;
 
 export function BecomePartner(): JSX.Element {
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation("public");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [formData, setFormData] = useState({
@@ -39,8 +62,8 @@ export function BecomePartner(): JSX.Element {
     if (!formData.organizationName.trim() || !formData.contactEmail.trim()) {
       toast({
         variant: "destructive",
-        title: "Champs requis",
-        description: "Veuillez renseigner au moins le nom de l'organisation et l'email de contact.",
+        title: t("becomePartner.toasts.requiredTitle"),
+        description: t("becomePartner.toasts.requiredDesc"),
       });
       return;
     }
@@ -50,14 +73,14 @@ export function BecomePartner(): JSX.Element {
       await submitPartnerApplication(formData);
       setIsSuccess(true);
       toast({
-        title: "Candidature transmise !",
-        description: "Notre équipe a bien reçu votre demande et vous recontactera sous 48h.",
+        title: t("becomePartner.toasts.sentTitle"),
+        description: t("becomePartner.toasts.sentDesc"),
       });
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: error?.message || "Une erreur est survenue lors de l'envoi de votre candidature.",
+        title: t("becomePartner.toasts.errorTitle"),
+        description: error?.message || t("becomePartner.toasts.errorDesc"),
       });
     } finally {
       setIsSubmitting(false);
@@ -65,183 +88,339 @@ export function BecomePartner(): JSX.Element {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 flex flex-col justify-between">
+    <PublicMotionProvider>
       <Helmet>
-        <title>Devenir Impact Partner | CampusSphere</title>
-        <meta
-          name="description"
-          content="Rejoignez les Impact Partners de CampusSphere : publiez vos opportunités, organisez vos événements et engagez la communauté étudiante."
-        />
+        <title>{t("becomePartner.meta.title")}</title>
+        <meta name="description" content={t("becomePartner.meta.description")} />
+        <link rel="canonical" href="https://campussphere.app/cs/become-partner" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={t("becomePartner.meta.ogTitle")} />
+        <meta property="og:description" content={t("becomePartner.meta.ogDescription")} />
+        <meta property="og:image" content="https://campussphere.app/CS.svg" />
+        <meta property="og:site_name" content="CampusSphere" />
       </Helmet>
 
       <Header />
 
-      <main className="container max-w-5xl mx-auto px-4 py-12 md:py-20 flex-1">
-        {/* En-tête Hero */}
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wider mb-4">
-            <Sparkles className="h-4 w-4" />
-            Programme Impact Partners
-          </div>
-          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-foreground font-automata mb-4">
-            Donnez de la visibilité à votre organisation auprès des étudiants
-          </h1>
-          <p className="text-muted-foreground text-base md:text-lg">
-            Entreprises, clubs universitaires, associations et institutions : devenez partenaire officiel de CampusSphere pour toucher directement les Spherians.
-          </p>
-        </div>
-
-        {/* Section Avantages */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-14">
-          <div className="p-6 rounded-2xl bg-card border border-border/50 shadow-sm flex flex-col items-center text-center">
-            <div className="p-3 bg-primary/10 text-primary rounded-xl mb-4">
-              <Users className="h-6 w-6" />
-            </div>
-            <h3 className="font-bold text-base mb-2">Audience ciblée & Abonnés</h3>
-            <p className="text-sm text-muted-foreground">
-              Les étudiants peuvent suivre votre page officielle. Vos annonces et offres apparaissent directement dans leur flux d'actualité.
-            </p>
-          </div>
-
-          <div className="p-6 rounded-2xl bg-card border border-border/50 shadow-sm flex flex-col items-center text-center">
-            <div className="p-3 bg-blue-500/10 text-blue-500 rounded-xl mb-4">
-              <CalendarCheck className="h-6 w-6" />
-            </div>
-            <h3 className="font-bold text-base mb-2">Événements & Hackathons</h3>
-            <p className="text-sm text-muted-foreground">
-              Organisez des talks, journées portes ouvertes, sessions de recrutement ou ateliers techniques visibles par l'ensemble du campus.
-            </p>
-          </div>
-
-          <div className="p-6 rounded-2xl bg-card border border-border/50 shadow-sm flex flex-col items-center text-center">
-            <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl mb-4">
-              <ShieldCheck className="h-6 w-6" />
-            </div>
-            <h3 className="font-bold text-base mb-2">Badge Officiel & Sphères</h3>
-            <p className="text-sm text-muted-foreground">
-              Bénéficiez du badge certifié Impact Partner et animez des Sphères officielles pour fédérer durablement vos membres.
-            </p>
-          </div>
-        </div>
-
-        {/* Formulaire ou Message de succès */}
-        <div className="max-w-xl mx-auto">
-          {isSuccess ? (
-            <Card className="border-border/60 shadow-lg text-center p-8 bg-card/80 backdrop-blur-sm animate-in fade-in zoom-in-95">
-              <div className="w-16 h-16 bg-emerald-500/20 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="h-10 w-10" />
-              </div>
-              <h2 className="text-2xl font-bold font-automata mb-2">Candidature envoyée !</h2>
-              <p className="text-muted-foreground text-sm mb-6">
-                Merci pour votre intérêt ! L'équipe CampusSphere examine votre demande et vous recontactera sous 48h à l'adresse <strong>{formData.contactEmail}</strong> pour activer vos accès.
-              </p>
-              <div className="flex justify-center gap-3">
-                <Button asChild variant="outline">
-                  <Link to="/">Retour à l'accueil</Link>
-                </Button>
-                <Button
-                  onClick={() => {
-                    setIsSuccess(false);
-                    setFormData({
-                      organizationName: "",
-                      organizationType: "entreprise",
-                      contactEmail: "",
-                      description: "",
-                    });
-                  }}
+      <main className="cs-public">
+        {/* ── 01. Hero éditorial centré ─────────────────────────────── */}
+        <section className="pub-hero" aria-labelledby="partner-title">
+          <div className="pub-hero-grid-bg" aria-hidden="true" />
+          <div className="pub-hero-glow" aria-hidden="true" />
+          <div className="pub-container">
+            <div className="pub-hero-center">
+              <motion.h1
+                id="partner-title"
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.54, ease: PUBLIC_EASE }}
+              >
+                {t("becomePartner.hero.titleLine1")}
+                <br />
+                <em>{t("becomePartner.hero.titleLine2")}</em>
+              </motion.h1>
+              <motion.p
+                className="pub-hero-lede"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.08, ease: PUBLIC_EASE }}
+              >
+                {t("becomePartner.hero.lede")}
+              </motion.p>
+              <motion.div
+                className="pub-hero-actions"
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.48, delay: 0.16, ease: PUBLIC_EASE }}
+              >
+                <button
+                  type="button"
+                  className="pub-btn pub-btn-orange"
+                  onClick={() =>
+                    document.getElementById("candidature")?.scrollIntoView({ behavior: "smooth" })
+                  }
                 >
-                  Envoyer une autre candidature
-                </Button>
-              </div>
-            </Card>
-          ) : (
-            <Card className="border-border/60 shadow-lg bg-card/80 backdrop-blur-sm">
-              <CardContent className="p-6 sm:p-8">
-                <div className="mb-6">
-                  <h2 className="text-xl font-bold font-automata flex items-center gap-2">
-                    <Buildings className="h-5 w-5 text-primary" />
-                    Formulaire de candidature
-                  </h2>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Validation manuelle par l'équipe CampusSphere avant activation.
-                  </p>
-                </div>
+                  {t("becomePartner.hero.ctaPrimary")}{" "}
+                  <ArrowDown size={16} weight="duotone" className="pub-icon-down" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="pub-btn pub-btn-ghost-light"
+                  onClick={() => navigate("/cs/about")}
+                >
+                  {t("becomePartner.hero.ctaSecondary")}{" "}
+                  <ArrowUpRight size={16} weight="duotone" aria-hidden="true" />
+                </button>
+              </motion.div>
+            </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="orgName">Nom de l'organisation *</Label>
-                    <Input
-                      id="orgName"
-                      placeholder="Ex : Tech Solutions, Club Informatique, Association IA..."
-                      value={formData.organizationName}
-                      onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
-                      required
-                    />
-                  </div>
+            <StaggerGrid className="pub-hero-pillars" mount delayChildren={0.2} stagger={0.07}>
+              {(["p1", "p2", "p3"] as const).map((key) => (
+                <StaggerItem key={key} className="pub-hero-pillar" y={14}>
+                  <span className="pub-hero-pillar-num">
+                    {t(`becomePartner.hero.pillars.${key}.num`)}
+                  </span>
+                  <b>{t(`becomePartner.hero.pillars.${key}.title`)}</b>
+                  <p>{t(`becomePartner.hero.pillars.${key}.desc`)}</p>
+                </StaggerItem>
+              ))}
+            </StaggerGrid>
+          </div>
+        </section>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="orgType">Type d'organisation *</Label>
-                    <Select
-                      value={formData.organizationType}
-                      onValueChange={(val) => setFormData({ ...formData, organizationType: val })}
+        {/* ── 02. Avantages & Formulaire de candidature ─────────────── */}
+        <section
+          className="pub-section pub-light"
+          id="candidature"
+          aria-label={t("becomePartner.form.sectionAria")}
+        >
+          <div className="pub-container">
+            <div className="pub-contact-grid">
+              {/* Colonne gauche : avantages détaillés */}
+              <StaggerGrid className="pub-contact-aside" stagger={0.08}>
+                {PARTNER_BENEFIT_SPECS.map(({ key, icon: Icon }) => (
+                  <StaggerItem key={key} className="pub-contact-card">
+                    <div className="pub-contact-card-head">
+                      <div className="pub-contact-card-icon" aria-hidden="true">
+                        <Icon size={20} weight="duotone" />
+                      </div>
+                      <h3>{t(`becomePartner.benefits.${key}.title`)}</h3>
+                    </div>
+                    <p>{t(`becomePartner.benefits.${key}.desc`)}</p>
+                  </StaggerItem>
+                ))}
+              </StaggerGrid>
+
+              {/* Colonne droite : formulaire de candidature */}
+              <Reveal delay={0.08} className="pub-contact-form-card">
+                <AnimatePresence mode="wait">
+                  {isSuccess ? (
+                    <motion.div
+                      key="success"
+                      className="pub-contact-sent"
+                      role="status"
+                      aria-live="polite"
+                      initial={{ opacity: 0, scale: 0.96, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.96 }}
+                      transition={{ duration: 0.35, ease: PUBLIC_EASE }}
                     >
-                      <SelectTrigger id="orgType">
-                        <SelectValue placeholder="Sélectionnez le type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="entreprise">Entreprise</SelectItem>
-                        <SelectItem value="club">Club universitaire / étudiant</SelectItem>
-                        <SelectItem value="association">Association</SelectItem>
-                        <SelectItem value="institution">Institution / École</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                      <motion.div
+                        className="pub-contact-sent-icon"
+                        aria-hidden="true"
+                        initial={{ scale: 0.5, rotate: -10 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ type: "spring", stiffness: 360, damping: 18, delay: 0.08 }}
+                      >
+                        <CheckCircle size={32} weight="duotone" />
+                      </motion.div>
+                      <h3>{t("becomePartner.form.sentTitle")}</h3>
+                      <p>
+                        {t("becomePartner.form.sentDescPrefix")}{" "}
+                        <strong className="text-[#18181b]">{formData.contactEmail}</strong>{" "}
+                        {t("becomePartner.form.sentDescSuffix")}
+                      </p>
+                      <div className="flex flex-wrap justify-center gap-3">
+                        <button
+                          type="button"
+                          className="pub-btn pub-btn-dark"
+                          onClick={() => navigate("/cs")}
+                        >
+                          {t("becomePartner.form.backHome")}
+                        </button>
+                        <button
+                          type="button"
+                          className="pub-btn pub-btn-orange"
+                          onClick={() => {
+                            setIsSuccess(false);
+                            setFormData({
+                              organizationName: "",
+                              organizationType: "entreprise",
+                              contactEmail: "",
+                              description: "",
+                            });
+                          }}
+                        >
+                          {t("becomePartner.form.newApplication")}
+                        </button>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="form"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="pub-contact-card-icon" aria-hidden="true">
+                          <Buildings size={20} weight="duotone" />
+                        </div>
+                        <h2 style={{ margin: 0 }}>
+                          {t("becomePartner.form.titleStart")}{" "}
+                          <em>{t("becomePartner.form.titleHighlight")}</em>
+                        </h2>
+                      </div>
+                      <p className="pub-contact-form-sub">{t("becomePartner.form.subtitle")}</p>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="contactEmail">Email de contact officiel *</Label>
-                    <Input
-                      id="contactEmail"
-                      type="email"
-                      placeholder="contact@organisation.com"
-                      value={formData.contactEmail}
-                      onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
-                      required
-                    />
-                  </div>
+                      <form onSubmit={handleSubmit} className="space-y-5">
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="orgName"
+                            className="font-poppins text-sm font-semibold text-[#18181b]"
+                          >
+                            {t("becomePartner.form.orgNameLabel")}
+                          </Label>
+                          <Input
+                            id="orgName"
+                            placeholder={t("becomePartner.form.orgNamePlaceholder")}
+                            value={formData.organizationName}
+                            onChange={(e) =>
+                              setFormData({ ...formData, organizationName: e.target.value })
+                            }
+                            required
+                            className="h-11 bg-white border-black/15 text-[#18181b] placeholder:text-zinc-400 focus-visible:ring-[#ff9800] focus-visible:border-[#ff9800]"
+                          />
+                        </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="desc">Présentation & Objectifs</Label>
-                    <Textarea
-                      id="desc"
-                      rows={4}
-                      placeholder="Présentez brièvement vos activités et les opportunités que vous souhaitez proposer aux Spherians (stages, événements, hackathons...)"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    />
-                  </div>
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label
+                              htmlFor="orgType"
+                              className="font-poppins text-sm font-semibold text-[#18181b]"
+                            >
+                              {t("becomePartner.form.orgTypeLabel")}
+                            </Label>
+                            <Select
+                              value={formData.organizationType}
+                              onValueChange={(val) =>
+                                setFormData({ ...formData, organizationType: val })
+                              }
+                            >
+                              <SelectTrigger
+                                id="orgType"
+                                className="h-11 bg-white border-black/15 text-[#18181b] focus:ring-[#ff9800] focus:border-[#ff9800]"
+                              >
+                                <SelectValue placeholder={t("becomePartner.form.orgTypePlaceholder")} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="entreprise">
+                                  {t("becomePartner.form.orgTypes.entreprise")}
+                                </SelectItem>
+                                <SelectItem value="club">
+                                  {t("becomePartner.form.orgTypes.club")}
+                                </SelectItem>
+                                <SelectItem value="association">
+                                  {t("becomePartner.form.orgTypes.association")}
+                                </SelectItem>
+                                <SelectItem value="institution">
+                                  {t("becomePartner.form.orgTypes.institution")}
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-                  <Button type="submit" disabled={isSubmitting} className="w-full mt-2" size="lg">
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Transmission en cours...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-4 w-4 mr-2" />
-                        Envoyer ma candidature
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+                          <div className="space-y-2">
+                            <Label
+                              htmlFor="contactEmail"
+                              className="font-poppins text-sm font-semibold text-[#18181b]"
+                            >
+                              {t("becomePartner.form.emailLabel")}
+                            </Label>
+                            <Input
+                              id="contactEmail"
+                              type="email"
+                              placeholder={t("becomePartner.form.emailPlaceholder")}
+                              value={formData.contactEmail}
+                              onChange={(e) =>
+                                setFormData({ ...formData, contactEmail: e.target.value })
+                              }
+                              required
+                              className="h-11 bg-white border-black/15 text-[#18181b] placeholder:text-zinc-400 focus-visible:ring-[#ff9800] focus-visible:border-[#ff9800]"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor="desc"
+                            className="font-poppins text-sm font-semibold text-[#18181b]"
+                          >
+                            {t("becomePartner.form.descLabel")}
+                          </Label>
+                          <Textarea
+                            id="desc"
+                            rows={5}
+                            placeholder={t("becomePartner.form.descPlaceholder")}
+                            value={formData.description}
+                            onChange={(e) =>
+                              setFormData({ ...formData, description: e.target.value })
+                            }
+                            className="bg-white border-black/15 text-[#18181b] placeholder:text-zinc-400 resize-y focus-visible:ring-[#ff9800] focus-visible:border-[#ff9800]"
+                          />
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className="pub-btn pub-btn-orange w-full disabled:opacity-60 disabled:pointer-events-none"
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <Spinner size={18} className="animate-spin pub-icon-static" aria-hidden="true" />
+                              {t("becomePartner.form.submitting")}
+                            </>
+                          ) : (
+                            <>
+                              {t("becomePartner.form.submit")}
+                              <PaperPlaneTilt size={17} weight="duotone" aria-hidden="true" />
+                            </>
+                          )}
+                        </button>
+                      </form>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Reveal>
+            </div>
+          </div>
+        </section>
+
+        {/* ── 03. Bandeau final Orange ──────────────────────────────── */}
+        <section className="pub-section pub-orange" aria-label={t("becomePartner.cta.ariaLabel")}>
+          <div className="pub-container">
+            <Reveal className="pub-cta-inner">
+              <div className="pub-cta-copy">
+                <h2>
+                  {t("becomePartner.cta.titleLine1")}
+                  <br />
+                  <em>{t("becomePartner.cta.titleLine2")}</em>
+                </h2>
+                <p>{t("becomePartner.cta.body")}</p>
+              </div>
+              <div className="pub-cta-actions">
+                <button
+                  type="button"
+                  className="pub-btn pub-btn-dark"
+                  onClick={() => navigate("/cs/contact")}
+                >
+                  {t("becomePartner.cta.ctaPrimary")}{" "}
+                  <ArrowUpRight size={16} weight="duotone" aria-hidden="true" />
+                </button>
+                <a href="mailto:contact@campussphere.app" className="pub-btn pub-btn-ghost-light">
+                  <Envelope size={16} weight="duotone" className="pub-icon-static" aria-hidden="true" />
+                  contact@campussphere.app
+                </a>
+              </div>
+            </Reveal>
+          </div>
+        </section>
       </main>
 
       <Footer />
-    </div>
+    </PublicMotionProvider>
   );
 }
+
 export default BecomePartner;

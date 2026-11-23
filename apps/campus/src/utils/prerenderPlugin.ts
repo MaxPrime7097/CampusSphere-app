@@ -27,7 +27,7 @@ export function prerenderPublicPagesPlugin(): Plugin {
       };
 
       // ─────────────────────────────────────────────────────────────
-      // 1. Landing Page Metadata & Semantic Noscript (/ and /cs-inc)
+      // 1. Landing Page Metadata & Semantic Noscript (/ and /cs)
       // ─────────────────────────────────────────────────────────────
       const landingTitle = "CampusSphere | Réseau Social Étudiant & Plateforme d'Entraide Universitaire";
       const landingDesc = "CampusSphere est le réseau social étudiant de référence. Rejoignez votre communauté étudiante en ligne : partagez des cours entre étudiants, créez des groupes d'étude et révisez avec Sphera IA.";
@@ -98,10 +98,10 @@ export function prerenderPublicPagesPlugin(): Plugin {
         </section>
       </main>
       <nav>
-        <a href="/cs-inc">Accueil</a> |
-        <a href="/cs-inc/about">À propos</a> |
-        <a href="/cs-inc/faq">FAQ</a> |
-        <a href="/cs-inc/contact">Contact</a> |
+        <a href="/cs">Accueil</a> |
+        <a href="/cs/about">À propos</a> |
+        <a href="/cs/faq">FAQ</a> |
+        <a href="/cs/contact">Contact</a> |
         <a href="/login">Connexion</a> |
         <a href="/register">Inscription</a> |
         <a href="https://sphera.campussphere.app">Sphera IA</a>
@@ -177,18 +177,18 @@ ${JSON.stringify(landingJsonLd, null, 2)}
       fs.writeFileSync(templatePath, rootHtml, 'utf-8');
       console.log(`✓ [prerender-campus] Prerendered dist/index.html (root, no visual flash)`);
 
-      // 2. /cs-inc
+      // 2. /cs
       injectPrerender(
-        'cs-inc',
+        'cs',
         landingTitle,
         landingDesc,
-        'https://campussphere.app/cs-inc',
+        'https://campussphere.app/cs',
         landingNoscriptHtml,
         landingJsonLd
       );
 
       // ─────────────────────────────────────────────────────────────
-      // 3. /cs-inc/about
+      // 3. /cs/about
       // ─────────────────────────────────────────────────────────────
       const aboutTitle = "À Propos - Le Réseau Social Étudiant & Notre Mission | CampusSphere";
       const aboutDesc = "Découvrez l'histoire de CampusSphere, l'équipe fondatrice et notre mission : créer le premier réseau social étudiant et plateforme d'entraide universitaire.";
@@ -196,7 +196,7 @@ ${JSON.stringify(landingJsonLd, null, 2)}
         '@context': 'https://schema.org',
         '@type': 'AboutPage',
         name: aboutTitle,
-        url: 'https://campussphere.app/cs-inc/about',
+        url: 'https://campussphere.app/cs/about',
         description: aboutDesc,
         mainEntity: {
           '@type': 'EducationalOrganization',
@@ -222,16 +222,16 @@ ${JSON.stringify(landingJsonLd, null, 2)}
         </section>
       </main>
       <nav>
-        <a href="/cs-inc">Accueil</a> |
-        <a href="/cs-inc/faq">FAQ</a> |
-        <a href="/cs-inc/contact">Contact</a> |
+        <a href="/cs">Accueil</a> |
+        <a href="/cs/faq">FAQ</a> |
+        <a href="/cs/contact">Contact</a> |
         <a href="/register">Rejoindre la communauté</a>
       </nav>
       `.trim();
-      injectPrerender('cs-inc/about', aboutTitle, aboutDesc, 'https://campussphere.app/cs-inc/about', aboutNoscriptHtml, aboutJsonLd);
+      injectPrerender('cs/about', aboutTitle, aboutDesc, 'https://campussphere.app/cs/about', aboutNoscriptHtml, aboutJsonLd);
 
       // ─────────────────────────────────────────────────────────────
-      // 4. /cs-inc/faq
+      // 4. /cs/faq
       // ─────────────────────────────────────────────────────────────
       const faqTitle = "FAQ - Réseau Social Étudiant & Entraide Académique | CampusSphere";
       const faqDesc = "Toutes les réponses à vos questions sur CampusSphere : partager des cours entre étudiants, créer des groupes d'étude, réviser avec Sphera IA et organiser vos études.";
@@ -274,7 +274,7 @@ ${JSON.stringify(landingJsonLd, null, 2)}
         '@context': 'https://schema.org',
         '@type': 'FAQPage',
         name: faqTitle,
-        url: 'https://campussphere.app/cs-inc/faq',
+        url: 'https://campussphere.app/cs/faq',
         description: faqDesc,
         mainEntity: faqItems.map(item => ({
           '@type': 'Question',
@@ -305,16 +305,16 @@ ${JSON.stringify(landingJsonLd, null, 2)}
         </section>
       </main>
       <nav>
-        <a href="/cs-inc">Accueil</a> |
-        <a href="/cs-inc/about">À propos</a> |
-        <a href="/cs-inc/contact">Contact</a> |
+        <a href="/cs">Accueil</a> |
+        <a href="/cs/about">À propos</a> |
+        <a href="/cs/contact">Contact</a> |
         <a href="/register">Inscription</a>
       </nav>
       `.trim();
-      injectPrerender('cs-inc/faq', faqTitle, faqDesc, 'https://campussphere.app/cs-inc/faq', faqNoscriptHtml, faqJsonLd);
+      injectPrerender('cs/faq', faqTitle, faqDesc, 'https://campussphere.app/cs/faq', faqNoscriptHtml, faqJsonLd);
 
       // ─────────────────────────────────────────────────────────────
-      // 5. /cs-inc/contact
+      // 5. /cs/contact
       // ─────────────────────────────────────────────────────────────
       const contactTitle = "Contactez l'Équipe CampusSphere | Support & Partenariats";
       const contactDesc = "Une question, une suggestion ou un partenariat ? Contactez directement l'équipe CampusSphere par email ou via notre formulaire.";
@@ -322,7 +322,7 @@ ${JSON.stringify(landingJsonLd, null, 2)}
         '@context': 'https://schema.org',
         '@type': 'ContactPage',
         name: contactTitle,
-        url: 'https://campussphere.app/cs-inc/contact',
+        url: 'https://campussphere.app/cs/contact',
         description: contactDesc
       };
       const contactNoscriptHtml = `
@@ -339,82 +339,76 @@ ${JSON.stringify(landingJsonLd, null, 2)}
         </section>
       </main>
       <nav>
-        <a href="/cs-inc">Accueil</a> |
-        <a href="/cs-inc/about">À propos</a> |
-        <a href="/cs-inc/faq">FAQ</a>
+        <a href="/cs">Accueil</a> |
+        <a href="/cs/about">À propos</a> |
+        <a href="/cs/faq">FAQ</a>
       </nav>
       `.trim();
-      injectPrerender('cs-inc/contact', contactTitle, contactDesc, 'https://campussphere.app/cs-inc/contact', contactNoscriptHtml, contactJsonLd);
+      injectPrerender('cs/contact', contactTitle, contactDesc, 'https://campussphere.app/cs/contact', contactNoscriptHtml, contactJsonLd);
 
       // ─────────────────────────────────────────────────────────────
-      // 6. /cs-inc/policies & Legal subpages
+      // 6. /cs/policies & Legal subpages
       // ─────────────────────────────────────────────────────────────
       const policiesPages = [
         {
-          dir: 'cs-inc/policies',
-          canonical: 'https://campussphere.app/cs-inc/policies',
+          dir: 'cs/policies',
+          canonical: 'https://campussphere.app/cs/policies',
           title: 'Centre des Politiques & Mentions Légales | CampusSphere',
           desc: 'Consultez l\'ensemble des politiques de confidentialité, mentions légales, CGU et CGV de CampusSphere.'
         },
         {
-          dir: 'cs-inc/policies/privacy',
-          canonical: 'https://campussphere.app/cs-inc/policies/privacy',
+          dir: 'cs/policies/privacy',
+          canonical: 'https://campussphere.app/cs/policies/privacy',
           title: 'Politique de Confidentialité | CampusSphere',
           desc: 'Informations sur la collecte, le traitement et la protection de vos données personnelles sur CampusSphere conformément au RGPD.'
         },
         {
-          dir: 'cs-inc/policies/terms',
-          canonical: 'https://campussphere.app/cs-inc/policies/terms',
+          dir: 'cs/policies/terms',
+          canonical: 'https://campussphere.app/cs/policies/terms',
           title: 'Conditions Générales d\'Utilisation (CGU) | CampusSphere',
           desc: 'Conditions régissant l\'accès et l\'utilisation du réseau social étudiant CampusSphere.'
         },
         {
-          dir: 'cs-inc/policies/terms-of-sale',
-          canonical: 'https://campussphere.app/cs-inc/policies/terms-of-sale',
+          dir: 'cs/policies/terms-of-sale',
+          canonical: 'https://campussphere.app/cs/policies/terms-of-sale',
           title: 'Conditions Générales de Vente (CGV) | CampusSphere',
           desc: 'Conditions relatives aux crédits et souscriptions Sphera IA et paiements Mobile Money.'
         },
         {
-          dir: 'cs-inc/policies/community-guidelines',
-          canonical: 'https://campussphere.app/cs-inc/policies/community-guidelines',
+          dir: 'cs/policies/community-guidelines',
+          canonical: 'https://campussphere.app/cs/policies/community-guidelines',
           title: 'Règles de la Communauté | CampusSphere',
           desc: 'Principes d\'entraide, de respect mutuel et règles de modération au sein de CampusSphere.'
         },
         {
-          dir: 'cs-inc/policies/copyright',
-          canonical: 'https://campussphere.app/cs-inc/policies/copyright',
+          dir: 'cs/policies/copyright',
+          canonical: 'https://campussphere.app/cs/policies/copyright',
           title: 'Politique de Droits d\'Auteur | CampusSphere',
           desc: 'Respect de la propriété intellectuelle, droits d\'auteur et procédure de signalement DMCA.'
         },
         {
-          dir: 'cs-inc/policies/cookiepolicy',
-          canonical: 'https://campussphere.app/cs-inc/policies/cookiepolicy',
+          dir: 'cs/policies/cookiepolicy',
+          canonical: 'https://campussphere.app/cs/policies/cookiepolicy',
           title: 'Politique de Cookies | CampusSphere',
           desc: 'Informations sur l\'utilisation des cookies essentiels au fonctionnement de CampusSphere.'
         },
         {
-          dir: 'cs-inc/policies/datadeletion',
-          canonical: 'https://campussphere.app/cs-inc/policies/datadeletion',
+          dir: 'cs/policies/datadeletion',
+          canonical: 'https://campussphere.app/cs/policies/datadeletion',
           title: 'Suppression des Données | CampusSphere',
           desc: 'Procédure pour demander l\'effacement définitif de votre compte et de vos données personnelles.'
         },
         {
-          dir: 'cs-inc/policies/legal-notice',
-          canonical: 'https://campussphere.app/cs-inc/policies/legal-notice',
+          dir: 'cs/policies/legal-notice',
+          canonical: 'https://campussphere.app/cs/policies/legal-notice',
           title: 'Mentions Légales | CampusSphere',
           desc: 'Mentions légales relatives à l\'éditeur CampusSphere, l\'hébergement et l\'infrastructure.'
         },
         {
-          dir: 'cs-inc/impact-score',
-          canonical: 'https://campussphere.app/cs-inc/impact-score',
+          dir: 'cs/impact-score',
+          canonical: 'https://campussphere.app/cs/impact-score',
           title: "Impact Score : Le Système d'Engagement Académique | CampusSphere",
           desc: "Découvrez l'Impact Score de CampusSphere : barème de points, système d'entraide, badges de réputation et valorisation du travail collaboratif."
-        },
-        {
-          dir: 'cs-inc/waitlist',
-          canonical: 'https://campussphere.app/cs-inc/waitlist',
-          title: 'Liste d\'Attente | CampusSphere',
-          desc: 'Inscrivez-vous pour être averti en avant-première des nouveautés CampusSphere.'
         },
         {
           dir: 'login',
