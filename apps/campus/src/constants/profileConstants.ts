@@ -1,3 +1,4 @@
+import { Crown, Fire, Plant, Star, Trophy, type Icon as PhosphorIcon } from "@phosphor-icons/react";
 import { formatSlugToLabel } from "@/lib/utils";
 import { FACULTY_BILINGUAL_MAP } from "@/constants/academicData";
 
@@ -23,12 +24,44 @@ export const MOOD_VALUE_TO_LABEL = MOOD_OPTIONS.reduce<Record<string, string>>((
   return acc;
 }, {});
 
-export const IMPACT_LEVELS = [
-  { min: 0, label: "Nouveau venu", color: "from-slate-400 to-slate-600", icon: "🌱" },
-  { min: 50, label: "Contributeur", color: "from-blue-500 to-indigo-600", icon: "⭐" },
-  { min: 200, label: "Pilier du Campus", color: "from-neutral-700 to-stone-900", icon: "🔥" },
-  { min: 500, label: "Maître du Campus", color: "from-indigo-600 to-violet-800", icon: "🏆" },
-  { min: 1000, label: "Légende du Campus", color: "from-purple-900 via-rose-900 to-slate-900", icon: "👑" },
+export interface ImpactLevel {
+  min: number;
+  label: string;
+  color: string;
+  icon: PhosphorIcon;
+}
+
+export const IMPACT_LEVELS: readonly ImpactLevel[] = [
+  {
+    min: 0,
+    label: "Nouveau venu",
+    color: "bg-zinc-100 text-zinc-600 border-zinc-200/90 dark:bg-zinc-800/90 dark:text-zinc-300 dark:border-zinc-700",
+    icon: Plant,
+  },
+  {
+    min: 50,
+    label: "Contributeur",
+    color: "bg-slate-100 text-slate-700 border-slate-300/90 dark:bg-slate-800/90 dark:text-slate-200 dark:border-slate-700",
+    icon: Star,
+  },
+  {
+    min: 200,
+    label: "Pilier du Campus",
+    color: "bg-stone-200/80 text-stone-800 border-stone-300 dark:bg-stone-800 dark:text-stone-200 dark:border-stone-600",
+    icon: Fire,
+  },
+  {
+    min: 500,
+    label: "Maître du Campus",
+    color: "bg-amber-50 text-amber-800 border-amber-300/80 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700/60",
+    icon: Trophy,
+  },
+  {
+    min: 1000,
+    label: "Légende du Campus",
+    color: "bg-zinc-900 text-amber-400 border-zinc-700 dark:bg-zinc-100 dark:text-amber-700 dark:border-zinc-300",
+    icon: Crown,
+  },
 ];
 
 export function getImpactLevelInfo(score: number) {

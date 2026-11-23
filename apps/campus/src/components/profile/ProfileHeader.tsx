@@ -404,16 +404,22 @@ export function ProfileHeader({
                       >
                         {user.impactScore ?? 0}
                       </p>
-                      {user.impactScore !== null && (
-                        <div
-                          className={cn(
-                            "flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white bg-gradient-to-r shadow-sm",
-                            getImpactLevelInfo(user.impactScore).currentLevel.color
-                          )}
-                        >
-                          <span>{getImpactLevelInfo(user.impactScore).currentLevel.icon}</span>
-                        </div>
-                      )}
+                      {user.impactScore !== null && (() => {
+                        const { currentLevel } = getImpactLevelInfo(user.impactScore ?? 0);
+                        const LevelIcon = currentLevel.icon;
+                        return (
+                          <div
+                            title={currentLevel.label}
+                            aria-label={currentLevel.label}
+                            className={cn(
+                              "flex items-center justify-center px-1.5 py-0.5 rounded-full border shadow-sm",
+                              currentLevel.color
+                            )}
+                          >
+                            <LevelIcon size={13} weight="duotone" aria-hidden="true" />
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
