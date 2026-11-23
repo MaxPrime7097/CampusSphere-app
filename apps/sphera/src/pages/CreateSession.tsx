@@ -157,8 +157,8 @@ export default function CreateSession() {
     try {
       const res = await createArtefact(sessionId, {
         type: 'flashcards',
-        title: `Flashcards - ${chapterTitle}`,
-        subtitle: `Flashcards • ${chapterTitle}`,
+        title: `Cartes mémoire - ${chapterTitle}`,
+        subtitle: `Cartes mémoire • ${chapterTitle}`,
         target_chapter: chapterTitle,
         selection_text: chapterSummary,
       })
@@ -989,7 +989,7 @@ export default function CreateSession() {
       display = `Quiz sur : "${selectedText}"`
       prompt = `Génère une question de quiz à choix multiples (avec 4 options A, B, C, D, la bonne réponse et une brève explication) basée sur ce passage :\n\n> "${selectedText}"`
     } else if (action === 'flashcards') {
-      display = `Flashcard pour : "${selectedText}"`
+      display = `Carte mémoire pour : "${selectedText}"`
       prompt = `Crée une flashcard recto/verso (Question clé au recto, Réponse synthétique au verso) basée sur ce concept :\n\n> "${selectedText}"`
     }
 

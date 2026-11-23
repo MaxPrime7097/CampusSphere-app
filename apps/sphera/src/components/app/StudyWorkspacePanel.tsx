@@ -437,11 +437,11 @@ export function StudyWorkspacePanel({
     const hasContent = sessionContent && sessionContent[tool]
     if (hasContent) {
       const titles: Record<ToolType, string> = {
-        fiche: 'Résumé du cours',
-        quiz: 'Quiz interactif',
-        flashcards: 'Flashcards',
-        mindmap: 'Mindmap & Plan',
-        audio: 'Podcast audio',
+        fiche: 'Fiche de cours',
+        quiz: "Quiz d'entraînement",
+        flashcards: 'Cartes mémoire',
+        mindmap: 'Schéma du cours',
+        audio: 'Cours en audio',
       }
       setActiveView({ type: tool, title: titles[tool] || tool })
     } else {
@@ -564,11 +564,11 @@ export function StudyWorkspacePanel({
     : null
 
   const TOOL_META: Record<ToolType, { label: string; color: string }> = {
-    audio: { label: 'Podcast', color: 'purple' },
-    fiche: { label: 'Résumé', color: 'cyan' },
-    flashcards: { label: 'Flashcards', color: 'orange' },
+    audio: { label: 'Cours audio', color: 'purple' },
+    fiche: { label: 'Fiche de cours', color: 'cyan' },
+    flashcards: { label: 'Cartes mémoire', color: 'orange' },
     quiz: { label: 'Quiz', color: 'rose' },
-    mindmap: { label: 'Mindmap', color: 'emerald' },
+    mindmap: { label: 'Schéma', color: 'emerald' },
   }
 
   const TOOL_COLORS: Record<ToolType, string> = {
@@ -756,7 +756,7 @@ export function StudyWorkspacePanel({
                       <Waveform weight="duotone" className="w-4 h-4 text-purple-400" />
                     </div>
                     <span className="text-xs sm:text-sm font-semibold text-white truncate">
-                      Podcast
+                      Cours audio
                     </span>
                   </div>
                   {generatingToolType === 'audio' ? (
@@ -795,7 +795,7 @@ export function StudyWorkspacePanel({
                       <FileText weight="duotone" className="w-4 h-4 text-cyan-400" />
                     </div>
                     <span className="text-xs sm:text-sm font-semibold text-white truncate">
-                      Résumé
+                      Fiche de cours
                     </span>
                   </div>
                   {generatingToolType === 'fiche' ? (
@@ -834,7 +834,7 @@ export function StudyWorkspacePanel({
                       <Cards weight="duotone" className="w-4 h-4 text-orange-400" />
                     </div>
                     <span className="text-xs sm:text-sm font-semibold text-white truncate">
-                      Flashcards
+                      Cartes mémoire
                     </span>
                   </div>
                   {generatingToolType === 'flashcards' ? (
@@ -850,7 +850,7 @@ export function StudyWorkspacePanel({
                             setScopeModal({ isOpen: true, toolType: 'flashcards' })
                           }}
                           className="p-1 rounded-lg text-sphera-text-muted hover:text-orange-400 hover:bg-sphera-surface transition-colors cursor-pointer"
-                          title="Générer des flashcards par chapitre"
+                          title="Générer des cartes mémoire par chapitre"
                         >
                           <Plus className="w-4 h-4" />
                         </div>
@@ -869,7 +869,7 @@ export function StudyWorkspacePanel({
                           }
                         }}
                         className="p-1 rounded-lg text-sphera-text-muted hover:text-orange-400 hover:bg-sphera-surface transition-colors shrink-0"
-                        title="Paramètres Quiz & Flashcards"
+                        title="Paramètres Quiz & Cartes mémoire"
                       >
                         <FadersHorizontal className="w-4 h-4" />
                       </div>
@@ -924,7 +924,7 @@ export function StudyWorkspacePanel({
                           }
                         }}
                         className="p-1 rounded-lg text-sphera-text-muted hover:text-rose-400 hover:bg-sphera-surface transition-colors shrink-0"
-                        title="Paramètres Quiz & Flashcards"
+                        title="Paramètres Quiz & Cartes mémoire"
                       >
                         <FadersHorizontal className="w-4 h-4" />
                       </div>
@@ -961,7 +961,7 @@ export function StudyWorkspacePanel({
                       <GitFork weight="duotone" className="w-4 h-4 text-emerald-400" />
                     </div>
                     <span className="text-xs sm:text-sm font-semibold text-white truncate">
-                      Mindmap
+                      Schéma
                     </span>
                   </div>
                   {generatingToolType === 'mindmap' ? (
@@ -1030,13 +1030,13 @@ export function StudyWorkspacePanel({
                         </div>
                         {[
                           { id: 'all', label: 'Tous les outils' },
-                          { id: 'annale', label: 'Annales & Corrigés' },
-                          { id: 'fiche', label: 'Résumés de cours' },
+                          { id: 'annale', label: "Corrigés d'examens" },
+                          { id: 'fiche', label: 'Fiches de cours' },
                           { id: 'quiz', label: 'Quiz' },
-                          { id: 'flashcards', label: 'Flashcards' },
+                          { id: 'flashcards', label: 'Cartes mémoire' },
                           { id: 'note', label: 'Notes personnelles' },
-                          { id: 'audio', label: 'Podcasts audio' },
-                          { id: 'mindmap', label: 'Mindmaps' },
+                          { id: 'audio', label: 'Cours en audio' },
+                          { id: 'mindmap', label: 'Schémas de cours' },
                         ].map((item) => (
                           <button
                             key={item.id}
@@ -1174,7 +1174,7 @@ export function StudyWorkspacePanel({
                   </div>
                   <div className="flex-1 min-w-0">
                     <span className="text-sm font-semibold text-white truncate block">
-                      {generatingChapterArtefact.type === 'quiz' ? 'Quiz' : 'Flashcards'} - {generatingChapterArtefact.chapter}
+                      {generatingChapterArtefact.type === 'quiz' ? 'Quiz' : 'Cartes mémoire'} - {generatingChapterArtefact.chapter}
                     </span>
                     <span className="text-[11px] text-sphera-text-muted">Création en cours…</span>
                   </div>
@@ -1686,9 +1686,9 @@ export function StudyWorkspacePanel({
               {/* Left: Animated Icon + Title (clickable to return to podcast view) */}
               <button
                 type="button"
-                onClick={() => setActiveView({ type: 'audio', title: podcast.title || 'Podcast' })}
+                onClick={() => setActiveView({ type: 'audio', title: podcast.title || 'Cours en audio' })}
                 className="flex items-center gap-2.5 min-w-0 text-left hover:opacity-80 transition-opacity group cursor-pointer"
-                title="Ouvrir le podcast"
+                title="Ouvrir le cours en audio"
               >
                 <div className="w-7 h-7 rounded-lg bg-purple-500/15 border border-purple-500/30 flex items-center justify-center shrink-0">
                   {podcast.isPlaying ? (
@@ -1703,7 +1703,7 @@ export function StudyWorkspacePanel({
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-purple-400">Podcast en cours</span>
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-purple-400">Audio en cours</span>
                     <span className="text-[10px] text-sphera-text-muted">•</span>
                     <span className="text-[10px] text-sphera-text-muted font-mono">
                       {podcast.audioUrl
@@ -1874,7 +1874,7 @@ export function StudyWorkspacePanel({
           showPanelFeedback(
             scopeModal.toolType === 'quiz'
               ? 'Génération du Quiz complet lancée !'
-              : 'Génération des Flashcards complètes lancée !',
+              : 'Génération des Cartes mémoire complètes lancée !',
             'info'
           )
         }}

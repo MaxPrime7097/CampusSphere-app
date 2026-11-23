@@ -180,7 +180,7 @@ export function ChapterFicheView({
                           ) : (
                             <Cards weight="duotone" className="w-3.5 h-3.5" />
                           )}
-                          <span>{isThisFlashGenerating ? "Création..." : "Flashcards (0.5)"}</span>
+                          <span>{isThisFlashGenerating ? "Création..." : "Cartes mémoire (0.5)"}</span>
                         </button>
                       </div>
                     )
