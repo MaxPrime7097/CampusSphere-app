@@ -128,39 +128,96 @@ const SPHERA_QA_PERSONA = SPHERA_QA_PERSONA_BASE + REBOUND_SUGGESTIONS_MANDATE;
 const fichePrompt = (text: string): string => {
   const lang = detectLanguage(text);
   const mandate = getLanguageMandate(lang);
+  const charCount = text.length;
+
+  const depthGuidance =
+    charCount < 3500
+      ? "- Document length: SHORT. Structure into 2 to 3 focused, crisp chapters and 2 to 3 exam self-check questions. Do not pad with fluff."
+      : charCount < 15000
+        ? "- Document length: MEDIUM. Structure into 3 to 6 well-balanced thematic chapters covering the entire source from start to finish, and 3 to 4 exam self-check questions."
+        : "- Document length: LONG / DENSE. Structure into 5 to 9 comprehensive thematic chapters covering ALL major sections from beginning to end (never neglect the final chapters of the document), and 4 to 5 exam self-check questions.";
 
   return (
     SPHERA_JSON_PERSONA +
-    `Generate an exhaustive, highly structured study sheet in JSON format based on the provided course text.
+    `Generate a university-grade, pedagogically rigorous, highly scannable study sheet ("fiche de révision") in JSON format based strictly on the provided course text.
 
 ${mandate}
 
-IMPORTANT RULES:
-- Deconstruct the course into clear, coherent thematic chapters / sections ("chapitres").
-- Each chapter MUST contain a substantial, highly pedagogical summary explaining the key concepts, mechanisms, and examples belonging to that section.
-- Extract ALL key points, definitions, and concepts actually present in the source text.
-- The "formules" field is for mathematical formulas, formal rules, or key equations. If the course contains none, return an empty array: "formules": [].
-- The "a_retenir" array contains practical revision tips and typical exam traps to avoid.
-- Do NOT invent information absent from the source text. Stay strictly faithful to the content provided.
-- JSON keys must remain strictly in French as specified below, but all string values inside must strictly match the detected course language.
+PEDAGOGICAL & STRUCTURAL MANDATES:
+${depthGuidance}
+- SOURCE HYGIENE: Ignore PDF/OCR extraction noise (page numbers, repeated headers/footers, table-of-contents lines, raw bibliography lists, slide footers). Focus exclusively on academic substance.
+- ZERO HALLUCINATION: Stay strictly faithful to the provided source text. Every definition, formula, example, trap, and exam question MUST be grounded in the source material. Never invent equations, dates, or concepts absent from the text.
+- CHAPTERS ("chapitres"):
+  - Follow the logical progression of the course.
+  - Each chapter's "resume" MUST be genuinely didactic and readable — NOT a wall of text. Use short paragraphs (2-4 lines max), **bold** for essential terms, bullet lists ("- ...") for enumerations/steps, and GitHub Flavored Markdown comparison tables (| Critère | A | B |) whenever the course compares or contrasts notions, categories, or mechanisms.
+  - Explain WHY and HOW concepts work (mechanisms, cause-and-effect, conditions of validity), not just superficial topic labels.
+  - Each chapter's "points_cles" MUST contain 2 to 5 sharp, high-yield exam takeaways specific to that chapter (no vague filler).
+- MATH & SCIENTIFIC NOTATION (LaTeX):
+  - Whenever mathematical, physical, chemical, statistical, or economic expressions appear in the course, format them in clean LaTeX: inline with $...$ and display formulas with $$...$$ (remember to double-escape backslashes inside JSON strings, e.g., "\\\\frac{a}{b}", "\\\\Delta G").
+- DEFINITIONS ("definitions"):
+  - Extract ALL key technical terms, concepts, or theorems defined or explained in the course, with precise, rigorous, exam-ready definitions.
+- FORMULAS & FORMAL RULES ("formules"):
+  - Extract every mathematical formula, scientific law, theorem statement, or formal rule from the course as structured objects: { "nom", "formule", "explication" }.
+  - "explication" MUST state what each symbol/variable represents, units if mentioned, and when/under what conditions the formula applies.
+  - If the course contains NO formulas, equations, or formal rules, return an empty array: "formules": [].
+- CONCRETE EXAMPLES ("exemples"):
+  - Extract 1 to 4 concrete applications, worked numerical examples, case studies, or clinical/legal/practical illustrations actually present in the course.
+  - If the source contains no concrete examples, return "exemples": [].
+- EXAM TRAPS & CONFUSIONS ("pieges"):
+  - List 2 to 5 concrete pitfalls, frequent confusions (e.g., "Do not confuse X with Y"), exceptions, or validity conditions grounded directly in the nuances of the course text.
+- HIGH-YIELD REVISION TAKEAWAYS ("a_retenir"):
+  - List 3 to 5 strategic revision tips, core syntheses, or methodology pointers to master for the exam.
+- EXAM SELF-CHECK QUESTIONS ("questions_examen"):
+  - Write realistic university exam questions (conceptual, analytical, or applied) testing real understanding of this course, each paired with structured "reponse" elements explaining what a grader expects for full marks.
+- JSON keys must remain strictly in French as specified below, and all string values must strictly match the detected course language.
 
 Strict JSON format:
 {
-  "titre": "Course Title in same language as source",
-  "resume": "Comprehensive global synthesis of the entire course.",
+  "titre": "Clear, accurate course title in source language",
+  "resume": "Executive synthesis (3 to 5 crisp sentences) framing the core subject, key stakes, and overall takeaway of the course.",
   "chapitres": [
     {
       "id": "chap_1",
       "numero": 1,
-      "titre": "Title of Chapter / Section 1 in source language",
-      "resume": "Thorough, clear, and didactic explanation of this chapter's concepts, mechanisms, and real-world examples.",
-      "points_cles": ["Key point 1 of this chapter", "Key point 2"]
+      "titre": "Clear thematic title of Chapter 1",
+      "resume": "Well-structured didactic explanation in Markdown (**bold terms**, bullet lists, GFM comparison tables when comparing notions, $LaTeX$ for equations).",
+      "points_cles": [
+        "Sharp, exam-oriented takeaway 1 for this chapter",
+        "Sharp, exam-oriented takeaway 2 for this chapter"
+      ]
     }
   ],
-  "points_cles": ["Overall key point 1 in source language", "Overall key point 2", "Overall key point 3"],
-  "definitions": [{"terme": "Term in source language", "definition": "Complete and precise definition in source language"}],
-  "formules": ["Formula 1", "Formula 2"],
-  "a_retenir": ["Exam advice 1 in source language", "Common trap to avoid", "Advice 3"]
+  "definitions": [
+    {
+      "terme": "Technical term in source language",
+      "definition": "Complete, rigorous, exam-ready definition in source language"
+    }
+  ],
+  "formules": [
+    {
+      "nom": "Name of the formula, law, or formal rule",
+      "formule": "$$E = mc^2$$",
+      "explication": "Variables, units, and conditions of validity/application"
+    }
+  ],
+  "exemples": [
+    {
+      "titre": "Short title of concrete application from the course",
+      "description": "Clear walkthrough of the worked example or case study from the source text"
+    }
+  ],
+  "pieges": [
+    "Specific confusion or condition to watch out for based on the course text"
+  ],
+  "a_retenir": [
+    "High-yield exam strategy or essential mental model from the course"
+  ],
+  "questions_examen": [
+    {
+      "question": "Realistic exam question testing deep comprehension of the course",
+      "reponse": "Structured expected answer elements (key points, reasoning, and keywords required for full credit)"
+    }
+  ]
 }
 
 <source_text>

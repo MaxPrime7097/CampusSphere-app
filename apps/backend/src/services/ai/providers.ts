@@ -934,8 +934,9 @@ export async function getBedrockUsageStats(forceRefresh = false): Promise<Bedroc
   }
 }
 
-/** Token budgets per tool type. Quiz and flashcards need more room for 20-30 items. */
+/** Token budgets per tool type. Fiche, quiz, and flashcards need room for rich structured output. */
 export const TOKENS_DEFAULT = 3000;
+export const TOKENS_FICHE = 7000;
 export const TOKENS_QUIZ = 6000;
 export const TOKENS_FLASHCARDS = 4096;
 export const TOKENS_ANNALE = 8000;

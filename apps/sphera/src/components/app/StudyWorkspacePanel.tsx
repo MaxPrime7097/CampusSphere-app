@@ -1694,9 +1694,12 @@ export function StudyWorkspacePanel({
               (sessionContent?.fiche_content || sessionContent?.fiche) ? (
                 <ChapterFicheView
                   fiche={sessionContent?.fiche_content || sessionContent?.fiche}
+                  sessionId={sessionId}
+                  sessionType={isAnnale ? 'annale' : 'session'}
                   onGenerateChapterQuiz={onGenerateChapterQuiz}
                   onGenerateChapterFlashcards={onGenerateChapterFlashcards}
                   onRegenerateFiche={onRegenerateFiche}
+                  onSaveNote={handleSaveInlineNote}
                   isRegenerating={isRegeneratingFiche}
                   isGeneratingItem={isGeneratingArtefact}
                   generatingChapterArtefact={generatingChapterArtefact}

@@ -91,7 +91,7 @@ function markdownToHtml(text: string): string {
 function renderTable(rows: string[]): string {
   if (rows.length < 2) return ''
   const headerCells = rows[0].split('|').filter(c => c.trim() !== '')
-  const dataRows = rows.slice(1).filter(r => !r.replace(/[-|:\s]/g, '').length === false)
+  const dataRows = rows.slice(1).filter(r => r.replace(/[-|:\s]/g, '').length > 0)
 
   let html = '<div class="table-container"><table class="doc-table"><thead><tr>'
   for (const cell of headerCells) {
@@ -694,8 +694,8 @@ export function generateFicheHtml(options: GenerateFicheOptions): string {
       const num = chap.numero || idx + 1
       const titre = chap.titre || `Chapitre ${num}`
       html += `
-        <div class="chapter-card page-break-avoid">
-          <div class="chapter-header">
+        <div class="chapter-card">
+          <div class="chapter-header page-break-avoid">
             <span class="chapter-badge">${escapeHtml(String(num))}</span>
             <span class="chapter-title">${escapeHtml(titre)}</span>
           </div>
