@@ -1,16 +1,16 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Envelope as Mail, Check, Spinner as Loader2 } from "@phosphor-icons/react";
-import { Button } from "@/components/ui/button";
+import { Helmet } from "react-helmet-async";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, CheckCircle, Envelope, Spinner } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabaseResetPassword } from "@/services/api";
-import { useTranslation } from "react-i18next";
+import { AuthLanguageToggle, AuthSidePanel } from "@/components/auth/AuthSidePanel";
 
 export function ForgotPassword() {
-  const { t } = useTranslation('auth');
+  const { t } = useTranslation("auth");
   const navigate = useNavigate();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
@@ -25,56 +25,162 @@ export function ForgotPassword() {
       await supabaseResetPassword(email.trim());
       setSent(true);
     } catch (err: any) {
-      toast({ title: t('login.errorTitle', { defaultValue: "Erreur" }), description: err?.message || "Impossible d'envoyer l'email", variant: "destructive" });
+      toast({
+        title: t("login.errorTitle", { defaultValue: "Erreur" }),
+        description: err?.message || "Impossible d’envoyer l’email",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <Button variant="ghost" onClick={() => navigate("/login")} className="mb-4">
-          <ArrowLeft className="h-4 w-4 mr-2" />{t('forgotPassword.back', { defaultValue: "Retour" })}
-        </Button>
+    <div className="cs-pub-font min-h-screen bg-white text-[#18181b] grid lg:grid-cols-2">
+      <Helmet>
+        <title>
+          {t("forgotPassword.title", { defaultValue: "Mot de passe oublié" })} — CampusSphere
+        </title>
+        <meta
+          name="description"
+          content={t("forgotPassword.subtitle", {
+            defaultValue: "Entre ton adresse email pour recevoir un lien de réinitialisation.",
+          })}
+        />
+        <link rel="canonical" href="https://campussphere.app/forgot-password" />
+      </Helmet>
 
-        <Card className="cs-card">
-          <CardHeader className="text-center">
-            <div className="w-16 h-16 campus-gradient rounded-2xl flex items-center justify-center mx-auto mb-4">
-              {sent ? <Check className="h-8 w-8 text-white" /> : <Mail className="h-8 w-8 text-white" />}
-            </div>
-            <CardTitle className="text-2xl">
-              {sent ? t('forgotPassword.emailSentTitle', { defaultValue: "Email envoyé !" }) : t('forgotPassword.title', { defaultValue: "Mot de passe oublié ?" })}
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-2">
-              {sent
-                ? t('forgotPassword.emailSentDesc', { defaultValue: "Vérifiez votre boîte mail pour réinitialiser votre mot de passe" })
-                : t('forgotPassword.subtitle', { defaultValue: "Entrez votre email pour recevoir un lien de réinitialisation" })}
-            </p>
-          </CardHeader>
-          <CardContent>
-            {!sent ? (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="email">{t('forgotPassword.emailLabel', { defaultValue: "Email" })}</Label>
-                  <Input id="email" type="email" placeholder={t('forgotPassword.emailPlaceholder', { defaultValue: "votre.email@exemple.com" })} value={email} onChange={e => setEmail(e.target.value)} required />
+      {/* Colonne Formulaire (Blanc pur) */}
+      <div className="flex flex-col justify-between px-4 sm:px-10 lg:px-14 py-6 sm:py-8 overflow-y-auto">
+        <div className="flex items-center justify-between max-w-md w-full mx-auto gap-2">
+          <Link to="/cs" className="inline-flex items-center gap-2.5">
+            <img src="/CS.svg" alt="CampusSphere" className="w-8 h-8" />
+            <span className="font-automata text-lg font-bold campus-gradient bg-clip-text text-transparent">
+              CampusSphere
+            </span>
+          </Link>
+          <div className="flex items-center gap-2.5">
+            <AuthLanguageToggle tone="light" className="lg:hidden" />
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-1.5 font-poppins text-xs font-semibold text-zinc-500 hover:text-[#18181b] transition-colors"
+            >
+              <ArrowLeft size={14} weight="bold" aria-hidden="true" />
+              {t("forgotPassword.back", { defaultValue: "Connexion" })}
+            </Link>
+          </div>
+        </div>
+
+        <div className="w-full max-w-md mx-auto my-10">
+          {!sent ? (
+            <>
+              <div className="mb-7">
+                <div className="w-12 h-12 rounded-2xl bg-[#fff7ed] text-[#ff9800] flex items-center justify-center mb-4">
+                  <Envelope size={24} weight="duotone" aria-hidden="true" />
                 </div>
-                <Button type="submit" className="w-full campus-gradient text-white hover:opacity-90" disabled={isLoading}>
-                  {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('forgotPassword.submittingButton', { defaultValue: "Envoi..." })}</> : t('forgotPassword.submitButton', { defaultValue: "Envoyer le lien" })}
-                </Button>
-              </form>
-            ) : (
-              <div className="space-y-4">
-                <div className="text-center p-4 bg-primary/10 rounded-lg">
-                  <p className="text-sm">{t('forgotPassword.emailSentTo', { defaultValue: "Un email a été envoyé à" })}{" "}<strong>{email}</strong></p>
-                </div>
-                <Button onClick={() => navigate("/login")} className="w-full" variant="outline">{t('forgotPassword.backToLogin', { defaultValue: "Retour à la connexion" })}</Button>
-                <Button onClick={() => setSent(false)} variant="ghost" className="w-full text-sm">{t('forgotPassword.resend', { defaultValue: "Renvoyer l'email" })}</Button>
+                <h1 className="font-poppins text-2xl sm:text-3xl font-bold text-[#18181b] tracking-tight">
+                  {t("forgotPassword.title", { defaultValue: "Mot de passe oublié ?" })}
+                </h1>
+                <p className="font-nunito text-sm sm:text-base text-zinc-500 mt-1.5 leading-relaxed">
+                  {t("forgotPassword.subtitle", {
+                    defaultValue: "Entre ton adresse email pour recevoir un lien de réinitialisation.",
+                  })}
+                </p>
               </div>
-            )}
-          </CardContent>
-        </Card>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor="forgot-email"
+                    className="font-poppins text-sm font-semibold text-[#18181b]"
+                  >
+                    {t("forgotPassword.emailLabel", { defaultValue: "Adresse email" })}
+                  </Label>
+                  <div className="relative">
+                    <Envelope
+                      size={17}
+                      weight="duotone"
+                      aria-hidden="true"
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400"
+                    />
+                    <Input
+                      id="forgot-email"
+                      type="email"
+                      autoComplete="email"
+                      placeholder={t("forgotPassword.emailPlaceholder", {
+                        defaultValue: "toi@exemple.com",
+                      })}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="h-11 pl-10 bg-white border-black/15 text-[#18181b] placeholder:text-zinc-400 focus-visible:ring-[#ff9800] focus-visible:border-[#ff9800]"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-11 rounded-full bg-[#ff9800] hover:bg-[#f57c00] text-white font-poppins text-sm font-semibold shadow-md shadow-[#ff9800]/25 inline-flex items-center justify-center gap-2 transition-all disabled:opacity-60 disabled:pointer-events-none"
+                >
+                  {isLoading ? (
+                    <>
+                      <Spinner size={17} className="animate-spin" aria-hidden="true" />
+                      {t("forgotPassword.submittingButton", { defaultValue: "Envoi..." })}
+                    </>
+                  ) : (
+                    t("forgotPassword.submitButton", { defaultValue: "Envoyer le lien" })
+                  )}
+                </button>
+              </form>
+            </>
+          ) : (
+            <div className="text-center space-y-5 rounded-3xl bg-[#faf8f5] border border-black/8 p-6 sm:p-8">
+              <div className="w-16 h-16 rounded-2xl bg-[#fff7ed] text-[#ff9800] flex items-center justify-center mx-auto">
+                <CheckCircle size={32} weight="duotone" aria-hidden="true" />
+              </div>
+              <div>
+                <h1 className="font-poppins text-2xl font-bold text-[#18181b] mb-2">
+                  {t("forgotPassword.emailSentTitle", { defaultValue: "Email envoyé !" })}
+                </h1>
+                <p className="font-nunito text-sm text-zinc-600 leading-relaxed">
+                  {t("forgotPassword.emailSentTo", { defaultValue: "Un lien a été envoyé à" })}{" "}
+                  <strong className="text-[#18181b]">{email}</strong>.{" "}
+                  {t("forgotPassword.emailSentDesc", {
+                    defaultValue: "Vérifie ta boîte mail (et tes spams) pour définir un nouveau mot de passe.",
+                  })}
+                </p>
+              </div>
+              <div className="flex flex-col gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => navigate("/login")}
+                  className="w-full h-11 rounded-full bg-[#09090b] hover:bg-zinc-800 text-white font-poppins text-sm font-semibold transition-colors"
+                >
+                  {t("forgotPassword.backToLogin", { defaultValue: "Retour à la connexion" })}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSent(false)}
+                  className="font-poppins text-xs font-semibold text-zinc-500 hover:text-[#18181b] py-2 transition-colors"
+                >
+                  {t("forgotPassword.resend", { defaultValue: "Renvoyer l’email" })}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <p className="text-center font-nunito text-xs text-zinc-400 max-w-md mx-auto">
+          {t("sidePanel.needHelp", { defaultValue: "Besoin d’aide ?" })}{" "}
+          <Link to="/cs/contact" className="text-zinc-600 hover:text-[#e65100] underline">
+            {t("sidePanel.contactSupport", { defaultValue: "Contacter le support" })}
+          </Link>
+        </p>
       </div>
+
+      {/* Panneau latéral Encre sombre */}
+      <AuthSidePanel />
     </div>
   );
 }

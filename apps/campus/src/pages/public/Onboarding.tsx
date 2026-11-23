@@ -1,22 +1,25 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
-import { Spinner as Loader2, ArrowRight } from "@phosphor-icons/react";
-import { Button } from "@/components/ui/button";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { ArrowRight, GraduationCap, Spinner } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { completeSupabaseProfile } from "@/services/api";
 import { cn } from "@/lib/utils";
-import { UniversityCombobox, CAMEROON_PRIVATE_UNIVERSITIES } from "@/components/forms/UniversityCombobox";
+import {
+  UniversityCombobox,
+  CAMEROON_PRIVATE_UNIVERSITIES,
+} from "@/components/forms/UniversityCombobox";
 import { DomainCombobox } from "@/components/forms/DomainCombobox";
 import { FacultyCombobox } from "@/components/forms/FacultyCombobox";
 import { StudyLevelCombobox } from "@/components/forms/StudyLevelCombobox";
 import { getDomainForFaculty } from "@/constants/academicData";
 import { useAuth } from "@/contexts/AuthContext";
 import { WELCOME_FLAG_KEY } from "@/components/onboarding/WelcomeTeamModal";
+import { AuthLanguageToggle } from "@/components/auth/AuthSidePanel";
 
 const MINIMUM_AGE = 16;
 
@@ -24,7 +27,12 @@ const parseISODate = (value: string) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   const [year, month, day] = value.split("-").map(Number);
   const date = new Date(Date.UTC(year, month - 1, day));
-  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  )
+    return null;
   return date;
 };
 
@@ -42,14 +50,18 @@ const getBirthDateMax = () => {
     .split("T")[0];
 };
 
-const validateDateOfBirth = (value: string, t: (key: string, opt?: any) => string): string | null => {
+const validateDateOfBirth = (
+  value: string,
+  t: (key: string, opt?: any) => string
+): string | null => {
   if (!value) return t("onboarding.errors.dobRequired");
   const birthDate = parseISODate(value);
   if (!birthDate) return t("onboarding.errors.dobInvalid");
   const now = new Date();
   const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   if (birthDate > todayUtc) return t("onboarding.errors.dobFuture");
-  if (getAgeFromDate(birthDate, todayUtc) < MINIMUM_AGE) return t("onboarding.errors.minAge", { age: MINIMUM_AGE });
+  if (getAgeFromDate(birthDate, todayUtc) < MINIMUM_AGE)
+    return t("onboarding.errors.minAge", { age: MINIMUM_AGE });
   return null;
 };
 
@@ -96,10 +108,20 @@ export function Onboarding() {
 
   // Pré-remplissage avec les informations déjà connues de l'utilisateur
   useEffect(() => {
-    const campusRef = searchParams.get("campus") || searchParams.get("ref") || localStorage.getItem("campus_ref") || "";
+    const campusRef =
+      searchParams.get("campus") ||
+      searchParams.get("ref") ||
+      localStorage.getItem("campus_ref") ||
+      "";
     if (user) {
       const isKnown = CAMEROON_PRIVATE_UNIVERSITIES.some((u) => u.value === user.university);
-      const uniVal = user.university ? (isKnown ? user.university : "other") : (campusRef ? campusRef.toLowerCase().trim() : "iuc");
+      const uniVal = user.university
+        ? isKnown
+          ? user.university
+          : "other"
+        : campusRef
+        ? campusRef.toLowerCase().trim()
+        : "iuc";
       if (!isKnown && user.university) {
         setCustomUniversity(user.university);
       }
@@ -130,25 +152,21 @@ export function Onboarding() {
 
     const newErrors: Record<string, string> = {};
 
-    // Validation date de naissance
     const dobError = validateDateOfBirth(formData.dateOfBirth, t);
     if (dobError) {
       newErrors.dateOfBirth = dobError;
     }
 
-    // Validation université
     if (!formData.university.trim()) {
       newErrors.university = t("onboarding.errors.selectUniversity");
     } else if (formData.university === "other" && !customUniversity.trim()) {
       newErrors.customUniversity = t("onboarding.errors.enterCustomUniversity");
     }
 
-    // Validation filière
     if (!formData.faculty.trim()) {
       newErrors.faculty = t("onboarding.errors.selectFaculty");
     }
 
-    // Validation niveau
     if (!formData.studyYear.trim()) {
       newErrors.studyYear = t("onboarding.errors.selectStudyYear");
     }
@@ -167,9 +185,8 @@ export function Onboarding() {
     setIsLoading(true);
 
     try {
-      const finalUniversity = formData.university === "other"
-        ? customUniversity.trim()
-        : formData.university.trim();
+      const finalUniversity =
+        formData.university === "other" ? customUniversity.trim() : formData.university.trim();
 
       const payload = {
         date_of_birth: formData.dateOfBirth,
@@ -190,7 +207,6 @@ export function Onboarding() {
       const isPilot = normUni === "iuc" || normUni.includes("côte") || normUni.includes("cote");
 
       if (isPilot) {
-        // Déclencheurs pour la bienvenue et la modale de certification sur le feed
         localStorage.setItem(WELCOME_FLAG_KEY, "1");
         localStorage.setItem("cs_just_onboarded", "1");
 
@@ -220,168 +236,184 @@ export function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5 flex flex-col items-center justify-center p-4 sm:p-8">
+    <div className="cs-pub-font min-h-screen bg-[#f6f4ee] text-[#18181b] flex flex-col font-nunito">
       <Helmet>
         <title>{t("onboarding.metaTitle")}</title>
       </Helmet>
 
-      <div className="w-full max-w-lg mx-auto">
-        {/* Entête */}
-        <div className="text-center mb-6">
-          <span className="text-2xl sm:text-3xl font-bold font-automata campus-gradient bg-clip-text text-transparent">
-            CampusSphere
-          </span>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground mt-3">
-            {t("onboarding.title")}
-          </h1>
-          <p className="text-muted-foreground mt-1.5 text-xs sm:text-sm max-w-md mx-auto">
-            {t("onboarding.subtitle")}
-          </p>
+      {/* Barre supérieure sombre cohérente */}
+      <header className="sticky top-0 z-50 bg-[#09090b]/95 backdrop-blur-md border-b border-white/10">
+        <div className="max-w-[1040px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+          <Link to="/cs" className="inline-flex items-center gap-2.5">
+            <img src="/CS.svg" alt="CampusSphere" className="w-8 h-8" />
+            <span className="font-automata text-lg font-bold campus-gradient bg-clip-text text-transparent">
+              CampusSphere
+            </span>
+          </Link>
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:inline font-poppins text-xs font-medium text-zinc-400">
+              {t("sidePanel.profileCompletion", { defaultValue: "Finalisation du profil" })}
+            </span>
+            <AuthLanguageToggle tone="dark" />
+          </div>
         </div>
+      </header>
 
-        {user?.firstName && (
-          <p className="text-xs text-center text-muted-foreground mb-5">
-            {t("onboarding.welcomeBack", { name: user.firstName })}
-          </p>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* 1. Date de naissance */}
-          <div>
-            <Label className="text-xs font-semibold">
-              {t("onboarding.birthDate")} <span className="text-primary">*</span>
-            </Label>
-            <Input
-              type="date"
-              max={getBirthDateMax()}
-              value={formData.dateOfBirth}
-              onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
-              className={cn("mt-1.5", errors.dateOfBirth && "border-destructive")}
-            />
-            {errors.dateOfBirth ? (
-              <p className="text-xs text-destructive mt-1">{errors.dateOfBirth}</p>
-            ) : (
-              <p className="text-[11px] text-muted-foreground mt-1">
-                {t("onboarding.ageRequirement", { age: MINIMUM_AGE })}
+      {/* Contenu centré */}
+      <main className="flex-1 flex items-center justify-center px-3.5 sm:px-6 py-8 sm:py-12">
+        <div className="w-full max-w-[580px] rounded-3xl bg-white border border-black/10 p-5 sm:p-8 shadow-sm">
+          {/* En-tête */}
+          <div className="text-center mb-7">
+            <div className="w-12 h-12 mx-auto rounded-2xl bg-[#fff7ed] text-[#ff9800] flex items-center justify-center mb-3.5">
+              <GraduationCap size={24} weight="duotone" aria-hidden="true" />
+            </div>
+            <h1 className="font-poppins text-2xl sm:text-[1.65rem] font-extrabold text-[#18181b] tracking-tight">
+              {t("onboarding.title")}
+            </h1>
+            <p className="text-zinc-500 mt-1.5 text-sm max-w-md mx-auto leading-relaxed">
+              {t("onboarding.subtitle")}
+            </p>
+            {user?.firstName && (
+              <p className="font-poppins text-xs font-semibold text-[#e65100] mt-2">
+                {t("onboarding.welcomeBack", { name: user.firstName })}
               </p>
             )}
           </div>
 
-          {/* 2. Université / Établissement */}
-          <div>
-            <Label className="text-xs font-semibold">
-              {t("onboarding.university")} <span className="text-primary">*</span>
-            </Label>
-            <UniversityCombobox
-              value={formData.university}
-              onValueChange={(v) => handleInputChange("university", v)}
-              className="mt-1.5"
-            />
-            {errors.university && (
-              <p className="text-xs text-destructive mt-1">{errors.university}</p>
-            )}
-          </div>
-
-          {/* Saisie explicite du nom complet si autre établissement */}
-          {formData.university === "other" && (
-            <div className="space-y-1">
-              <Label className="text-xs font-semibold">
-                {t("onboarding.customUniversity")} <span className="text-primary">*</span>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* 1. Date de naissance */}
+            <div className="space-y-1.5">
+              <Label className="font-poppins text-xs font-semibold text-[#18181b]">
+                {t("onboarding.birthDate")} <span className="text-[#ff9800]">*</span>
               </Label>
               <Input
-                type="text"
-                placeholder={t("onboarding.customUniversityPlaceholder")}
-                value={customUniversity}
-                onChange={(e) => {
-                  setCustomUniversity(e.target.value);
-                  if (errors.customUniversity) setErrors((prev) => ({ ...prev, customUniversity: "" }));
-                }}
-                className={cn("mt-1.5", errors.customUniversity && "border-destructive")}
+                type="date"
+                max={getBirthDateMax()}
+                value={formData.dateOfBirth}
+                onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
+                className={cn(
+                  "h-11 bg-white border-black/15 text-[#18181b] focus-visible:ring-[#ff9800] focus-visible:border-[#ff9800]",
+                  errors.dateOfBirth && "border-destructive"
+                )}
               />
-              {errors.customUniversity ? (
-                <p className="text-xs text-destructive mt-1">{errors.customUniversity}</p>
+              {errors.dateOfBirth ? (
+                <p className="text-xs text-destructive">{errors.dateOfBirth}</p>
               ) : (
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  {t("onboarding.customUniversityHint")}
+                <p className="text-xs text-zinc-500">
+                  {t("onboarding.ageRequirement", { age: MINIMUM_AGE })}
                 </p>
               )}
             </div>
-          )}
 
-          {/* 3. Domaine d'études */}
-          <div>
-            <Label className="text-xs font-semibold">
-              {t("onboarding.fieldOfStudy")} <span className="text-muted-foreground text-[11px] font-normal">{t("onboarding.optional")}</span>
-            </Label>
-            <DomainCombobox
-              value={academicDomain}
-              onValueChange={(dom) => {
-                setAcademicDomain(dom);
-                if (formData.faculty && getDomainForFaculty(formData.faculty) !== dom) {
-                  handleInputChange("faculty", "");
-                }
-              }}
-              className="mt-1.5"
-            />
-          </div>
-
-          {/* 4. Filière & Niveau */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs font-semibold">
-                {t("onboarding.faculty")} <span className="text-primary">*</span>
+            {/* 2. Établissement */}
+            <div className="space-y-1.5">
+              <Label className="font-poppins text-xs font-semibold text-[#18181b]">
+                {t("onboarding.university")} <span className="text-[#ff9800]">*</span>
               </Label>
-              <FacultyCombobox
-                domain={academicDomain}
-                onDomainChange={(dom) => {
-                  if (dom && dom !== academicDomain) setAcademicDomain(dom);
+              <UniversityCombobox
+                value={formData.university}
+                onValueChange={(v) => handleInputChange("university", v)}
+              />
+              {errors.university && <p className="text-xs text-destructive">{errors.university}</p>}
+            </div>
+
+            {/* Saisie explicite si autre établissement */}
+            {formData.university === "other" && (
+              <div className="space-y-1.5">
+                <Label className="font-poppins text-xs font-semibold text-[#18181b]">
+                  {t("onboarding.customUniversity")} <span className="text-[#ff9800]">*</span>
+                </Label>
+                <Input
+                  type="text"
+                  placeholder={t("onboarding.customUniversityPlaceholder")}
+                  value={customUniversity}
+                  onChange={(e) => {
+                    setCustomUniversity(e.target.value);
+                    if (errors.customUniversity)
+                      setErrors((prev) => ({ ...prev, customUniversity: "" }));
+                  }}
+                  className={cn(
+                    "h-11 bg-white border-black/15 text-[#18181b] focus-visible:ring-[#ff9800] focus-visible:border-[#ff9800]",
+                    errors.customUniversity && "border-destructive"
+                  )}
+                />
+                {errors.customUniversity ? (
+                  <p className="text-xs text-destructive">{errors.customUniversity}</p>
+                ) : (
+                  <p className="text-xs text-zinc-500">{t("onboarding.customUniversityHint")}</p>
+                )}
+              </div>
+            )}
+
+            {/* 3. Domaine d'études */}
+            <div className="space-y-1.5">
+              <Label className="font-poppins text-xs font-semibold text-[#18181b]">
+                {t("onboarding.fieldOfStudy")}{" "}
+                <span className="text-zinc-400 font-normal">{t("onboarding.optional")}</span>
+              </Label>
+              <DomainCombobox
+                value={academicDomain}
+                onValueChange={(dom) => {
+                  setAcademicDomain(dom);
+                  if (formData.faculty && getDomainForFaculty(formData.faculty) !== dom) {
+                    handleInputChange("faculty", "");
+                  }
                 }}
-                value={formData.faculty}
-                onValueChange={(v) => handleInputChange("faculty", v)}
-                className="mt-1.5"
               />
-              {errors.faculty && (
-                <p className="text-xs text-destructive mt-1">{errors.faculty}</p>
-              )}
             </div>
 
-            <div>
-              <Label className="text-xs font-semibold">
-                {t("onboarding.studyYear")} <span className="text-primary">*</span>
-              </Label>
-              <StudyLevelCombobox
-                value={formData.studyYear}
-                onValueChange={(v) => handleInputChange("studyYear", v)}
-                className="mt-1.5"
-              />
-              {errors.studyYear && (
-                <p className="text-xs text-destructive mt-1">{errors.studyYear}</p>
-              )}
-            </div>
-          </div>
+            {/* 4. Filière & Niveau */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="font-poppins text-xs font-semibold text-[#18181b]">
+                  {t("onboarding.faculty")} <span className="text-[#ff9800]">*</span>
+                </Label>
+                <FacultyCombobox
+                  domain={academicDomain}
+                  onDomainChange={(dom) => {
+                    if (dom && dom !== academicDomain) setAcademicDomain(dom);
+                  }}
+                  value={formData.faculty}
+                  onValueChange={(v) => handleInputChange("faculty", v)}
+                />
+                {errors.faculty && <p className="text-xs text-destructive">{errors.faculty}</p>}
+              </div>
 
-          {/* Bouton de validation */}
-          <div className="pt-3 border-t border-border/50">
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full campus-gradient text-white hover:opacity-90 h-11 text-sm font-semibold shadow-sm"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t("onboarding.submitting")}
-                </>
-              ) : (
-                <>
-                  {t("onboarding.submit")}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
-      </div>
+              <div className="space-y-1.5">
+                <Label className="font-poppins text-xs font-semibold text-[#18181b]">
+                  {t("onboarding.studyYear")} <span className="text-[#ff9800]">*</span>
+                </Label>
+                <StudyLevelCombobox
+                  value={formData.studyYear}
+                  onValueChange={(v) => handleInputChange("studyYear", v)}
+                />
+                {errors.studyYear && <p className="text-xs text-destructive">{errors.studyYear}</p>}
+              </div>
+            </div>
+
+            {/* Bouton de validation */}
+            <div className="pt-4 border-t border-black/8">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-11 rounded-full bg-[#ff9800] hover:bg-[#f57c00] text-white font-poppins text-sm font-semibold shadow-md shadow-[#ff9800]/25 inline-flex items-center justify-center gap-2 transition-all disabled:opacity-60 disabled:pointer-events-none"
+              >
+                {isLoading ? (
+                  <>
+                    <Spinner size={17} className="animate-spin" aria-hidden="true" />
+                    {t("onboarding.submitting")}
+                  </>
+                ) : (
+                  <>
+                    {t("onboarding.submit")}
+                    <ArrowRight size={16} weight="bold" aria-hidden="true" />
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </main>
     </div>
   );
 }
