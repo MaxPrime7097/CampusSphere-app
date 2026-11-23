@@ -1782,7 +1782,10 @@ spheraRouter.get("/sessions/:id/suggestions/", async (req, res) => {
   ok(res, { suggestions });
 });
 
-const askSchema = z.object({ question: z.string().trim().min(1, "La question ne peut pas être vide.") });
+const askSchema = z.object({
+  question: z.string().trim().min(1, "La question ne peut pas être vide."),
+  ephemeral: z.boolean().optional(),
+});
 
 interface QaEntry {
   question: string;
@@ -1806,7 +1809,7 @@ function appendQa(history: unknown, entry: QaEntry): QaEntry[] {
 spheraRouter.post("/sessions/:id/ask/", async (req, res) => {
   const me = currentUser(req);
   const session = await ownStudySession(idParam(req), me.id);
-  const { question } = askSchema.parse(req.body ?? {});
+  const { question, ephemeral = false } = askSchema.parse(req.body ?? {});
 
   if (!session.extractedText) {
     throw badRequest(
@@ -1814,11 +1817,13 @@ spheraRouter.post("/sessions/:id/ask/", async (req, res) => {
     );
   }
 
-  const rawHistory: QaEntry[] = Array.isArray(session.qaHistory)
-    ? (session.qaHistory as unknown as QaEntry[])
-    : typeof session.qaHistory === "string"
-      ? (() => { try { const p = JSON.parse(session.qaHistory as string); return Array.isArray(p) ? (p as unknown as QaEntry[]) : []; } catch { return []; } })()
-      : [];
+  const rawHistory: QaEntry[] = ephemeral
+    ? []
+    : Array.isArray(session.qaHistory)
+      ? (session.qaHistory as unknown as QaEntry[])
+      : typeof session.qaHistory === "string"
+        ? (() => { try { const p = JSON.parse(session.qaHistory as string); return Array.isArray(p) ? (p as unknown as QaEntry[]) : []; } catch { return []; } })()
+        : [];
 
   const isStream =
     req.headers.accept?.includes("text/event-stream") ||
@@ -1832,10 +1837,12 @@ spheraRouter.post("/sessions/:id/ask/", async (req, res) => {
       created_at: new Date().toISOString(),
     };
 
-    await prisma.studySession.update({
-      where: { id: session.id },
-      data: { qaHistory: appendQa(session.qaHistory, entry) as unknown as Prisma.InputJsonValue },
-    });
+    if (!ephemeral) {
+      await prisma.studySession.update({
+        where: { id: session.id },
+        data: { qaHistory: appendQa(session.qaHistory, entry) as unknown as Prisma.InputJsonValue },
+      });
+    }
 
     return ok(res, entry);
   }
@@ -1873,16 +1880,18 @@ spheraRouter.post("/sessions/:id/ask/", async (req, res) => {
       created_at: new Date().toISOString(),
     };
 
-    await prisma.studySession.update({
-      where: { id: session.id },
-      data: { qaHistory: appendQa(session.qaHistory, entry) as unknown as Prisma.InputJsonValue },
-    });
+    if (!ephemeral) {
+      await prisma.studySession.update({
+        where: { id: session.id },
+        data: { qaHistory: appendQa(session.qaHistory, entry) as unknown as Prisma.InputJsonValue },
+      });
+    }
 
     res.write(`data: ${JSON.stringify({ done: true, entry })}\n\n`);
     res.end();
   } catch (err: any) {
     if (abortController.signal.aborted) {
-      if (fullAnswer.trim()) {
+      if (!ephemeral && fullAnswer.trim()) {
         const entry: QaEntry = {
           question,
           answer: fullAnswer,
@@ -2039,17 +2048,19 @@ spheraRouter.post("/annales/:id/correct/", checkGenerationQuota, async (req, res
 spheraRouter.post("/annales/:id/ask/", async (req, res) => {
   const me = currentUser(req);
   const session = await readableAnnaleSession(idParam(req), me.id);
-  const { question } = askSchema.parse(req.body ?? {});
+  const { question, ephemeral = false } = askSchema.parse(req.body ?? {});
 
   if (!session.extractedText) {
     throw badRequest("Le texte de ce document n'est pas disponible pour le Q&A.");
   }
 
-  const rawHistory: QaEntry[] = Array.isArray(session.qaHistory)
-    ? (session.qaHistory as unknown as QaEntry[])
-    : typeof session.qaHistory === "string"
-      ? (() => { try { const p = JSON.parse(session.qaHistory as string); return Array.isArray(p) ? (p as unknown as QaEntry[]) : []; } catch { return []; } })()
-      : [];
+  const rawHistory: QaEntry[] = ephemeral
+    ? []
+    : Array.isArray(session.qaHistory)
+      ? (session.qaHistory as unknown as QaEntry[])
+      : typeof session.qaHistory === "string"
+        ? (() => { try { const p = JSON.parse(session.qaHistory as string); return Array.isArray(p) ? (p as unknown as QaEntry[]) : []; } catch { return []; } })()
+        : [];
 
   const isStream =
     req.headers.accept?.includes("text/event-stream") ||
@@ -2063,10 +2074,12 @@ spheraRouter.post("/annales/:id/ask/", async (req, res) => {
       created_at: new Date().toISOString(),
     };
 
-    await prisma.annaleSession.update({
-      where: { id: session.id },
-      data: { qaHistory: appendQa(session.qaHistory, entry) as unknown as Prisma.InputJsonValue },
-    });
+    if (!ephemeral) {
+      await prisma.annaleSession.update({
+        where: { id: session.id },
+        data: { qaHistory: appendQa(session.qaHistory, entry) as unknown as Prisma.InputJsonValue },
+      });
+    }
 
     return ok(res, entry);
   }
@@ -2104,16 +2117,18 @@ spheraRouter.post("/annales/:id/ask/", async (req, res) => {
       created_at: new Date().toISOString(),
     };
 
-    await prisma.annaleSession.update({
-      where: { id: session.id },
-      data: { qaHistory: appendQa(session.qaHistory, entry) as unknown as Prisma.InputJsonValue },
-    });
+    if (!ephemeral) {
+      await prisma.annaleSession.update({
+        where: { id: session.id },
+        data: { qaHistory: appendQa(session.qaHistory, entry) as unknown as Prisma.InputJsonValue },
+      });
+    }
 
     res.write(`data: ${JSON.stringify({ done: true, entry })}\n\n`);
     res.end();
   } catch (err: any) {
     if (abortController.signal.aborted) {
-      if (fullAnswer.trim()) {
+      if (!ephemeral && fullAnswer.trim()) {
         const entry: QaEntry = {
           question,
           answer: fullAnswer,

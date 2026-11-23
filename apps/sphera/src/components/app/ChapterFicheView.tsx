@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   FileText,
   Question,
@@ -16,6 +17,7 @@ import {
 import { MarkdownRenderer } from './MarkdownRenderer'
 import DownloadPDFButton from '../shared/DownloadPDFButton'
 import { useDownloadPDF } from '../../hooks/useDownloadPDF'
+import type { WorkspaceSlots } from './workspaceSlots'
 
 interface ChapterBlock {
   id?: string
@@ -43,6 +45,7 @@ interface ChapterFicheViewProps {
   isRegenerating?: boolean
   isGeneratingItem?: boolean
   generatingChapterArtefact?: { type: 'quiz' | 'flashcards'; chapter: string } | null
+  workspaceSlots?: WorkspaceSlots
 }
 
 export function ChapterFicheView({
@@ -53,6 +56,7 @@ export function ChapterFicheView({
   isRegenerating = false,
   isGeneratingItem = false,
   generatingChapterArtefact = null,
+  workspaceSlots,
 }: ChapterFicheViewProps) {
   const { isDownloading, generateFiche } = useDownloadPDF()
 
@@ -72,41 +76,74 @@ export function ChapterFicheView({
 
   const chapitres = Array.isArray(fiche.chapitres) && fiche.chapitres.length > 0 ? fiche.chapitres : null
 
-  return (
-    <div className="w-full flex flex-col gap-6 py-2 animate-in fade-in duration-300">
-      {/* 1. Header with Fiche Title, Download and Regenerate action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-sphera-border/60">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
-            <FileText weight="duotone" className="w-5 h-5 text-cyan-400" />
-          </div>
-          <div>
-            <h1 className="text-base sm:text-lg font-bold text-white leading-tight">
-              {fiche.titre || "Fiche de Révision"}
-            </h1>
-            <p className="text-xs text-sphera-text-muted mt-0.5">
-              Structure par blocs & chapitres d'étude
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-1.5 self-start sm:self-auto shrink-0 items-end">
-          <button
-            type="button"
-            onClick={onRegenerateFiche}
-            disabled={isRegenerating || isGeneratingItem}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs font-medium text-white/90 transition-colors disabled:opacity-50 shrink-0"
-          >
-            <ArrowClockwise className={`w-3.5 h-3.5 text-sphera-green ${isRegenerating ? 'animate-spin' : ''}`} />
-            <span>{isRegenerating ? "Régénération..." : "Régénérer (0.5 gén)"}</span>
-          </button>
-          <DownloadPDFButton
-            isDownloading={isDownloading}
-            onDownload={() => generateFiche(fiche)}
-            label="Télécharger en PDF"
-          />
-        </div>
+  const headerActions = (
+    <div className="flex items-center justify-between gap-2 w-full min-w-0">
+      <div className="flex items-center gap-2 min-w-0">
+        <FileText weight="duotone" className="w-4 h-4 text-cyan-400 shrink-0 hidden sm:block" />
+        <span className="text-xs sm:text-sm font-semibold text-white truncate">
+          {fiche.titre || "Fiche de Révision"}
+        </span>
       </div>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <button
+          type="button"
+          onClick={onRegenerateFiche}
+          disabled={isRegenerating || isGeneratingItem}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs font-medium text-white/90 transition-colors disabled:opacity-50 cursor-pointer"
+          title="Régénérer la fiche (0.5 génération)"
+        >
+          <ArrowClockwise className={`w-3.5 h-3.5 text-sphera-green ${isRegenerating ? 'animate-spin' : ''}`} />
+          <span className="hidden md:inline">{isRegenerating ? "Régénération..." : "Régénérer"}</span>
+        </button>
+        <DownloadPDFButton
+          isDownloading={isDownloading}
+          onDownload={() => generateFiche(fiche)}
+          label="PDF"
+          className="!px-2.5 !py-1.5 !text-xs !rounded-lg cursor-pointer"
+        />
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="w-full flex flex-col gap-5 py-1 animate-in fade-in duration-300">
+      {workspaceSlots?.headerSlot ? (
+        createPortal(headerActions, workspaceSlots.headerSlot)
+      ) : (
+        /* Fallback standalone Header */
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-sphera-border/60">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
+              <FileText weight="duotone" className="w-5 h-5 text-cyan-400" />
+            </div>
+            <div>
+              <h1 className="text-base sm:text-lg font-bold text-white leading-tight">
+                {fiche.titre || "Fiche de Révision"}
+              </h1>
+              <p className="text-xs text-sphera-text-muted mt-0.5">
+                Structure par blocs & chapitres d'étude
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5 self-start sm:self-auto shrink-0 items-end">
+            <button
+              type="button"
+              onClick={onRegenerateFiche}
+              disabled={isRegenerating || isGeneratingItem}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs font-medium text-white/90 transition-colors disabled:opacity-50 shrink-0"
+            >
+              <ArrowClockwise className={`w-3.5 h-3.5 text-sphera-green ${isRegenerating ? 'animate-spin' : ''}`} />
+              <span>{isRegenerating ? "Régénération..." : "Régénérer (0.5 gén)"}</span>
+            </button>
+            <DownloadPDFButton
+              isDownloading={isDownloading}
+              onDownload={() => generateFiche(fiche)}
+              label="Télécharger en PDF"
+            />
+          </div>
+        </div>
+      )}
 
       {/* 2. Global Overview Summary */}
       {fiche.resume && (
