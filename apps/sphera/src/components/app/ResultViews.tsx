@@ -923,17 +923,21 @@ export function FlashcardsView({
     return null
   }, [storageKey, total])
 
+  const [deckIndices, setDeckIndices] = useState<number[]>(() => cartes.map((_: any, i: number) => i))
+  const [isReviewSubset, setIsReviewSubset] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(() => initialProgress?.currentIndex ?? 0)
   const [flipped, setFlipped] = useState(false)
   const [known, setKnown] = useState<Set<number>>(() => new Set(initialProgress?.known ?? []))
   const [review, setReview] = useState<Set<number>>(() => new Set(initialProgress?.review ?? []))
   const [finished, setFinished] = useState(false)
 
+  const activeTotal = deckIndices.length
+
   const inlineAsk = useInlineSpheraAsk({ sessionId, sessionType })
 
-  // Save progress automatically
+  // Save progress automatically (only for full deck runs)
   useEffect(() => {
-    if (currentIndex > 0 && currentIndex < total && !finished && (known.size > 0 || review.size > 0)) {
+    if (!isReviewSubset && currentIndex > 0 && currentIndex < total && !finished && (known.size > 0 || review.size > 0)) {
       try {
         localStorage.setItem(
           storageKey,
@@ -947,39 +951,45 @@ export function FlashcardsView({
         )
       } catch {}
     }
-  }, [currentIndex, total, known, review, finished, storageKey])
+  }, [isReviewSubset, currentIndex, total, known, review, finished, storageKey])
 
   // Clear when finished
   useEffect(() => {
-    if (finished) {
+    if (finished && !isReviewSubset) {
       try {
         localStorage.removeItem(storageKey)
       } catch {}
     }
-  }, [finished, storageKey])
+  }, [finished, isReviewSubset, storageKey])
 
   const advance = useCallback(() => {
     setFlipped(false);
-    if (currentIndex + 1 >= total) {
+    if (currentIndex + 1 >= activeTotal) {
       setFinished(true);
     } else {
       setCurrentIndex(i => i + 1);
     }
-  }, [currentIndex, total])
+  }, [currentIndex, activeTotal])
 
   const handleKnew = useCallback(() => {
-    setKnown(prev => new Set(prev).add(currentIndex));
+    const origIdx = deckIndices[currentIndex]
+    if (origIdx !== undefined) {
+      setKnown(prev => new Set(prev).add(origIdx));
+    }
     advance();
-  }, [currentIndex, advance])
+  }, [deckIndices, currentIndex, advance])
 
   const handleReview = useCallback(() => {
-    setReview(prev => new Set(prev).add(currentIndex));
+    const origIdx = deckIndices[currentIndex]
+    if (origIdx !== undefined) {
+      setReview(prev => new Set(prev).add(origIdx));
+    }
     advance();
-  }, [currentIndex, advance])
+  }, [deckIndices, currentIndex, advance])
 
   // Keyboard shortcuts: Space/Enter to flip, Left/Right arrows to rate
   useEffect(() => {
-    if (finished || !total) return
+    if (finished || !activeTotal) return
     const onKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
@@ -998,16 +1008,19 @@ export function FlashcardsView({
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [finished, total, flipped, handleReview, handleKnew])
+  }, [finished, activeTotal, flipped, handleReview, handleKnew])
 
   if (!total) return <p className="text-sphera-text-muted">{t('resultViews.emptyFlashcards')}</p>
 
-  const currentCard = cartes[currentIndex]
+  const activeOrigIndex = deckIndices[currentIndex] ?? 0
+  const currentCard = cartes[activeOrigIndex]
 
   const handleRestart = () => {
     try {
       localStorage.removeItem(storageKey);
     } catch {}
+    setDeckIndices(cartes.map((_: any, i: number) => i));
+    setIsReviewSubset(false);
     setCurrentIndex(0);
     setFlipped(false);
     setKnown(new Set());
@@ -1016,9 +1029,13 @@ export function FlashcardsView({
   }
 
   const handleRestartReview = () => {
-    try {
-      localStorage.removeItem(storageKey);
-    } catch {}
+    const remainingIndices = deckIndices.filter((origIdx) => !known.has(origIdx));
+    if (remainingIndices.length === 0) {
+      handleRestart();
+      return;
+    }
+    setDeckIndices(remainingIndices);
+    setIsReviewSubset(true);
     setCurrentIndex(0);
     setFlipped(false);
     setKnown(new Set());
@@ -1039,7 +1056,7 @@ export function FlashcardsView({
   }
 
   const hasPortal = Boolean(workspaceSlots?.headerSlot)
-  const progressPct = finished ? 100 : (currentIndex / total) * 100
+  const progressPct = finished ? 100 : (activeTotal > 0 ? (currentIndex / activeTotal) * 100 : 0)
   const canAsk = Boolean(sessionId || onAskQuestion)
 
   const progressBarPortal = workspaceSlots?.progressSlot
@@ -1056,15 +1073,17 @@ export function FlashcardsView({
 
   if (finished) {
     const knownCount = known.size;
-    const reviewCount = total - knownCount;
-    const reviewCards = cartes.filter((_: any, i: number) => !known.has(i));
+    const reviewCount = activeTotal - knownCount;
+    const reviewCards = deckIndices
+      .filter((origIdx) => !known.has(origIdx))
+      .map((origIdx) => ({ card: cartes[origIdx], origIdx }));
 
     const finishedHeaderPortal = workspaceSlots?.headerSlot
       ? createPortal(
           <div className="flex items-center gap-2 min-w-0">
             <Trophy className="w-4 h-4 text-sphera-green shrink-0" />
             <span className="text-xs sm:text-sm font-semibold text-white truncate">
-              Bilan • {knownCount}/{total} maîtrisées
+              Bilan • {knownCount}/{activeTotal} maîtrisées
             </span>
           </div>,
           workspaceSlots.headerSlot
@@ -1103,16 +1122,16 @@ export function FlashcardsView({
 
         <div className="text-center p-6 sm:p-8 bg-sphera-surface-2 rounded-2xl border border-sphera-border">
           <div className="w-14 h-14 rounded-2xl bg-sphera-green/15 text-sphera-green flex items-center justify-center mx-auto mb-3 border border-sphera-green/30">
-            {knownCount === total ? <Trophy className="w-7 h-7" /> : <BookOpen className="w-7 h-7" />}
+            {knownCount === activeTotal ? <Trophy className="w-7 h-7" /> : <BookOpen className="w-7 h-7" />}
           </div>
           <p className="text-3xl font-bold text-white mb-1.5">
-            {knownCount} <span className="text-sphera-text-muted font-normal text-xl">/ {total} {t('resultViews.memorized', { count: total })}</span>
+            {knownCount} <span className="text-sphera-text-muted font-normal text-xl">/ {activeTotal} {t('resultViews.memorized', { count: activeTotal })}</span>
           </p>
           <p className="text-sm text-sphera-text-muted">
             {reviewCount > 0 ? t('resultViews.cardsToReview', { count: reviewCount }) : t('resultViews.allMastered')}
           </p>
           <div className="h-2 w-full bg-sphera-bg rounded-full overflow-hidden mt-5">
-            <div className="h-full bg-sphera-green transition-all" style={{ width: `${(knownCount / total) * 100}%` }} />
+            <div className="h-full bg-sphera-green transition-all" style={{ width: `${activeTotal > 0 ? (knownCount / activeTotal) * 100 : 100}%` }} />
           </div>
         </div>
 
@@ -1121,11 +1140,11 @@ export function FlashcardsView({
             <h3 className="font-semibold text-white flex items-center gap-2 mb-3">
               <RefreshCcw className="h-5 w-5 text-yellow-500" /> {t('resultViews.flashcardsToReview')}
             </h3>
-            {reviewCards.map((card: any, i: number) => {
-              const reviewKey = `fc-review-${i}`
+            {reviewCards.map(({ card, origIdx }) => {
+              const reviewKey = `fc-review-${origIdx}`
               const inlineEntry = inlineAsk.entries[reviewKey]
               return (
-                <div key={i} className="border border-red-500/30 bg-red-500/5 rounded-xl p-4">
+                <div key={origIdx} className="border border-red-500/30 bg-red-500/5 rounded-xl p-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-red-400 mb-1">{formatText(card.recto)}</p>
@@ -1134,7 +1153,7 @@ export function FlashcardsView({
                     {canAsk && (
                       <button
                         type="button"
-                        onClick={() => triggerAskForCard(reviewKey, card, i)}
+                        onClick={() => triggerAskForCard(reviewKey, card, origIdx)}
                         disabled={inlineEntry?.isStreaming}
                         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 hover:border-sphera-green/40 text-xs text-sphera-text-muted hover:text-sphera-green transition-colors shrink-0 self-end sm:self-center cursor-pointer disabled:opacity-60"
                         title="Demander de l'aide à Sphera directement ici"
@@ -1150,7 +1169,7 @@ export function FlashcardsView({
                       entry={inlineEntry}
                       onStop={() => inlineAsk.stop(reviewKey)}
                       onClose={() => inlineAsk.close(reviewKey)}
-                      onRetry={() => triggerAskForCard(reviewKey, card, i)}
+                      onRetry={() => triggerAskForCard(reviewKey, card, origIdx)}
                       onSaveNote={onSaveNote}
                     />
                   )}
@@ -1176,7 +1195,7 @@ export function FlashcardsView({
     );
   }
 
-  const activeCardAskKey = `fc-card-${currentIndex}`
+  const activeCardAskKey = `fc-card-${activeOrigIndex}`
   const activeCardInlineEntry = inlineAsk.entries[activeCardAskKey]
 
   const headerPortal = workspaceSlots?.headerSlot
@@ -1184,10 +1203,16 @@ export function FlashcardsView({
         <div className="flex items-center justify-between gap-2 w-full min-w-0">
           <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
             <span className="text-xs sm:text-sm text-sphera-text-muted font-medium whitespace-nowrap">
-              <span className="hidden sm:inline">Carte </span>
+              <span className="hidden sm:inline">{isReviewSubset ? 'Révision ' : 'Carte '}</span>
               <span className="text-white font-bold">{currentIndex + 1}</span>
-              <span className="text-sphera-text-muted/80">/{total}</span>
+              <span className="text-sphera-text-muted/80">/{activeTotal}</span>
             </span>
+
+            {isReviewSubset && (
+              <span className="hidden md:inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">
+                À revoir
+              </span>
+            )}
 
             {known.size > 0 && (
               <span className="bg-sphera-green/10 text-sphera-green border border-sphera-green/20 px-2 py-0.5 rounded-full text-[11px] font-bold flex items-center gap-1 shrink-0">
@@ -1201,12 +1226,12 @@ export function FlashcardsView({
             )}
           </div>
 
-          {currentIndex > 0 && (
+          {(currentIndex > 0 || isReviewSubset) && (
             <button
               type="button"
               onClick={handleRestart}
               className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs text-sphera-text-muted hover:text-white transition-colors shrink-0 cursor-pointer"
-              title="Recommencer le paquet depuis le début"
+              title="Recommencer tout le paquet depuis le début"
             >
               <RotateCcw className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden sm:inline">Recommencer</span>
@@ -1269,7 +1294,7 @@ export function FlashcardsView({
         <>
           <div className="flex items-center justify-between text-sm">
             <span className="text-sphera-text-muted font-medium">
-              Carte <span className="text-white font-bold">{currentIndex + 1}</span> / {total}
+              {isReviewSubset ? 'Révision' : 'Carte'} <span className="text-white font-bold">{currentIndex + 1}</span> / {activeTotal}
             </span>
             <div className="flex items-center gap-2">
               {currentIndex > 0 && (
@@ -1349,7 +1374,7 @@ export function FlashcardsView({
             type="button"
             onClick={(e) => {
               e.stopPropagation()
-              triggerAskForCard(activeCardAskKey, currentCard, currentIndex)
+              triggerAskForCard(activeCardAskKey, currentCard, activeOrigIndex)
             }}
             disabled={activeCardInlineEntry?.isStreaming}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 hover:border-sphera-green/40 text-xs font-medium text-white hover:text-sphera-green transition-all shadow-xs cursor-pointer disabled:opacity-60"
@@ -1366,7 +1391,7 @@ export function FlashcardsView({
           entry={activeCardInlineEntry}
           onStop={() => inlineAsk.stop(activeCardAskKey)}
           onClose={() => inlineAsk.close(activeCardAskKey)}
-          onRetry={() => triggerAskForCard(activeCardAskKey, currentCard, currentIndex)}
+          onRetry={() => triggerAskForCard(activeCardAskKey, currentCard, activeOrigIndex)}
           onSaveNote={onSaveNote}
         />
       )}

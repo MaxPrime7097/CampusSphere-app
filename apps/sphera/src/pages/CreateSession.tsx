@@ -25,6 +25,7 @@ import {
   Check,
   Trash as Trash2,
   Stack as Layers,
+  List as Menu,
 } from "@phosphor-icons/react";
 import { ToolSelector, type ToolType } from '../components/app/ToolSelector'
 import { GenerateButton } from '../components/app/GenerateButton'
@@ -1287,15 +1288,27 @@ export default function CreateSession() {
   return (
     <div className="flex h-full overflow-hidden flex-col md:flex-row bg-sphera-bg">
       {/* Mobile Top Bar with Segmented View Switcher */}
-      <div className="md:hidden flex items-center justify-between px-3 py-2 bg-sphera-surface-2 border-b border-sphera-border shrink-0 z-30">
-        <button 
-          onClick={() => navigate('/app')} 
-          title={t('createSession.backToDashboard')}
-          aria-label={t('createSession.backToDashboard')}
-          className="p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-md transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </button>
+      <div className="md:hidden flex items-center justify-between gap-2 px-3 py-2 bg-sphera-surface-2 border-b border-sphera-border shrink-0 z-30">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('sphera:open-mobile-sidebar'))}
+            className="p-1.5 text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-lg transition-colors shrink-0 cursor-pointer"
+            title="Ouvrir le menu"
+            aria-label="Ouvrir le menu"
+          >
+            <Menu className="w-4 h-4" />
+          </button>
+          <button 
+            type="button"
+            onClick={() => navigate('/app')} 
+            title={t('createSession.backToDashboard')}
+            aria-label={t('createSession.backToDashboard')}
+            className="px-2 py-1 text-xs font-medium text-sphera-text-muted hover:bg-sphera-surface hover:text-white rounded-lg transition-colors shrink-0 cursor-pointer"
+          >
+            Accueil
+          </button>
+        </div>
 
         <div className="flex items-center bg-sphera-surface p-1 rounded-lg border border-sphera-border gap-1">
           <button
