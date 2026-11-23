@@ -144,7 +144,7 @@ export function QuotaIndicator({ className = '', align = 'auto' }: QuotaIndicato
           </div>
           <div className="space-y-2 text-white/90">
             <div className="flex items-start justify-between gap-2">
-              <span>Cours complet (Fiche, Quiz, Podcast)</span>
+              <span>Cours complet (Fiche, Quiz, Audio, Schéma)</span>
               <span className="font-semibold text-white shrink-0">1.0 gén</span>
             </div>
             <div className="flex items-start justify-between gap-2">

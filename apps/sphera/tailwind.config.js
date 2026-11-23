@@ -55,8 +55,8 @@ export default {
         "cs-orange": "var(--cs-orange)",
       },
       fontFamily: {
-        display: ['Syne', 'sans-serif'],
-        sans: ['DM Sans', 'sans-serif'],
+        display: ['Space Grotesk', 'sans-serif'],
+        sans: ['Manrope', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
   		keyframes: {

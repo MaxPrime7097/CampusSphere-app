@@ -6,8 +6,9 @@
     "ogDescription": "Guides, methodologies, and cognitive tips to ace exams and revise stress-free."
   },
   "list": {
+    "eyebrow": "Guides & methods",
     "title": "The Sphera Blog",
-    "subtitle": "Comprehensive guides and cognitive science-backed methods to ace your exams and revise more effectively.",
+    "subtitle": "Practical guides and cognitive science-backed methods to revise smarter and ace your exams.",
     "featured": "Featured",
     "allCategory": "All",
     "readArticle": "Read article",
@@ -18,7 +19,7 @@
     "cta": {
       "badge": "Take action",
       "title": "Automate your study routine with Sphera",
-      "description": "Upload lecture notes and course PDFs. Get quiz questions, flashcards, and a revision sheet in 30 seconds.",
+      "description": "Upload lecture notes and course PDFs. Get quizzes, flashcards, and a structured revision sheet in 30 seconds.",
       "button": "Get started for free"
     },
     "related": {

@@ -77,10 +77,10 @@ export function getNavigationSections(
   const utilities: NavigationItem[] = [
     { title: tr("openSphera", "Ouvrir Sphera"), url: "/sphera/sso", icon: SpheraIcon, external: true },
     ...adminEntry,
-    { title: tr("impactScore", "Impact Score"), url: "/cs-inc/impact-score", icon: Zap, external: true },
-    { title: tr("about", "À propos"), url: "/cs-inc/about", icon: Info, external: true },
-    { title: tr("policies", "Politiques"), url: "/cs-inc/policies", icon: Scale, external: true },
-    { title: tr("help", "Aide"), url: "/cs-inc/contact", icon: LifeBuoy, external: true },
+    { title: tr("impactScore", "Impact Score"), url: "/cs/impact-score", icon: Zap, external: true },
+    { title: tr("about", "À propos"), url: "/cs/about", icon: Info, external: true },
+    { title: tr("policies", "Politiques"), url: "/cs/policies", icon: Scale, external: true },
+    { title: tr("help", "Aide"), url: "/cs/contact", icon: LifeBuoy, external: true },
   ];
 
   const mobileItems: NavigationItem[] = [

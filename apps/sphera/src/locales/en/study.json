@@ -76,28 +76,28 @@
     "directQaNoticeTitle": "Direct Q&A mode selected",
     "directQaNoticeDesc": "The session will be created immediately without generating study sheets or quizzes (0 quota consumed). You can generate them on demand later!",
     "fiche": {
-      "title": "Study sheet",
+      "title": "Course summary",
       "desc": "Key points, definitions, formulas"
     },
     "quiz": {
-      "title": "Interactive quiz",
+      "title": "Practice quiz",
       "desc": "MCQ with timer and score"
     },
     "flashcards": {
-      "title": "Flashcards",
-      "desc": "Front/back cards for memorization"
+      "title": "Memory cards",
+      "desc": "Front/back cards to memorize fast"
     },
     "mindmap": {
-      "title": "Mind map",
-      "desc": "Visual representation of key concepts"
+      "title": "Visual course map",
+      "desc": "Visual overview of key concepts"
     },
     "audio": {
-      "title": "Audio summary",
-      "desc": "Podcast-style audio to study on the go"
+      "title": "Audio lesson",
+      "desc": "Spoken dialogue to revise while listening"
     },
     "annale": {
-      "title": "Exam paper",
-      "desc": "Past exam topics and solutions"
+      "title": "Exam paper solution",
+      "desc": "Past exam papers and solutions"
     }
   },
   "appPage": {
@@ -125,10 +125,10 @@
     "download": "Download PDF",
     "newGeneration": "New generation",
     "toolNames": {
-      "fiche": "Study sheet",
-      "quiz": "Interactive quiz",
-      "flashcards": "Flashcards",
-      "annale": "Exam paper correction",
+      "fiche": "Course summary",
+      "quiz": "Practice quiz",
+      "flashcards": "Memory cards",
+      "annale": "Exam paper solution",
       "default": "Generation"
     }
   },
@@ -228,12 +228,12 @@
     "commandMenu": {
       "title": "Sphera Commands",
       "shortcutHint": "↑↓ to navigate • Enter to select",
-      "ficheLabel": "Study sheet",
-      "ficheDesc": "View or generate your study sheet",
-      "quizLabel": "Interactive quiz",
-      "quizDesc": "View or launch your quiz",
-      "flashcardsLabel": "Flashcards",
-      "flashcardsDesc": "View or study your flashcards",
+      "ficheLabel": "Course summary",
+      "ficheDesc": "View or generate your course summary",
+      "quizLabel": "Practice quiz",
+      "quizDesc": "View or launch your practice quiz",
+      "flashcardsLabel": "Memory cards",
+      "flashcardsDesc": "View or study your memory cards",
       "explainLabel": "Explain a concept",
       "explainDesc": "Detailed step-by-step pedagogical explanation",
       "resumeLabel": "Summarize a point",
@@ -246,7 +246,7 @@
       "summarize": "Summarize",
       "example": "Example",
       "quiz": "Quiz",
-      "flashcard": "Flashcard",
+      "flashcard": "Memory card",
       "actionTitle": "{{label}} this excerpt"
     }
   },
@@ -303,7 +303,7 @@
     ]
   },
   "quotaIndicator": {
-    "freeWeekly": "5 free gen. / week",
+    "freeWeekly": "10 free gen. / week",
     "weeklyRemaining": "{{remaining}} / {{limit}} gen. week"
   },
   "downloadPdf": {
@@ -356,8 +356,8 @@
     "quizMessageGreat": "Excellent work!",
     "quizMessageGood": "Good score, but you can do better!",
     "quizMessageKeepGoing": "Keep going!",
-    "flashcardsTitle": "Flashcards",
-    "emptyFlashcards": "No flashcard generated.",
+    "flashcardsTitle": "Memory cards",
+    "emptyFlashcards": "No memory card generated.",
     "flashcardsCompleted": "Session finished",
     "flashcardsAcquired": "Mastered",
     "flashcardsToReview": "To review",
@@ -402,20 +402,20 @@
     "searchQuestionPlaceholder": "Search a question, keyword...",
     "allQuestions": "All",
     "noQuestionsFound": "No question found.",
-    "mindmapTitle": "Mind Map",
+    "mindmapTitle": "Visual course map",
     "mindmapDesc": "Visualize connections and hierarchy of key concepts.",
     "mindmapDownload": "Export image",
     "themesCount": "{{count}} theme · Click to collapse/expand all",
     "themesCount_plural": "{{count}} themes · Click to collapse/expand all",
     "subBranchesCount": "{{count}} sub-branch",
     "subBranchesCount_plural": "{{count}} sub-branches",
-    "canvasMode": "Interactive view (Canvas)",
-    "treeMode": "Hierarchical view (Tree)",
+    "canvasMode": "Visual diagram",
+    "treeMode": "Structured outline",
     "recenter": "Recenter",
-    "audioTitle": "Audio Summary",
+    "audioTitle": "Audio lesson",
     "audioDesc": "Listen to a clear and lively summary of your course.",
-    "audioListen": "Listen to podcast",
-    "podcastTitle": "Podcast & Audio Summary",
+    "audioListen": "Listen to lesson",
+    "podcastTitle": "Audio lesson",
     "downloadMp3": "Download MP3 audio",
     "webSpeechTitle": "Dialogue audio playback",
     "webSpeechSub": "Listen to text-to-speech of both students",
@@ -460,11 +460,11 @@
     "pdf": "PDF",
     "document": "Document",
     "selectionGeneratingQuiz": "Generating quiz from selection...",
-    "selectionGeneratingFlashcards": "Generating flashcards...",
+    "selectionGeneratingFlashcards": "Generating memory cards...",
     "selectionAddedQuiz": "✨ {{count}} question successfully added to Quiz!",
     "selectionAddedQuiz_plural": "✨ {{count}} questions successfully added to Quiz!",
-    "selectionAddedFlashcards": "✨ {{count}} flashcard successfully added to deck!",
-    "selectionAddedFlashcards_plural": "✨ {{count}} flashcards successfully added to deck!",
+    "selectionAddedFlashcards": "✨ {{count}} memory card successfully added to deck!",
+    "selectionAddedFlashcards_plural": "✨ {{count}} memory cards successfully added to deck!",
     "selectionError": "Error creating item.",
     "explainAction": "Explain: \"{{text}}\"",
     "explainPrompt": "Explain this course excerpt clearly, concisely, and educationally:\n\n> \"{{text}}\"",
@@ -474,18 +474,18 @@
     "examplePrompt": "Provide a concrete real-world example illustrating this concept:\n\n> \"{{text}}\"",
     "quizAction": "Quiz on: \"{{text}}\"",
     "quizPrompt": "Generate a multiple-choice question (with 4 options A, B, C, D, correct answer, and concise explanation) based on this excerpt:\n\n> \"{{text}}\"",
-    "flashcardAction": "Flashcard for: \"{{text}}\"",
-    "flashcardPrompt": "Create a double-sided flashcard (Key question front, Concise answer back) based on this concept:\n\n> \"{{text}}\"",
+    "flashcardAction": "Memory card for: \"{{text}}\"",
+    "flashcardPrompt": "Create a double-sided memory card (Key question front, Concise answer back) based on this concept:\n\n> \"{{text}}\"",
     "promptRelatedToCourse": "In connection with the course, provide the necessary elements regarding \"{{text}}\".",
     "promptSummarizePoints": "Summarize the key points of the course.",
     "promptDefaultEssential": "key essential points.",
     "tools": {
-      "fiche": "Summary",
+      "fiche": "Course summary",
       "quiz": "Quiz",
-      "flashcards": "Flashcards",
-      "mindmap": "Mind map",
-      "audio": "Audio summary",
-      "annale": "Exam paper"
+      "flashcards": "Memory cards",
+      "mindmap": "Course map",
+      "audio": "Audio lesson",
+      "annale": "Exam solution"
     }
   }
 }

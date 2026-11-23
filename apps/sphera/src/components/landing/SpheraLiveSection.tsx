@@ -1,189 +1,192 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { Lightning as Zap, Users, Trophy, Clock, ArrowRight, Play, Sparkle as Sparkles } from "@phosphor-icons/react";
+import { Lightning as Zap, Users, Trophy, Clock, ArrowRight, Play, Sparkle } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
+import { Reveal } from '../public/SpheraMotion'
 
 export function SpheraLiveSection() {
   const { t } = useTranslation('landing')
 
+  const bullets = [
+    { icon: Users, title: t('liveSection.bullet1Title'), desc: t('liveSection.bullet1Desc') },
+    { icon: Clock, title: t('liveSection.bullet2Title'), desc: t('liveSection.bullet2Desc') },
+    { icon: Trophy, title: t('liveSection.bullet3Title'), desc: t('liveSection.bullet3Desc') },
+    { icon: Sparkle, title: t('liveSection.bullet4Title'), desc: t('liveSection.bullet4Desc') },
+  ]
+
   return (
-    <section className="py-24 relative overflow-hidden bg-sphera-surface/60 border-y border-sphera-border">
-      {/* Background ambient glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-[radial-gradient(circle,rgba(34,197,94,0.08)_0%,transparent_70%)] blur-3xl pointer-events-none" />
+    <section className="py-20 md:py-28 border-t border-sphera-border/70 bg-[#0f1114] relative overflow-hidden">
+      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[560px] h-[560px] bg-[radial-gradient(circle,rgba(34,197,94,0.08)_0%,transparent_70%)] blur-3xl pointer-events-none" />
 
-      <div className="container mx-auto max-w-6xl px-4 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          
-          {/* Left Text Column */}
-          <div className="lg:col-span-6 space-y-6 text-left">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sphera-green/10 border border-sphera-green/30 text-sphera-green text-xs font-bold uppercase tracking-wider">
-              <Zap className="w-4 h-4 fill-sphera-green" />
+      <div className="container mx-auto max-w-6xl px-4 sm:px-6 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+          {/* Left Narrative */}
+          <Reveal className="lg:col-span-6 space-y-6">
+            <p className="font-mono text-xs uppercase tracking-[0.18em] text-sphera-green inline-flex items-center gap-2">
+              <Zap className="w-3.5 h-3.5" weight="fill" />
               {t('liveSection.badge')}
-            </div>
+            </p>
 
-            <h2 className="font-display text-3xl md:text-5xl font-bold text-white tracking-tight leading-tight">
-              {t('liveSection.titlePrefix')} <span className="text-sphera-green">{t('liveSection.titleHighlight')}</span>{t('liveSection.titleSuffix')}
+            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight leading-[1.08]">
+              {t('liveSection.titlePrefix')}{' '}
+              <span className="text-sphera-green">{t('liveSection.titleHighlight')}</span>
+              {t('liveSection.titleSuffix')}
             </h2>
 
             <p className="text-base md:text-lg text-sphera-text-muted leading-relaxed">
               {t('liveSection.description')}
             </p>
 
-            {/* Quick bullets */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-sphera-surface-2 border border-sphera-border text-sphera-green shrink-0">
-                  <Users className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-white">{t('liveSection.bullet1Title')}</h4>
-                  <p className="text-xs text-sphera-text-muted">{t('liveSection.bullet1Desc')}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-sphera-surface-2 border border-sphera-border text-sphera-green shrink-0">
-                  <Clock className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-white">{t('liveSection.bullet2Title')}</h4>
-                  <p className="text-xs text-sphera-text-muted">{t('liveSection.bullet2Desc')}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-sphera-surface-2 border border-sphera-border text-sphera-green shrink-0">
-                  <Trophy className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-white">{t('liveSection.bullet3Title')}</h4>
-                  <p className="text-xs text-sphera-text-muted">{t('liveSection.bullet3Desc')}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-sphera-surface-2 border border-sphera-border text-sphera-green shrink-0">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-white">{t('liveSection.bullet4Title')}</h4>
-                  <p className="text-xs text-sphera-text-muted">{t('liveSection.bullet4Desc')}</p>
-                </div>
-              </div>
+              {bullets.map((b, idx) => {
+                const Icon = b.icon
+                return (
+                  <div key={idx} className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-sphera-bg border border-sphera-border text-sphera-green shrink-0">
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-white">{b.title}</h3>
+                      <p className="text-xs text-sphera-text-muted leading-relaxed">{b.desc}</p>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
 
-            {/* Actions */}
-            <div className="flex flex-wrap items-center gap-4 pt-4">
+            <div className="flex flex-wrap items-center gap-3.5 pt-3">
               <Link
                 to="/live"
-                className="sphera-primary-btn text-sm px-6 py-3 flex items-center gap-2 group"
+                className="sphera-primary-btn text-sm px-6 py-3 inline-flex items-center gap-2 group"
               >
-                <Play className="w-4 h-4 fill-black" />
-                {t('liveSection.launchGame')}
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <Play className="w-4 h-4" weight="fill" />
+                <span>{t('liveSection.launchGame')}</span>
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </Link>
-
               <Link
                 to="/sphera-live"
-                className="btn btn-outline border-sphera-border text-white hover:border-sphera-green/50 hover:bg-sphera-surface-2 text-sm px-6 py-3 rounded-lg font-semibold transition-colors"
+                className="rounded-xl border border-sphera-border bg-sphera-bg hover:border-sphera-green/40 hover:bg-sphera-surface text-white text-sm px-6 py-3 font-semibold transition-colors"
               >
                 {t('liveSection.learnMore')}
               </Link>
             </div>
-          </div>
+          </Reveal>
 
-          {/* Right Visual / Mockup Column */}
-          <div className="lg:col-span-6">
-            <div className="relative rounded-3xl border border-sphera-green/30 bg-sphera-surface-2 p-4 sm:p-6 shadow-[0_0_50px_rgba(34,197,94,0.12)]">
-              
-              {/* Fake Room Header */}
-              <div className="flex items-center justify-between border-b border-sphera-border pb-4 mb-5">
+          {/* Right Live Session Card */}
+          <Reveal delay={120} className="lg:col-span-6">
+            <div className="rounded-3xl border border-sphera-green/25 bg-[#121518] p-5 sm:p-6 shadow-[0_24px_70px_-24px_rgba(0,0,0,0.85)]">
+              {/* Room Header */}
+              <div className="flex items-center justify-between gap-3 border-b border-sphera-border pb-4 mb-5">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-sphera-green/20 border border-sphera-green/40 flex items-center justify-center">
-                    <Zap className="w-5 h-5 text-sphera-green" />
+                  <div className="w-9 h-9 rounded-xl bg-sphera-green/15 border border-sphera-green/35 flex items-center justify-center text-sphera-green">
+                    <Zap className="w-5 h-5" weight="fill" />
                   </div>
                   <div>
-                    <span className="text-[11px] font-mono uppercase tracking-wider text-sphera-green font-bold block">{t('liveSection.mockup.waitingRoom')}</span>
-                    <h3 className="text-sm font-bold text-white">{t('liveSection.mockup.roomTitle')}</h3>
+                    <span className="text-[11px] font-mono uppercase tracking-wider text-sphera-green block">
+                      {t('liveSection.mockup.waitingRoom')}
+                    </span>
+                    <h3 className="text-sm font-bold text-white">
+                      {t('liveSection.mockup.roomTitle')}
+                    </h3>
                   </div>
                 </div>
 
                 <div className="bg-sphera-bg border border-sphera-border px-3 py-1.5 rounded-xl text-right">
-                  <span className="text-[10px] text-sphera-text-muted block uppercase font-mono">{t('liveSection.mockup.pinCode')}</span>
-                  <span className="font-mono text-base font-extrabold text-sphera-green tracking-widest">LIVE88</span>
+                  <span className="text-[10px] text-sphera-text-muted block uppercase font-mono">
+                    {t('liveSection.mockup.pinCode')}
+                  </span>
+                  <span className="font-mono text-sm sm:text-base font-bold text-sphera-green tracking-[0.2em]">
+                    LIVE26
+                  </span>
                 </div>
               </div>
 
-              {/* Question Simulation */}
-              <div className="bg-sphera-bg rounded-2xl border border-sphera-border p-5 mb-5 relative overflow-hidden">
+              {/* Question Card */}
+              <div className="bg-sphera-bg rounded-2xl border border-sphera-border p-4 sm:p-5 mb-4">
                 <div className="flex items-center justify-between text-xs text-sphera-text-muted mb-3 font-mono">
                   <span>{t('liveSection.mockup.questionProgress')}</span>
-                  <span className="text-sphera-green font-bold animate-pulse">{t('liveSection.mockup.timeRemaining')}</span>
+                  <span className="text-sphera-green font-semibold">
+                    {t('liveSection.mockup.timeRemaining')}
+                  </span>
                 </div>
 
-                <h4 className="text-base sm:text-lg font-bold text-white mb-4">
+                <p className="text-sm sm:text-base font-bold text-white mb-4 leading-snug">
                   {t('liveSection.mockup.sampleQuestion')}
-                </h4>
+                </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs font-semibold">
-                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-white flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-md bg-red-500/20 text-red-400 flex items-center justify-center text-[10px]">A</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-medium">
+                  <div className="p-2.5 rounded-xl bg-sphera-surface border border-sphera-border text-sphera-text-muted flex items-center gap-2">
+                    <span className="w-5 h-5 rounded bg-white/5 font-mono text-[10px] flex items-center justify-center">
+                      A
+                    </span>
                     {t('liveSection.mockup.optionA')}
                   </div>
-                  <div className="p-3 rounded-xl bg-sphera-green/20 border-2 border-sphera-green text-white flex items-center gap-2 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
-                    <span className="w-5 h-5 rounded-md bg-sphera-green text-black flex items-center justify-center text-[10px] font-bold">B</span>
+                  <div className="p-2.5 rounded-xl bg-sphera-green/15 border border-sphera-green text-white font-semibold flex items-center gap-2">
+                    <span className="w-5 h-5 rounded bg-sphera-green text-black font-mono font-bold text-[10px] flex items-center justify-center">
+                      B
+                    </span>
                     {t('liveSection.mockup.optionB')}
                   </div>
-                  <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/30 text-white flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-md bg-blue-500/20 text-blue-400 flex items-center justify-center text-[10px]">C</span>
+                  <div className="p-2.5 rounded-xl bg-sphera-surface border border-sphera-border text-sphera-text-muted flex items-center gap-2">
+                    <span className="w-5 h-5 rounded bg-white/5 font-mono text-[10px] flex items-center justify-center">
+                      C
+                    </span>
                     {t('liveSection.mockup.optionC')}
                   </div>
-                  <div className="p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-white flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-md bg-yellow-500/20 text-yellow-400 flex items-center justify-center text-[10px]">D</span>
+                  <div className="p-2.5 rounded-xl bg-sphera-surface border border-sphera-border text-sphera-text-muted flex items-center gap-2">
+                    <span className="w-5 h-5 rounded bg-white/5 font-mono text-[10px] flex items-center justify-center">
+                      D
+                    </span>
                     {t('liveSection.mockup.optionD')}
                   </div>
                 </div>
               </div>
 
-              {/* Live Leaderboard Teaser */}
+              {/* Compact Leaderboard */}
               <div className="bg-sphera-bg rounded-2xl border border-sphera-border p-4">
                 <div className="flex items-center justify-between text-xs text-sphera-text-muted mb-3">
-                  <span className="font-bold text-white uppercase text-[11px] tracking-wider flex items-center gap-1.5">
-                    <Trophy className="w-3.5 h-3.5 text-yellow-400" /> {t('liveSection.mockup.liveLeaderboard')}
+                  <span className="font-mono uppercase text-[11px] tracking-wider text-white flex items-center gap-1.5">
+                    <Trophy className="w-3.5 h-3.5 text-amber-400" weight="fill" />
+                    {t('liveSection.mockup.liveLeaderboard')}
                   </span>
-                  <span>{t('liveSection.mockup.connectedParticipants')}</span>
+                  <span className="font-mono text-[11px]">
+                    {t('liveSection.mockup.connectedParticipants')}
+                  </span>
                 </div>
 
                 <div className="space-y-2 text-xs">
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-sphera-surface border border-yellow-500/30">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-5 h-5 rounded-full bg-yellow-500/20 text-yellow-400 font-bold flex items-center justify-center text-[11px]">1</span>
-                      <span className="font-bold text-white">Alexandre D.</span>
+                  {[
+                    { rank: '1', name: 'Nadia K.', pts: '3 420 pts', top: true },
+                    { rank: '2', name: 'Boris M.', pts: '3 180 pts', top: false },
+                    { rank: '3', name: 'Amina T.', pts: '2 950 pts', top: false },
+                  ].map((row) => (
+                    <div
+                      key={row.rank}
+                      className={`flex items-center justify-between px-3 py-2 rounded-xl border ${
+                        row.top
+                          ? 'bg-sphera-green/[0.08] border-sphera-green/35'
+                          : 'bg-sphera-surface border-sphera-border/70'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span
+                          className={`w-5 h-5 rounded-full font-mono font-bold text-[11px] flex items-center justify-center ${
+                            row.top
+                              ? 'bg-sphera-green text-black'
+                              : 'bg-white/[0.06] text-sphera-text-muted'
+                          }`}
+                        >
+                          {row.rank}
+                        </span>
+                        <span className="font-semibold text-white">{row.name}</span>
+                      </div>
+                      <span className="font-mono font-semibold text-sphera-green">{row.pts}</span>
                     </div>
-                    <span className="font-mono font-bold text-sphera-green">3 420 pts</span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-sphera-surface border border-sphera-border">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-5 h-5 rounded-full bg-slate-500/20 text-slate-300 font-bold flex items-center justify-center text-[11px]">2</span>
-                      <span className="font-medium text-white">Sarah N.</span>
-                    </div>
-                    <span className="font-mono font-bold text-sphera-green">3 180 pts</span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-sphera-surface border border-sphera-border">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-5 h-5 rounded-full bg-amber-700/20 text-amber-500 font-bold flex items-center justify-center text-[11px]">3</span>
-                      <span className="font-medium text-white">Kevin T.</span>
-                    </div>
-                    <span className="font-mono font-bold text-sphera-green">2 950 pts</span>
-                  </div>
+                  ))}
                 </div>
               </div>
-
             </div>
-          </div>
-
+          </Reveal>
         </div>
       </div>
     </section>

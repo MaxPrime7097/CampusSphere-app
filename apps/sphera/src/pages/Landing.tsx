@@ -4,21 +4,23 @@ import { SpheraFooter } from '../components/layout/SpheraFooter'
 import { Hero } from '../components/landing/Hero'
 import { HowItWorks } from '../components/landing/HowItWorks'
 import { Features } from '../components/landing/Features'
-import { CampusSphereSection } from '../components/landing/CampusSphereSection'
+import { SpheraLiveSection } from '../components/landing/SpheraLiveSection'
 import { SocialProof } from '../components/landing/SocialProof'
+import { CampusSphereSection } from '../components/landing/CampusSphereSection'
 import { FAQ } from '../components/landing/FAQ'
 
 export default function Landing() {
   return (
     <div className="flex flex-col min-h-screen bg-sphera-bg font-sans selection:bg-sphera-green/30">
       <SpheraHeader />
-      
+
       <main className="flex-1">
         <Hero />
         <HowItWorks />
         <Features />
-        <CampusSphereSection />
+        <SpheraLiveSection />
         <SocialProof />
+        <CampusSphereSection />
         <FAQ />
       </main>
 

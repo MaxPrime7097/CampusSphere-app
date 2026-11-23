@@ -1,22 +1,22 @@
-// Define the type for clarity
+// ── Types ─────────────────────────────────────────────────────────────────────
 export type CardData = [string, number, number][]
 
-// Section 1 Data
+// ── Section 1 — Communauté (Feed) ────────────────────────────────────────────
 export const sectionOneCard: CardData = [
-    ["/Illustrations/Team work-amico.svg", 20, 40],
+    ["/landing/feed.webp", 36, 45],
 ]
 
-// Section 2 Data
+// ── Section 2 — Ressources (bibliothèque partagée) ───────────────────────────
 export const sectionTwoCard: CardData = [
-    ["/Illustrations/Upload-amico.svg", 51, 28],
+    ["/landing/resources.webp", 40, 32],
 ]
 
-// Section 3 Data
+// ── Section 3 — Sphères (travail collaboratif) ───────────────────────────────
 export const sectionThreeCard: CardData = [
-    ["/Illustrations/Feed-amico.svg", 38, 356],
+    ["/landing/spheres.webp", 38, 28],
 ]
 
-// Section 4 Data (Événements)
+// ── Section 4 — Événements ───────────────────────────────────────────────────
 export const sectionFourCard: CardData = [
-    ["/Illustrations/Events-amico.svg", 30, 68],
+    ["/landing/events.webp", 36, 50],
 ]

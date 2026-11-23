@@ -2,7 +2,7 @@
   "nav": {
     "profile": { "label": "Mon Profil", "desc": "Identité académique & SSO" },
     "generation": { "label": "Préférences IA", "desc": "Langue, détail & tonalité" },
-    "tools": { "label": "Quiz & Flashcards", "desc": "Volume & temps par outil" },
+    "tools": { "label": "Quiz & Cartes mémoire", "desc": "Volume & temps par outil" },
     "quota": { "label": "Usage & Quota", "desc": "Consommation hebdomadaire" },
     "stats": { "label": "Activité & Streak", "desc": "Grille 14 semaines & stats" },
     "appearance": { "label": "Apparence", "desc": "Thèmes sombre & clair" }
@@ -17,8 +17,8 @@
       "desc": "Personnalisez la langue, le niveau de détail et la posture pédagogique de votre tuteur Sphera"
     },
     "tools": {
-      "title": "Paramètres par Outil (Quiz & Flashcards)",
-      "desc": "Définissez le volume par défaut de questions et flashcards générées pour chaque cours"
+      "title": "Paramètres par Outil (Quiz & Cartes mémoire)",
+      "desc": "Définissez le volume par défaut de questions et cartes mémoire générées pour chaque cours"
     },
     "quota": {
       "title": "Usage & Quota Hebdomadaire",
@@ -69,10 +69,10 @@
   "statsGrid": {
     "tools": {
       "fiche": "Fiches de cours",
-      "quiz": "Quiz interactifs",
-      "flashcards": "Flashcards",
-      "mindmap": "Cartes mentales",
-      "audio": "Résumés audio"
+      "quiz": "Quiz d'entraînement",
+      "flashcards": "Cartes mémoire",
+      "mindmap": "Schémas de cours",
+      "audio": "Cours en audio"
     },
     "currentStreak": "Streak en cours",
     "recordStreak": "Record personnel",

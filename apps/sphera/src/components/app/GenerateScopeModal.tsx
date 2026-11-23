@@ -38,7 +38,7 @@ export function GenerateScopeModal({
   if (!isOpen) return null
 
   const isQuiz = toolType === 'quiz'
-  const title = isQuiz ? 'Créer un Quiz' : 'Créer des Flashcards'
+  const title = isQuiz ? 'Créer un Quiz' : 'Créer des Cartes mémoire'
   const accentColor = isQuiz ? 'rose' : 'orange'
 
   const handleConfirm = () => {
@@ -135,7 +135,7 @@ export function GenerateScopeModal({
                 <p className="text-[11px] text-sphera-text-muted mt-0.5">
                   {isQuiz
                     ? 'Génère un test global de 20 questions couvrant l\'ensemble du document.'
-                    : 'Génère un paquet complet de 20 flashcards couvrant tout le document.'}
+                    : 'Génère un paquet complet de 20 cartes mémoire couvrant tout le document.'}
                 </p>
               </div>
               {scopeMode === 'full' && (

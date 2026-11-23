@@ -2,7 +2,7 @@
   "nav": {
     "profile": { "label": "My Profile", "desc": "Academic identity & SSO" },
     "generation": { "label": "AI Preferences", "desc": "Language, detail & tone" },
-    "tools": { "label": "Quiz & Flashcards", "desc": "Volume & time per tool" },
+    "tools": { "label": "Quiz & Memory cards", "desc": "Volume & time per tool" },
     "quota": { "label": "Usage & Quota", "desc": "Weekly consumption" },
     "stats": { "label": "Activity & Streak", "desc": "14-week grid & stats" },
     "appearance": { "label": "Appearance", "desc": "Dark & light themes" }
@@ -17,8 +17,8 @@
       "desc": "Customize writing language, detail level, and pedagogical style of your Sphera tutor"
     },
     "tools": {
-      "title": "Per-Tool Settings (Quiz & Flashcards)",
-      "desc": "Define default questions and flashcards volume generated for each course"
+      "title": "Per-Tool Settings (Quiz & Memory cards)",
+      "desc": "Define default questions and memory cards volume generated for each course"
     },
     "quota": {
       "title": "Weekly Usage & Quota",
@@ -69,10 +69,10 @@
   "statsGrid": {
     "tools": {
       "fiche": "Course summaries",
-      "quiz": "Interactive quizzes",
-      "flashcards": "Flashcards",
-      "mindmap": "Mind maps",
-      "audio": "Audio summaries"
+      "quiz": "Practice quizzes",
+      "flashcards": "Memory cards",
+      "mindmap": "Visual course maps",
+      "audio": "Audio lessons"
     },
     "currentStreak": "Current streak",
     "recordStreak": "Personal record",

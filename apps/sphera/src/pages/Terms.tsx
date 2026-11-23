@@ -20,7 +20,7 @@ export default function Terms() {
 
       <SpheraHeader />
       
-      <main className="flex-1 pt-32 pb-24 relative overflow-hidden">
+      <main className="flex-1 pt-16 pb-24 md:pt-20 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-sphera-green/5 blur-[100px] rounded-full pointer-events-none" />
         
         <div className="container mx-auto px-4 max-w-4xl relative z-10 text-sphera-text-muted">
@@ -72,7 +72,7 @@ export default function Terms() {
             <section>
               <h2 className="text-xl font-bold text-white mb-4">{t('terms.sec8.title')}</h2>
               <p>
-                {t('terms.sec8.p1')} <a href="mailto:policies@campussphere.app" className="text-sphera-green hover:underline">policies@campussphere.app</a> ou <a href="mailto:support@campussphere.app" className="text-sphera-green hover:underline">support@campussphere.app</a>.
+                {t('terms.sec8.p1')} <a href="mailto:policies@campussphere.app" className="text-sphera-green hover:underline">policies@campussphere.app</a> {t('or')} <a href="mailto:support@campussphere.app" className="text-sphera-green hover:underline">support@campussphere.app</a>.
               </p>
             </section>
           </div>

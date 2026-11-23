@@ -38,7 +38,7 @@ export const COMMANDS: Command[] = [
   {
     trigger: '@flashcards',
     aliases: ['@cards', '@cartes'],
-    label: 'Flashcards',
+    label: 'Cartes mémoire',
     icon: Cards,
     description: 'Afficher ou réviser tes flashcards',
     category: 'tool',
@@ -113,7 +113,7 @@ export function CommandMenu({ isVisible, filter, activeIndex, isEnglish = false,
       case '@flashcards':
         return {
           ...cmd,
-          label: isEnglish ? 'Flashcards' : t('modals.commandMenu.flashcardsLabel'),
+          label: isEnglish ? 'Memory cards' : t('modals.commandMenu.flashcardsLabel'),
           description: isEnglish ? 'Review or generate flashcards' : t('modals.commandMenu.flashcardsDesc'),
         }
       case '@expliquer':
