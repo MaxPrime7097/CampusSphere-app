@@ -1,0 +1,634 @@
+{
+  "layout": {
+    "breadcrumbAria": "Breadcrumb",
+    "policiesRoot": "Policies",
+    "lastUpdated": "Last updated: {{date}}",
+    "otherPoliciesAria": "Other policies",
+    "tocAria": "Page table of contents",
+    "tocTitle": "On this page",
+    "allPoliciesAria": "All policies",
+    "otherPoliciesTitle": "Other policies",
+    "ctaAria": "Contact the legal team",
+    "ctaTitle1": "Questions about",
+    "ctaTitle2": "this document?",
+    "ctaBody": "To exercise your rights or get clarification on any of our policies, you can reach our team directly by email or through our contact form.",
+    "ctaContact": "Contact us"
+  },
+  "catalog": {
+    "privacy": {
+      "title": "Privacy Policy",
+      "shortLabel": "Privacy",
+      "description": "Collection, processing, and protection of your personal data, cloud subprocessors, and how to exercise your rights."
+    },
+    "terms": {
+      "title": "Terms of Use",
+      "shortLabel": "Terms of Use",
+      "description": "Platform access rules, 16-year minimum age requirement, intellectual property, and member commitments."
+    },
+    "termsOfSale": {
+      "title": "Terms of Sale",
+      "shortLabel": "Terms of Sale",
+      "description": "Pricing in XAF, study passes and Sphera AI credits, Mobile Money payments via Campay, and refund rules."
+    },
+    "legalNotice": {
+      "title": "Legal Notice",
+      "shortLabel": "Legal Notice",
+      "description": "Publisher identification for CampusSphere, frontend/backend cloud hosting, and official contact channels."
+    },
+    "dataDeletion": {
+      "title": "Account & Data Deletion",
+      "shortLabel": "Data Deletion",
+      "description": "Step-by-step instructions to request permanent deletion of your account and personal data."
+    },
+    "communityGuidelines": {
+      "title": "Community Guidelines",
+      "shortLabel": "Community",
+      "description": "Standards for mutual respect, responsible academic sharing, and moderation principles across Spheres."
+    },
+    "cookiePolicy": {
+      "title": "Cookie & Tracker Policy",
+      "shortLabel": "Cookies",
+      "description": "Strictly limited to essential technical cookies and anonymized metrics, with zero advertising trackers."
+    },
+    "copyright": {
+      "title": "Copyright Policy",
+      "shortLabel": "Copyright",
+      "description": "Protection of original works and shared study materials, infringement notice process, and counter-notices."
+    }
+  },
+  "hub": {
+    "meta": {
+      "title": "Policies & Legal Compliance | CampusSphere",
+      "description": "Browse all policies, legal notices, Terms of Use, Terms of Sale, and Community Guidelines for CampusSphere and Sphera.",
+      "ogTitle": "Policies & Legal Notices — CampusSphere",
+      "ogDescription": "Full information on privacy, terms of use, and community rules across CampusSphere."
+    },
+    "hero": {
+      "titleLine1": "Transparency &",
+      "titleLine2": "legal framework.",
+      "lede": "Find every rule protecting your data, governing CampusSphere and Sphera services, and keeping our student community safe and trustworthy in one place.",
+      "ctaPrimary": "Privacy Policy",
+      "ctaSecondary": "Contact us",
+      "pillars": {
+        "p1": {
+          "num": "01",
+          "title": "Encryption & security",
+          "desc": "TLS 1.3 encrypted communications and AES-256 encrypted storage on Supabase and Amazon Web Services (AWS EC2 / S3)."
+        },
+        "p2": {
+          "num": "02",
+          "title": "Zero ad data resale",
+          "desc": "Your personal and academic data is never sold, rented, or transferred to advertising networks."
+        },
+        "p3": {
+          "num": "03",
+          "title": "Confidential AI",
+          "desc": "Study materials analyzed in Sphera stay yours and are never used to train public AI models."
+        }
+      }
+    },
+    "docs": {
+      "ariaLabel": "Legal documents",
+      "titleLine1": "Our official",
+      "titleLine2": "documents.",
+      "lede": "Eight clear policies covering privacy, terms of use and sale, copyright protection, and account deletion.",
+      "readDoc": "Read document"
+    },
+    "cta": {
+      "ariaLabel": "Legal contact",
+      "titleLine1": "Have a question about",
+      "titleLine2": "our policies?",
+      "body": "To exercise your data rights or report content, reach out directly to our dedicated legal and compliance team.",
+      "ctaPrimary": "Contact us"
+    }
+  },
+  "privacy": {
+    "meta": {
+      "title": "Privacy Policy (GDPR) | CampusSphere",
+      "description": "CampusSphere privacy policy and data protection compliance: how we collect, use, and secure your personal data.",
+      "ogTitle": "Privacy Policy — CampusSphere",
+      "ogDescription": "Learn how CampusSphere protects your personal data and respects your privacy."
+    },
+    "header": {
+      "title": "Privacy",
+      "highlight": "Policy",
+      "subtitle": "How we collect, use, and protect your personal data across CampusSphere and Sphera.",
+      "lastUpdated": "2026-09-13"
+    },
+    "toc": {
+      "s1": "1. Data collection & minimum age",
+      "s2": "2. Data usage & Sphera",
+      "s3": "3. Cloud subprocessors",
+      "s4": "4. AI processing",
+      "s5": "5. Your rights",
+      "s6": "6. Security",
+      "s7": "7. Contact & DPO"
+    },
+    "s1": {
+      "title": "1. Data Collection & Minimum Age",
+      "intro": "CampusSphere collects only the information necessary to operate the platform and support your studies:",
+      "i1": "<strong>Personal details:</strong> First name, last name, student or personal email address.",
+      "i2": "<strong>Minimum age requirement (16 years old):</strong> Registration is reserved for individuals aged 16 and older. For minors between 16 and 18, prior consent from a parent or legal guardian is required.",
+      "i3": "<strong>Academic profile:</strong> Educational institution, faculty, major, and study level.",
+      "i4": "<strong>User content:</strong> Posts, study summaries, comments, and shared academic documents.",
+      "i5": "<strong>Technical performance data:</strong> Anonymized rendering metrics via Vercel Speed Insights (with zero advertising profiling)."
+    },
+    "s2": {
+      "title": "2. Data Usage & Unified Sphera Ecosystem",
+      "intro": "Your data is used exclusively to:",
+      "i1": "Provide, secure, and improve the features of the CampusSphere student social network.",
+      "i2": "Power the <strong>Sphera</strong> academic assistant through a unified Single Sign-On (SSO) account.",
+      "i3": "Allocate your revision credits and study passes, and synchronize your notes and study sessions.",
+      "i4": "Keep the community safe and moderate fraudulent or abusive behavior."
+    },
+    "s3": {
+      "title": "3. Cloud Subprocessors & Secure Infrastructure",
+      "intro": "We never sell or rent your personal data to third parties. Essential technical processing is performed by industry-leading partners providing strong encryption:",
+      "b1Title": "Frontend & CDN",
+      "b1Desc": "<strong>Vercel Inc.</strong> — Secure TLS 1.3 content delivery and anonymized technical performance metrics.",
+      "b2Title": "Backend Application Servers",
+      "b2Desc": "<strong>Amazon Web Services (AWS EC2)</strong> — Isolated hosting for APIs and application services.",
+      "b3Title": "Database & Authentication",
+      "b3Desc": "<strong>Supabase Inc.</strong> — Secure account management, sessions, and encrypted application data.",
+      "b4Title": "Document Storage",
+      "b4Desc": "<strong>Amazon Web Services (AWS S3)</strong> — Encrypted-at-rest (AES-256) storage for files and study materials.",
+      "b5Title": "AI Engines (Sphera)",
+      "b5Desc": "<b1>AWS Bedrock</b1>, complemented by <b2>Google AI (Gemini)</b2> and <b3>Groq Inc.</b3>, with zero public model training.",
+      "b6Title": "Mobile Money Payments",
+      "b6Desc": "Secure <strong>Campay</strong> payment gateway (MTN MoMo, Orange Money) with zero storage of secret PIN codes."
+    },
+    "s4": {
+      "title": "4. Artificial Intelligence Processing (Sphera)",
+      "intro": "When you use Sphera:",
+      "i1": "Uploaded documents (PDFs, scanned lectures, notes) are analyzed solely to generate your revision sheets, quizzes, flashcards, or exam corrections.",
+      "i2": "<strong>Zero public training:</strong> Your personal documents are never reused to train general public AI models of our providers (AWS Bedrock, Google, Groq).",
+      "i3": "Your documents and sessions are stored on AWS S3 under your control and can be deleted anytime from your personal workspace."
+    },
+    "s5": {
+      "title": "5. Your Rights",
+      "intro": "You have the following rights regarding your personal data at any time:",
+      "i1": "Access your personal data.",
+      "i2": "Rectify inaccurate or incomplete information.",
+      "i3": "Request permanent deletion of your account and data (see our <link>Data Deletion</link> page).",
+      "i4": "Export your data in a structured format.",
+      "i5": "Object to processing or withdraw your consent at any time.",
+      "outro": "To exercise these rights, contact us at <mail>policies@campussphere.app</mail>."
+    },
+    "s6": {
+      "title": "6. Security",
+      "body": "We implement appropriate technical and organizational safeguards (TLS 1.3 encryption in transit, AES-256 encryption at rest, strict access controls) to protect your data against unauthorized access, alteration, disclosure, or destruction."
+    },
+    "s7": {
+      "title": "7. Contact & Data Protection Officer (DPO)",
+      "intro": "For any question regarding this Privacy Policy or to exercise your data rights:",
+      "email": "Email: <m1>policies@campussphere.app</m1> or <m2>support@campussphere.app</m2>",
+      "address": "Address: Douala, Cameroon"
+    }
+  },
+  "terms": {
+    "meta": {
+      "title": "Terms of Use | CampusSphere",
+      "description": "CampusSphere Terms of Use governing platform access, student rights and responsibilities, and Sphere moderation.",
+      "ogTitle": "Terms of Use — CampusSphere",
+      "ogDescription": "Review the Terms of Use and engagement rules on the CampusSphere student network."
+    },
+    "header": {
+      "title": "Terms of",
+      "highlight": "Use",
+      "subtitle": "The rules governing access to CampusSphere and Sphera to keep our student community reliable and respectful.",
+      "lastUpdated": "2026-09-13"
+    },
+    "toc": {
+      "s1": "1. Acceptance of terms",
+      "s2": "2. Registration & minimum age",
+      "s3": "3. Platform use & Sphera AI",
+      "s4": "4. User content & hosting license",
+      "s5": "5. Paid services & Mobile Money",
+      "s6": "6. Prohibited conduct",
+      "s7": "7. Intellectual property",
+      "s8": "8. Liability & termination",
+      "s9": "9. Contact"
+    },
+    "s1": {
+      "title": "1. Acceptance of Terms",
+      "body": "By creating an account or browsing CampusSphere (and its Sphera AI study assistant), you unconditionally accept these Terms of Use. If you do not agree to these terms, you must stop using the platform immediately."
+    },
+    "s2": {
+      "title": "2. Registration, Minimum Age & Account",
+      "i1": "<b1>Minimum age requirement:</b1> Access to CampusSphere is strictly reserved for individuals aged at least <b2>16 years old</b2>. If you are between 16 and 18, you confirm that you have prior consent from your parents or legal guardians.",
+      "i2": "CampusSphere is primarily intended for students enrolled in higher education or upper secondary education.",
+      "i3": "You must provide a truthful identity and accurate information when registering.",
+      "i4": "You are solely responsible for maintaining the confidentiality of your login credentials.",
+      "i5": "You must report any suspicious login or security breach to us without delay.",
+      "i6": "Creating automated or multiple fake accounts (bots, impersonation profiles) is strictly prohibited."
+    },
+    "s3": {
+      "title": "3. Use of the Platform & Sphera AI Assistant",
+      "intro": "You agree to:",
+      "i1": "Use the platform lawfully, respectfully, and in compliance with Cameroonian and international laws.",
+      "i2": "Strictly respect the intellectual property rights of authors, lecturers, and third parties.",
+      "i3": "Refrain from posting abusive, defamatory, violent, or unlawful content.",
+      "i4": "Never use our services to cheat during official examinations.",
+      "i5": "Never attempt to tamper with servers or scrape data without authorization.",
+      "spheraNote": "CampusSphere also integrates the Sphera AI study assistant (powered by AWS Bedrock, Google AI, and Groq). Uploaded documents are processed exclusively to generate your revision sheets, flashcards, and quizzes, and <strong>are never used to train public AI models</strong>."
+    },
+    "s4": {
+      "title": "4. User Content & Technical Hosting License",
+      "intro": "Regarding documents, summaries, and posts you share:",
+      "i1": "<strong>Ownership preserved:</strong> You retain full intellectual property ownership of your original content and documents.",
+      "i2": "<strong>Technical license:</strong> To enable us to operate the service, you grant CampusSphere a worldwide, royalty-free, non-exclusive license to host, store on our secure servers (Amazon Web Services S3), technically replicate, index, and display your content solely for operating the community and Sphera assistant.",
+      "i3": "<strong>Lawfulness warranty:</strong> You confirm that you hold the necessary rights or permissions for any materials you upload.",
+      "i4": "CampusSphere reserves the right to moderate or remove without prior notice any content violating applicable laws or Community Guidelines."
+    },
+    "s5": {
+      "title": "5. Paid Services, Subscriptions & Mobile Money Payments",
+      "intro": "Access to certain advanced features (extended Sphera AI credits, Exam Passes, premium packs) may be billed in CFA Francs (XAF).",
+      "i1": "Payments are processed via <strong>Mobile Money (MTN MoMo, Orange Money)</strong> through approved encrypted payment gateways.",
+      "i2": "Order terms, immediate digital service execution, and cancellation policies are detailed in our <link>Terms of Sale</link>."
+    },
+    "s6": {
+      "title": "6. Prohibited Conduct",
+      "intro": "The following behaviors are strictly prohibited:",
+      "i1": "Spam or unauthorized advertising.",
+      "i2": "Harassment, bullying, or discrimination.",
+      "i3": "Sharing violent or sexually explicit content.",
+      "i4": "Identity theft or impersonation.",
+      "i5": "Unauthorized collection of user data.",
+      "i6": "Use of bots or abusive automation.",
+      "i7": "Copyright infringement."
+    },
+    "s7": {
+      "title": "7. Intellectual Property",
+      "body": "CampusSphere and its original content are protected by copyright, trademark, and intellectual property laws. You may not copy, modify, or distribute our proprietary content without prior written authorization."
+    },
+    "s8": {
+      "title": "8. Limitation of Liability, Termination & Updates",
+      "p1": "<strong>Availability:</strong> CampusSphere is provided “as is”. We make every effort to ensure service continuity without guaranteeing uninterrupted or error-free operation.",
+      "p2": "<strong>Termination:</strong> We reserve the right to suspend or terminate your account in the event of a breach of these terms. You may also delete your account anytime from your settings.",
+      "p3": "<strong>Updates:</strong> We may update these terms from time to time. Material changes will be notified to you by email or directly on the platform."
+    },
+    "s9": {
+      "title": "9. Contact",
+      "intro": "For any question regarding these Terms of Use, please contact:",
+      "email": "Email: <m1>policies@campussphere.app</m1> or <m2>support@campussphere.app</m2>",
+      "address": "Address: Douala, Cameroon"
+    }
+  },
+  "termsOfSale": {
+    "meta": {
+      "title": "Terms of Sale | CampusSphere",
+      "description": "Read the CampusSphere and Sphera Terms of Sale: Mobile Money payments via the Campay API, subscriptions, study passes, and withdrawal policy.",
+      "ogTitle": "Terms of Sale — CampusSphere",
+      "ogDescription": "Purchase terms, subscriptions, and Mobile Money payments via Campay on CampusSphere."
+    },
+    "header": {
+      "title": "Terms of",
+      "highlight": "Sale",
+      "subtitle": "Pricing in XAF, Sphera study passes and AI credits, and secure Mobile Money payments via the Campay API.",
+      "lastUpdated": "2026-09-13"
+    },
+    "toc": {
+      "s1": "1. Scope & purpose",
+      "s2": "2. Plans & pricing",
+      "s3": "3. Mobile Money payments",
+      "s4": "4. Execution & withdrawal",
+      "s5": "5. Refunds & claims",
+      "s6": "6. Governing law & disputes"
+    },
+    "s1": {
+      "title": "1. Scope & Purpose",
+      "p1": "These Terms of Sale govern all purchases of digital services, subscriptions, and artificial intelligence credits offered by <b1>CampusSphere</b1> and its companion service <b2>Sphera</b2> without restriction or reservation.",
+      "p2": "Any paid purchase implies full acceptance of these Terms of Sale and our Terms of Use. Users confirm they are at least <strong>16 years old</strong> and possess legal capacity (or guardian consent) to enter into a contract."
+    },
+    "s2": {
+      "title": "2. Services Offered, Plans & Pricing",
+      "p1": "CampusSphere offers digital academic assistance services, including generation of revision sheets, quizzes, flashcards, exam corrections, and priority access to Sphera AI models.",
+      "i1": "<strong>Beta Phase:</strong> During open beta or testing periods, services may be provided free of charge (0 XAF) subject to fair-usage quotas.",
+      "i2": "<strong>One-Time Passes (e.g., Exam Pass):</strong> Fixed-duration access (7 days, 30 days, etc.) with no auto-renewal. The pass expires at the end of its period with no recurring charge.",
+      "i3": "<strong>Recurring Subscriptions:</strong> Continuous access with periodic renewal that can be canceled anytime from account settings.",
+      "p2": "All prices are stated in <strong>CFA Francs (XAF)</strong> inclusive of all taxes. CampusSphere reserves the right to adjust pricing at any time; the applicable amount is always the one displayed at checkout confirmation."
+    },
+    "s3": {
+      "title": "3. Secure Payment Methods (Mobile Money via Campay)",
+      "p1": "To deliver a smooth payment experience tailored to local realities, Mobile Money transactions are processed through the certified payment aggregator <strong>Campay</strong> (Campay API).",
+      "i1": "<strong>MTN Mobile Money:</strong> Direct checkout with USSD prompt and confirmation on the student’s phone.",
+      "i2": "<strong>Orange Money:</strong> Secure authorization via approval code or mobile confirmation.",
+      "p2": "The Campay API ensures end-to-end encrypted transaction security. CampusSphere never collects, views, or stores any PIN code or banking password."
+    },
+    "s4": {
+      "title": "4. Immediate Execution & Right of Withdrawal",
+      "p1": "Purchased services consist of digital content not supplied on a physical medium and AI study assistance whose execution begins immediately upon payment confirmation.",
+      "callout": "By confirming your Mobile Money transaction via Campay, you expressly request immediate activation of paid features and acknowledge waiving your right of withdrawal once service execution has begun or AI credits have been consumed."
+    },
+    "s5": {
+      "title": "5. Refund Policy & Claims",
+      "p1": "No retroactive refund is granted for elapsed periods, expired passes, or already consumed AI generations.",
+      "p2": "In the event of a verified technical error (e.g., duplicate Mobile Money charge, account debited without feature activation within 2 hours), the user must contact support immediately with their Campay transaction reference:",
+      "i1": "Support: <m1>support@campussphere.app</m1> or <m2>policies@campussphere.app</m2>",
+      "i2": "Processing time: Response and resolution within 24 to 48 business hours."
+    },
+    "s6": {
+      "title": "6. Governing Law & Dispute Resolution",
+      "p1": "These Terms of Sale are governed by the laws of Cameroon and e-commerce regulations applicable within the CEMAC zone.",
+      "p2": "In the event of a dispute, an amicable settlement will be sought first. Failing an amicable resolution within thirty (30) days, any dispute shall be referred to the competent courts of Douala, Cameroon."
+    }
+  },
+  "legalNotice": {
+    "meta": {
+      "title": "Legal Notice | CampusSphere",
+      "description": "Read the official Legal Notice for CampusSphere: publisher details, cloud hosting infrastructure, and official contact addresses.",
+      "ogTitle": "Legal Notice — CampusSphere",
+      "ogDescription": "Legal details, publisher identification, and cloud infrastructure providers for CampusSphere."
+    },
+    "header": {
+      "title": "Legal",
+      "highlight": "Notice",
+      "subtitle": "Identification of the CampusSphere publisher and details of our secure cloud infrastructure.",
+      "lastUpdated": "2026-09-13"
+    },
+    "toc": {
+      "s1": "1. Platform publisher",
+      "s2": "2. Hosting & cloud infra",
+      "s3": "3. Intellectual property",
+      "s4": "4. Contact & legal notices"
+    },
+    "s1": {
+      "title": "1. Platform Publisher",
+      "intro": "The digital platform <b1>CampusSphere</b1> (accessible at <c1>campussphere.app</c1>) and its academic AI module <b2>Sphera</b2> (accessible at <c2>sphera.campussphere.app</c2>) are published by the CampusSphere founding team.",
+      "i1": "<strong>Project / Publisher:</strong> CampusSphere (Founding & Engineering Team)",
+      "i2": "<strong>Operating headquarters:</strong> Douala, Littoral Region, Cameroon",
+      "i3": "<strong>Partnerships, investors & general inquiries:</strong> <mail>contact@campussphere.app</mail>",
+      "i4": "<strong>Technical & student support:</strong> <mail>support@campussphere.app</mail>",
+      "i5": "<strong>Legal affairs, privacy & policies:</strong> <mail>policies@campussphere.app</mail>",
+      "i6": "<strong>Publication Director:</strong> Editorial & Technical Lead, CampusSphere"
+    },
+    "s2": {
+      "title": "2. Hosting & Cloud Infrastructure",
+      "intro": "To guarantee high availability, fast response times, and strong security for student data, CampusSphere’s architecture relies on the following providers:",
+      "b1Title": "Frontend & CDN Hosting",
+      "b1Desc": "<strong>Vercel Inc.</strong> — 440 N Barranca Ave #4133, Covina, CA 91723, United States. Encrypted SSL/TLS content delivery network.",
+      "b2Title": "Backend & API Hosting",
+      "b2Desc": "<strong>Amazon Web Services (AWS) — Amazon EC2</strong> — Amazon Web Services, Inc., 410 Terry Avenue North, Seattle, WA 98109-5210, United States. Secure, isolated application servers.",
+      "b3Title": "Database & Authentication",
+      "b3Desc": "<strong>Supabase Inc.</strong> — 970 Toa Payoh North #07-04, Singapore 318992. Managed PostgreSQL database, authentication, and secure access controls.",
+      "b4Title": "Secure File Storage",
+      "b4Desc": "<strong>Amazon Web Services (AWS) — Amazon S3</strong> — Encrypted-at-rest (AES-256) storage for user documents, study resources, and media.",
+      "b5Title": "Artificial Intelligence Engines (Sphera)",
+      "b5Desc": "<b1>Amazon Web Services (AWS Bedrock)</b1>, complemented by secure APIs from <b2>Google AI (Gemini)</b2> and <b3>Groq Inc.</b3> No user data is reused to train public AI models."
+    },
+    "s3": {
+      "title": "3. Intellectual Property",
+      "p1": "All elements comprising CampusSphere and Sphera (including trademarks, logos, graphics, software, source code, interfaces, and editorial copy) are protected under Cameroonian law (Law No. 2000/011 on Copyright), the conventions of the African Intellectual Property Organization (OAPI — Bangui Agreement), and international intellectual property treaties.",
+      "p2": "Any full or partial reproduction, representation, distribution, or exploitation without prior written consent from CampusSphere is strictly prohibited."
+    },
+    "s4": {
+      "title": "4. Contact & Legal Notices",
+      "intro": "For any disputed content notice, intellectual property claim, or request to exercise access and rectification rights:",
+      "email": "Email: <m1>policies@campussphere.app</m1> or <m2>support@campussphere.app</m2>",
+      "location": "Location: Douala, Cameroon"
+    }
+  },
+  "dataDeletion": {
+    "meta": {
+      "title": "Account & Data Deletion | CampusSphere",
+      "description": "Learn how to permanently delete your account and personal data from CampusSphere and Sphera.",
+      "ogTitle": "Account & Data Deletion — CampusSphere",
+      "ogDescription": "Step-by-step instructions to exercise your right to erasure on CampusSphere."
+    },
+    "header": {
+      "title": "Data",
+      "highlight": "Deletion",
+      "subtitle": "Stay in control of your personal data and follow the steps to permanently delete your CampusSphere and Sphera account.",
+      "lastUpdated": "2026-09-13"
+    },
+    "toc": {
+      "s1": "1. Your right to erasure",
+      "s2": "2. How to delete your account",
+      "s3": "3. Data permanently deleted",
+      "s4": "4. Backups & retention",
+      "s5": "5. Contact & support"
+    },
+    "s1": {
+      "title": "1. Your Right to Erasure",
+      "p1": "In accordance with Cameroonian legislation (Law No. 2010/012 on Cybersecurity) and international privacy standards (GDPR), every student or user registered on CampusSphere and Sphera holds a fundamental right to complete erasure of their personal data (“right to be forgotten”).",
+      "p2": "You may exercise this right at any time, independently and free of charge."
+    },
+    "s2": {
+      "title": "2. How to Delete Your Account",
+      "intro": "To initiate immediate and irreversible deletion of your account:",
+      "step1": "Sign in to your account at <strong>campussphere.app</strong>.",
+      "step2": "Open <b1>Settings</b1> (gear icon), then go to <b2>Account & Security</b2>.",
+      "step3": "Select <strong>Delete my account</strong> at the bottom of the page.",
+      "step4": "Confirm the action by entering your account password.",
+      "callout": "If you are unable to log in, send an email request to <mail>policies@campussphere.app</mail> from the email address linked to your account. Our team will process the full purge within 48 hours."
+    },
+    "s3": {
+      "title": "3. Data Permanently Deleted",
+      "intro": "Confirming deletion results in immediate and irreversible removal of:",
+      "i1": "Your profile (first name, last name, photo, status, institution, and major).",
+      "i2": "Your authentication credentials and active sessions on CampusSphere and Sphera (Supabase).",
+      "i3": "Your posts, comments, ratings, and private messages.",
+      "i4": "Your uploaded documents, generated revision sheets, quizzes, and flashcards hosted on AWS S3.",
+      "i5": "Your academic Sphere memberships and connections."
+    },
+    "s4": {
+      "title": "4. Backups & Residual Retention Periods",
+      "intro": "Removal from the live database is instantaneous. For strict service continuity and security requirements:",
+      "i1": "<strong>Encrypted system backups:</strong> Global system backups are cyclically purged within a maximum of 30 days, after which no residual data remains.",
+      "i2": "<strong>Legal & Campay financial records:</strong> Financial proof records (Mobile Money transaction references) are archived only within the limits and periods required by applicable tax and banking regulations."
+    },
+    "s5": {
+      "title": "5. Contact & Support",
+      "intro": "For any question about data processing or account deletion:",
+      "i1": "Data Protection & Policies: <mail>policies@campussphere.app</mail>",
+      "i2": "Technical Support: <mail>support@campussphere.app</mail>",
+      "i3": "Location: Douala, Cameroon"
+    }
+  },
+  "communityGuidelines": {
+    "meta": {
+      "title": "Community Guidelines & Student Charter | CampusSphere",
+      "description": "Discover the rules of mutual respect, safety, and moderation within the CampusSphere student community.",
+      "ogTitle": "Community Guidelines — CampusSphere",
+      "ogDescription": "Our principles of respect, peer help, and safety across student Spheres."
+    },
+    "header": {
+      "title": "Community",
+      "highlight": "Guidelines",
+      "subtitle": "Simple principles keeping every Sphere healthy, welcoming, and genuinely helpful for students.",
+      "lastUpdated": "2026-04-05"
+    },
+    "toc": {
+      "s1": "1. Respect & kindness",
+      "s2": "2. Safety & protection",
+      "s3": "3. Prohibited content",
+      "s4": "4. Collaboration & sharing",
+      "s5": "5. Enforcement",
+      "s6": "6. Report an issue",
+      "s7": "7. Contact"
+    },
+    "s1": {
+      "title": "1. Respect and Kindness",
+      "i1": "Treat every member with respect and courtesy.",
+      "i2": "Value diversity of viewpoints, majors, and backgrounds.",
+      "i3": "Encourage and support your peers in their projects and exam prep.",
+      "i4": "Share knowledge and feedback constructively."
+    },
+    "s2": {
+      "title": "2. Safety and Protection",
+      "i1": "Never share sensitive personal data (phone numbers, passwords, private IDs).",
+      "i2": "Report any inappropriate, abusive, or suspicious behavior.",
+      "i3": "Protect your own privacy as well as that of fellow members.",
+      "i4": "Never use the platform for harassment or intimidation."
+    },
+    "s3": {
+      "title": "3. Prohibited Content",
+      "intro": "The following content is strictly prohibited on CampusSphere:",
+      "i1": "Violent, hateful, or discriminatory content.",
+      "i2": "Nudity or sexually explicit material.",
+      "i3": "Deliberate misinformation or disinformation.",
+      "i4": "Spam, scams, or unauthorized commercial solicitation.",
+      "i5": "Copyright or intellectual property infringement."
+    },
+    "s4": {
+      "title": "4. Collaboration and Sharing",
+      "i1": "Share clear, useful academic resources with your classmates.",
+      "i2": "Always credit your sources when sharing study materials or work.",
+      "i3": "Contribute actively and positively inside collaborative Spheres.",
+      "i4": "Respect the intellectual work of fellow students and lecturers."
+    },
+    "s5": {
+      "title": "5. Consequences of Violations",
+      "intro": "Depending on severity, violating these rules may result in:",
+      "i1": "A formal warning from our moderation team.",
+      "i2": "Immediate removal of offending content.",
+      "i3": "Temporary account suspension.",
+      "i4": "Permanent ban in severe or repeated cases."
+    },
+    "s6": {
+      "title": "6. Report an Issue",
+      "intro": "If you witness a violation of these guidelines, report it promptly:",
+      "i1": "Using the “Report” button available on every post and resource.",
+      "i2": "By email at <mail>support@campussphere.app</mail>.",
+      "i3": "Through the platform’s <link>contact form</link>."
+    },
+    "s7": {
+      "title": "7. Contact",
+      "intro": "For any question regarding our Community Guidelines:",
+      "email": "Email: <mail>policies@campussphere.app</mail>",
+      "address": "Address: Douala, Cameroon"
+    }
+  },
+  "cookiePolicy": {
+    "meta": {
+      "title": "Cookie & Tracker Policy | CampusSphere",
+      "description": "Information on technical, session, and anonymized performance cookies used on CampusSphere.",
+      "ogTitle": "Cookie Policy — CampusSphere",
+      "ogDescription": "How CampusSphere uses strictly essential cookies with zero advertising tracking."
+    },
+    "header": {
+      "title": "Cookie",
+      "highlight": "Policy",
+      "subtitle": "How we rely solely on essential technical trackers, with zero advertising profiling.",
+      "lastUpdated": "2026-09-13"
+    },
+    "toc": {
+      "s1": "1. What is a cookie?",
+      "s2": "2. Trackers we use",
+      "s3": "3. Managing cookies",
+      "s4": "4. Contact"
+    },
+    "s1": {
+      "title": "1. What Is a Cookie?",
+      "body": "A cookie is a small text file or technical storage entry placed on your device when visiting CampusSphere. It ensures core platform functionality, keeps your session securely logged in, and optimizes browsing performance."
+    },
+    "s2": {
+      "title": "2. Types of Trackers and Cookies Used",
+      "b1Title": "Strictly necessary cookies",
+      "b1Desc": "Essential for the platform to work: keeping your authentication session secure and remembering your core preferences (such as language).",
+      "b2Title": "Technical performance (Vercel Speed Insights)",
+      "b2Desc": "Anonymized page load and responsiveness metrics. No commercial profiling cookies, no personally identifiable data, and no cross-site tracking.",
+      "callout": "<strong>Zero third-party ad targeting cookies:</strong> CampusSphere strictly rejects intrusive advertising trackers (no Google AdSense, no Meta/Facebook Pixel, and no third-party ad monetization networks)."
+    },
+    "s3": {
+      "title": "3. Managing Cookies",
+      "p1": "You can configure your browser at any time to block or delete cookies. Please note that disabling strictly necessary cookies will prevent you from signing in to your CampusSphere account.",
+      "p2": "To adjust your preferences, open the privacy settings in your web browser (Chrome, Firefox, Safari, Edge)."
+    },
+    "s4": {
+      "title": "4. Contact",
+      "intro": "For any question regarding cookies and trackers on CampusSphere:",
+      "email": "Email: <m1>policies@campussphere.app</m1> or <m2>support@campussphere.app</m2>",
+      "address": "Address: Douala, Cameroon"
+    }
+  },
+  "copyright": {
+    "meta": {
+      "title": "Copyright & Intellectual Property Policy | CampusSphere",
+      "description": "Read CampusSphere’s copyright policy, intellectual property standards, and takedown reporting procedures.",
+      "ogTitle": "Copyright & Intellectual Property — CampusSphere",
+      "ogDescription": "Author protection, intellectual property compliance, and content reporting on CampusSphere."
+    },
+    "header": {
+      "title": "Copyright",
+      "highlight": "Policy",
+      "subtitle": "How we protect copyright holders and handle takedown notifications on CampusSphere.",
+      "lastUpdated": "2026-04-05"
+    },
+    "toc": {
+      "s1": "1. Intellectual property",
+      "s2": "2. Reporting infringement",
+      "s3": "3. Notice procedure",
+      "s4": "4. Counter-notification",
+      "s5": "5. Repeat infringers",
+      "s6": "6. User-generated content",
+      "s7": "7. Contact"
+    },
+    "s1": {
+      "title": "1. Respect for Intellectual Property",
+      "body": "CampusSphere respects the intellectual property rights of others and expects its users to do the same. We respond to notices of alleged copyright infringement in accordance with applicable Cameroonian law — notably Law No. 2010/012 on Cybersecurity and Cybercrime and Law No. 2000/011 on Copyright — as well as OAPI (African Intellectual Property Organization) rules."
+    },
+    "s2": {
+      "title": "2. Reporting an Infringement",
+      "intro": "If you believe your copyrighted work has been reproduced or shared without authorization, please provide the following information:",
+      "i1": "Electronic or physical signature of the rights holder.",
+      "i2": "Clear description of the copyrighted work allegedly infringed.",
+      "i3": "Exact URL or location of the disputed material on CampusSphere.",
+      "i4": "Your complete contact details (name, address, phone number, email).",
+      "i5": "A good-faith statement confirming the disputed use is not authorized.",
+      "i6": "A sworn statement certifying the accuracy of the information provided."
+    },
+    "s3": {
+      "title": "3. Notification Procedure",
+      "intro": "Send your infringement notice to our legal team:",
+      "email": "Email: <mail>policies@campussphere.app</mail>",
+      "address": "Address: Douala, Cameroon"
+    },
+    "s4": {
+      "title": "4. Counter-Notification",
+      "intro": "If you believe your content was removed in error, you may submit a counter-notification containing:",
+      "i1": "Your electronic or physical signature.",
+      "i2": "Identification of the removed content and its prior location.",
+      "i3": "A sworn statement explaining why you believe the removal was made in error.",
+      "i4": "Your full name, address, and contact details."
+    },
+    "s5": {
+      "title": "5. Repeat Infringer Policy",
+      "body": "In accordance with applicable law, CampusSphere enforces a policy of suspending or terminating accounts belonging to users identified as repeat infringers."
+    },
+    "s6": {
+      "title": "6. User-Generated Content",
+      "intro": "By publishing content on CampusSphere, you:",
+      "i1": "Retain all ownership rights over your original content.",
+      "i2": "Grant CampusSphere a worldwide technical license to host, store, and display your content as part of the service.",
+      "i3": "Warrant that you hold the necessary rights over any shared materials.",
+      "i4": "Agree that CampusSphere may remove any content reported as infringing third-party copyrights."
+    },
+    "s7": {
+      "title": "7. Contact",
+      "intro": "For any question regarding our Copyright Policy:",
+      "email": "Email: <mail>policies@campussphere.app</mail>",
+      "address": "Address: Douala, Cameroon"
+    }
+  }
+}
