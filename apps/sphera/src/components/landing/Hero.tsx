@@ -113,6 +113,16 @@ export function Hero() {
                 />
               </div>
             </div>
+
+            {/* Window Content: Real Sphera Screenshot */}
+            <div className="relative overflow-hidden rounded-b-xl md:rounded-b-2xl bg-[#0d0e10]">
+              <img
+                src="/sphera_preview.png"
+                alt="Sphera Workspace - Interface d'étude active avec documents et outils IA"
+                className="w-full h-auto object-cover block select-none"
+                loading="eager"
+              />
+            </div>
           </div>
         </Reveal>
       </div>
