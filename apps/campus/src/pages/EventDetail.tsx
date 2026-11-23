@@ -4,7 +4,7 @@ import { getEventUrl, getSphereUrl, formatSlugToLabel } from "@/lib/utils";
 import { useState, useMemo, useEffect, useLayoutEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Calendar, Check, ArrowLeft, Sparkle as Sparkles, Trophy, Code, Microphone as Mic, BookOpen, Compass, WarningCircle as AlertCircle, Ticket, CheckCircle as CheckCircle2, SealCheck as BadgeCheck, ArrowSquareOut } from "@phosphor-icons/react";
+import { Calendar, Check, ArrowLeft, Sparkle as Sparkles, Trophy, Code, Microphone as Mic, BookOpen, Compass, WarningCircle as AlertCircle, Ticket, CheckCircle as CheckCircle2, SealCheck as BadgeCheck, ArrowSquareOut, Buildings, Megaphone, ShareNetwork as Share2 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -110,11 +110,11 @@ export function EventDetail() {
     },
   });
 
-  // Fetch Attendees
+  // Fetch Attendees (campus events only)
   const { data: attendees = [] } = useQuery<EventAttendee[]>({
     queryKey: ["event-attendees", id],
     queryFn: () => getEventAttendees(id!),
-    enabled: Boolean(id),
+    enabled: Boolean(id) && event?.eventMode !== "external",
     staleTime: 5 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -134,14 +134,17 @@ export function EventDetail() {
       queryClient.invalidateQueries({ queryKey: ["event", id] });
       queryClient.invalidateQueries({ queryKey: ["events"] });
       queryClient.invalidateQueries({ queryKey: ["event-attendees", id] });
+      const eventHasTicketing = event?.eventMode !== "external" && Boolean(event?.hasTicketing);
       toast({
         title: status === "going" ? t("detail.toasts.registered") : t("detail.toasts.interested"),
         description:
           status === "going"
-            ? t("detail.toasts.registeredDesc")
+            ? eventHasTicketing
+              ? t("detail.toasts.registeredTicketDesc")
+              : t("detail.toasts.registeredDesc")
             : t("detail.toasts.interestedDesc"),
       });
-      if (status === "going") {
+      if (status === "going" && eventHasTicketing) {
         setIsTicketOpen(true);
       }
     },
@@ -252,7 +255,11 @@ export function EventDetail() {
   }
 
   const isOrganizer = currentUser?.id === event.organizer.id;
-  const userRegistration = attendees.find((a: EventAttendee) => a.user?.id === currentUser?.id);
+  const isExternal = event.eventMode === "external";
+  const hasTicketing = !isExternal && Boolean(event.hasTicketing);
+  const userRegistration = !isExternal
+    ? attendees.find((a: EventAttendee) => a.user?.id === currentUser?.id)
+    : undefined;
   const isRegistered = Boolean(userRegistration);
   const isCheckedIn = Boolean(userRegistration?.isCheckedIn);
 
@@ -296,8 +303,8 @@ export function EventDetail() {
         </Button>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Action: Ticket Modal (if registered) */}
-          {isRegistered && (
+          {/* Action: Ticket Modal (ONLY if Campus + ticketing enabled + registered) */}
+          {hasTicketing && isRegistered && (
             <Button
               size="sm"
               onClick={() => setIsTicketOpen(true)}
@@ -308,26 +315,30 @@ export function EventDetail() {
             </Button>
           )}
 
-          {/* Action: Organizer Scanner */}
+          {/* Action: Organizer / Author Controls */}
           {isOrganizer && (
             <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsScannerOpen(true)}
-                className="rounded-xl text-xs font-medium gap-1.5 text-muted-foreground hover:text-foreground"
-              >
-                <span>{t("detail.scanEntries")}</span>
-              </Button>
+              {hasTicketing && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsScannerOpen(true)}
+                  className="rounded-xl text-xs font-medium gap-1.5 text-muted-foreground hover:text-foreground"
+                >
+                  <span>{t("detail.scanEntries")}</span>
+                </Button>
+              )}
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportAttendees}
-                className="rounded-xl text-xs font-medium gap-1.5 text-muted-foreground hover:text-foreground"
-              >
-                <span>{t("detail.exportCsv")}</span>
-              </Button>
+              {!isExternal && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportAttendees}
+                  className="rounded-xl text-xs font-medium gap-1.5 text-muted-foreground hover:text-foreground"
+                >
+                  <span>{t("detail.exportCsv")}</span>
+                </Button>
+              )}
 
               <Button
                 variant="outline"
@@ -394,10 +405,10 @@ export function EventDetail() {
             </Badge>
           )}
 
-          {event.registrationUrl && (
+          {isExternal && (
             <Badge className="bg-background/80 text-foreground border border-border/40 font-semibold text-xs backdrop-blur-md px-3 py-1 flex items-center gap-1">
               <ArrowSquareOut className="h-3 w-3" />
-              <span>{t("detail.externalRegistration")}</span>
+              <span>{event.registrationUrl ? t("detail.externalRegistration") : t("detail.externalShowcase")}</span>
             </Badge>
           )}
         </div>
@@ -430,42 +441,87 @@ export function EventDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         {/* Left column: Continuous fluid flow without cards */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Organizer Row */}
-          <div className="flex items-center justify-between pb-6 border-b border-border/30">
-            <Link
-              to={`/profile/${event.organizer.username}`}
-              className="flex items-center gap-3 hover:opacity-85 transition-opacity min-w-0"
-            >
-              <Avatar className="h-11 w-11 border border-border/60 shrink-0">
-                <AvatarImage src={event.organizer.avatar || undefined} />
-                <AvatarFallback className="font-semibold text-xs bg-muted text-muted-foreground">
-                  {getUserInitial(event.organizer, "O")}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="font-semibold text-foreground text-sm truncate">
-                    {getUserDisplayName(event.organizer, t("detail.organizer"))}
-                  </span>
-                  {event.organizer.isVerified && (
-                    <BadgeCheck className="h-4 w-4 text-primary shrink-0" weight="fill" />
-                  )}
+          {/* Organizer / Announcer Row */}
+          {isExternal && event.organizerName ? (
+            <div className="pb-6 border-b border-border/30 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                  <Buildings className="h-5 w-5 text-primary" />
                 </div>
-                <p className="text-xs text-muted-foreground truncate">
-                  Organisateur • {formatSlugToLabel(event.organizer.faculty) || formatSlugToLabel(event.organizer.university) || "Membre CampusSphere"}
-                </p>
+                <div className="min-w-0">
+                  <span className="text-[11px] font-medium text-muted-foreground block">
+                    {t("detail.organizedByLabel")}
+                  </span>
+                  <span className="font-semibold text-foreground text-sm sm:text-base truncate block">
+                    {event.organizerName}
+                  </span>
+                </div>
               </div>
-            </Link>
 
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => navigate(`/profile/${event.organizer.username}`)}
-              className="rounded-lg text-xs font-medium shrink-0"
-            >
-              {t("detail.viewProfile")}
-            </Button>
-          </div>
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/20">
+                <Link
+                  to={`/profile/${event.organizer.username}`}
+                  className="flex items-center gap-2 hover:opacity-85 transition-opacity min-w-0"
+                >
+                  <Avatar className="h-6 w-6 border border-border/60 shrink-0">
+                    <AvatarImage src={event.organizer.avatar || undefined} />
+                    <AvatarFallback className="font-semibold text-[10px] bg-muted text-muted-foreground">
+                      {getUserInitial(event.organizer, "A")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs text-muted-foreground truncate">
+                    {t("detail.sharedByLabel")}{" "}
+                    <span className="font-medium text-foreground">
+                      {getUserDisplayName(event.organizer, t("detail.organizer"))}
+                    </span>
+                    {" • "}
+                    {formatSlugToLabel(event.organizer.faculty) ||
+                      formatSlugToLabel(event.organizer.university) ||
+                      "Membre CampusSphere"}
+                  </span>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between pb-6 border-b border-border/30">
+              <Link
+                to={`/profile/${event.organizer.username}`}
+                className="flex items-center gap-3 hover:opacity-85 transition-opacity min-w-0"
+              >
+                <Avatar className="h-11 w-11 border border-border/60 shrink-0">
+                  <AvatarImage src={event.organizer.avatar || undefined} />
+                  <AvatarFallback className="font-semibold text-xs bg-muted text-muted-foreground">
+                    {getUserInitial(event.organizer, "O")}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-semibold text-foreground text-sm truncate">
+                      {getUserDisplayName(event.organizer, t("detail.organizer"))}
+                    </span>
+                    {event.organizer.isVerified && (
+                      <BadgeCheck className="h-4 w-4 text-primary shrink-0" weight="fill" />
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {isExternal ? t("detail.announcedByLabel") : t("detail.organizer")} •{" "}
+                    {formatSlugToLabel(event.organizer.faculty) ||
+                      formatSlugToLabel(event.organizer.university) ||
+                      "Membre CampusSphere"}
+                  </p>
+                </div>
+              </Link>
+
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigate(`/profile/${event.organizer.username}`)}
+                className="rounded-lg text-xs font-medium shrink-0"
+              >
+                {t("detail.viewProfile")}
+              </Button>
+            </div>
+          )}
 
           {/* Description Section */}
           <div className="pb-6 border-b border-border/30 space-y-3">
@@ -491,7 +547,7 @@ export function EventDetail() {
                   </Avatar>
                   <div className="min-w-0">
                     <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                      {t("detail.organizingSphere")}
+                      {isExternal ? t("detail.associatedSphere") : t("detail.organizingSphere")}
                     </span>
                     <h3 className="text-sm font-semibold text-foreground truncate">{event.sphere.name}</h3>
                   </div>
@@ -512,138 +568,205 @@ export function EventDetail() {
             </div>
           )}
 
-          {/* Attendees Preview Section */}
-          <div className="pb-6 border-b border-border/30 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-foreground">
-                {t("detail.attendeesTitle", { count: event.attendeesCount || confirmedAttendees.length })}
-              </h3>
-              {confirmedAttendees.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setIsAttendeesOpen(true)}
-                  className="text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
-                >
-                  {t("detail.viewAll")}
-                </button>
-              )}
-            </div>
-
-            {confirmedAttendees.length > 0 ? (
-              <div className="flex flex-wrap gap-2 pt-1">
-                {confirmedAttendees.slice(0, 8).map((att: EventAttendee) => {
-                  const attName = getUserDisplayName(att.user, "Participant");
-                  const initial = getUserInitial(att.user, "P");
-                  const profileUrl = att.user?.username ? `/profile/${att.user.username}` : "#";
-
-                  return (
-                    <Link
-                      key={att.id}
-                      to={profileUrl}
-                      className="inline-flex items-center gap-2 pl-1.5 pr-3 py-1 rounded-full bg-muted/40 hover:bg-muted border border-border/50 text-xs font-medium text-foreground transition-colors group max-w-[220px]"
-                      title={attName}
-                    >
-                      <Avatar className="h-6 w-6 border border-border/50 shrink-0">
-                        <AvatarImage src={att.user?.avatar || undefined} alt={attName} />
-                        <AvatarFallback className="text-[10px] font-semibold bg-muted text-muted-foreground">
-                          {initial}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="truncate group-hover:underline">{attName}</span>
-                    </Link>
-                  );
-                })}
-
-                {confirmedAttendees.length > 8 && (
+          {/* Attendees Preview Section (Campus events only) */}
+          {!isExternal && (
+            <div className="pb-6 border-b border-border/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-foreground">
+                  {t("detail.attendeesTitle", { count: event.attendeesCount || confirmedAttendees.length })}
+                </h3>
+                {confirmedAttendees.length > 0 && (
                   <button
                     type="button"
                     onClick={() => setIsAttendeesOpen(true)}
-                    className="inline-flex items-center px-3 py-1 rounded-full bg-muted/20 hover:bg-muted border border-border/40 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    className="text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
                   >
-                    +{confirmedAttendees.length - 8} {t("card.attendees", { count: confirmedAttendees.length - 8 })}
+                    {t("detail.viewAll")}
                   </button>
                 )}
               </div>
-            ) : (
-              <p className="text-xs text-muted-foreground">{t("detail.beFirstToJoin")}</p>
-            )}
-          </div>
-        </div>
 
-        {/* Right column: Sticky RSVP & Info Sidebar */}
-        <div className="space-y-6">
-          <div className="sticky top-20 p-5 rounded-2xl border border-border/40 bg-card shadow-xs space-y-5">
-            <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {t("detail.rsvpStatus")}
-              </span>
-              <div className="mt-2 flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-lg font-bold text-foreground">
-                    {event.attendeesCount}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {t("card.attendees", { count: event.attendeesCount })}
-                  </span>
+              {confirmedAttendees.length > 0 ? (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {confirmedAttendees.slice(0, 8).map((att: EventAttendee) => {
+                    const attName = getUserDisplayName(att.user, "Participant");
+                    const initial = getUserInitial(att.user, "P");
+                    const profileUrl = att.user?.username ? `/profile/${att.user.username}` : "#";
+
+                    return (
+                      <Link
+                        key={att.id}
+                        to={profileUrl}
+                        className="inline-flex items-center gap-2 pl-1.5 pr-3 py-1 rounded-full bg-muted/40 hover:bg-muted border border-border/50 text-xs font-medium text-foreground transition-colors group max-w-[220px]"
+                        title={attName}
+                      >
+                        <Avatar className="h-6 w-6 border border-border/50 shrink-0">
+                          <AvatarImage src={att.user?.avatar || undefined} alt={attName} />
+                          <AvatarFallback className="text-[10px] font-semibold bg-muted text-muted-foreground">
+                            {initial}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="truncate group-hover:underline">{attName}</span>
+                      </Link>
+                    );
+                  })}
+
+                  {confirmedAttendees.length > 8 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsAttendeesOpen(true)}
+                      className="inline-flex items-center px-3 py-1 rounded-full bg-muted/20 hover:bg-muted border border-border/40 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    >
+                      +{confirmedAttendees.length - 8} {t("card.attendees", { count: confirmedAttendees.length - 8 })}
+                    </button>
+                  )}
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsAttendeesOpen(true)}
-                  className="text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
-                >
-                  {t("detail.viewList")}
-                </button>
-              </div>
-
-              {/* Capacity Progress Bar */}
-              {event.maxAttendees && (
-                <div className="mt-3 space-y-1.5">
-                  <div className="flex justify-between text-[11px] text-muted-foreground font-medium">
-                    <span>{t("detail.spotsRemaining")}</span>
-                    <span>
-                      {t("detail.spotsRemainingOf", { left: Math.max(0, event.maxAttendees - event.attendeesCount), total: event.maxAttendees })}
-                    </span>
-                  </div>
-                  <Progress value={capacityPercent || 0} className="h-1.5 rounded-full" />
-                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">{t("detail.beFirstToJoin")}</p>
               )}
             </div>
+          )}
+        </div>
 
-            {/* Registration Action Buttons */}
-            <div className="space-y-2 pt-2 border-t border-border/40">
-              {isPast ? (
-                <Button disabled className="w-full rounded-xl text-xs" variant="outline">
-                  {t("detail.eventFinished")}
-                </Button>
-              ) : event.registrationUrl ? (
-                /* External Registration Flow */
-                <div className="space-y-3">
-                  <Button
-                    asChild
-                    size="lg"
-                    className="w-full rounded-xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-all py-5 text-sm gap-2"
-                  >
-                    <a href={event.registrationUrl} target="_blank" rel="noopener noreferrer">
-                      <span>{t("detail.registerExternal")}</span>
-                      <ArrowSquareOut className="h-4 w-4 shrink-0" />
-                    </a>
-                  </Button>
+        {/* Right column: Sticky RSVP / External Action & Info Sidebar */}
+        <div className="space-y-6">
+          <div className="sticky top-20 p-5 rounded-2xl border border-border/40 bg-card shadow-xs space-y-5">
+            {isExternal ? (
+              /* External / Showcase Sidebar Header & Actions */
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
+                    <Megaphone className="h-3.5 w-3.5" />
+                    <span>{t("detail.externalEventInfo")}</span>
+                  </span>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {event.registrationUrl ? t("detail.externalEventHint") : t("detail.freeAccessHint")}
+                  </p>
+                </div>
 
-                  {isRegistered ? (
-                    <div className="space-y-2 pt-1">
-                      <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center justify-center gap-2">
+                <div className="space-y-2 pt-2 border-t border-border/40">
+                  {isPast ? (
+                    <Button disabled className="w-full rounded-xl text-xs" variant="outline">
+                      {t("detail.eventFinished")}
+                    </Button>
+                  ) : event.registrationUrl ? (
+                    <>
+                      <Button
+                        asChild
+                        size="lg"
+                        className="w-full rounded-xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-all py-5 text-sm gap-2"
+                      >
+                        <a href={event.registrationUrl} target="_blank" rel="noopener noreferrer">
+                          <span>{t("detail.registerExternal")}</span>
+                          <ArrowSquareOut className="h-4 w-4 shrink-0" />
+                        </a>
+                      </Button>
+
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <Button asChild variant="outline" size="sm" className="rounded-xl text-xs font-medium gap-1.5">
+                          <a href={gcalUrl()} target="_blank" rel="noopener noreferrer">
+                            <Calendar className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">Google Agenda</span>
+                          </a>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsShareOpen(true)}
+                          className="rounded-xl text-xs font-medium gap-1.5"
+                        >
+                          <Share2 className="h-3.5 w-3.5 shrink-0" />
+                          <span>{t("detail.share")}</span>
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        asChild
+                        size="lg"
+                        className="w-full rounded-xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-all py-5 text-sm gap-2"
+                      >
+                        <a href={gcalUrl()} target="_blank" rel="noopener noreferrer">
+                          <Calendar className="h-4 w-4 shrink-0" />
+                          <span>{t("detail.addToGcal")}</span>
+                        </a>
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsShareOpen(true)}
+                        className="w-full rounded-xl text-xs font-medium gap-1.5"
+                      >
+                        <Share2 className="h-3.5 w-3.5 shrink-0" />
+                        <span>{t("detail.share")}</span>
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Campus Event RSVP Header & Actions */
+              <>
+                <div>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t("detail.rsvpStatus")}
+                  </span>
+                  <div className="mt-2 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-lg font-bold text-foreground">
+                        {event.attendeesCount}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {t("card.attendees", { count: event.attendeesCount })}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsAttendeesOpen(true)}
+                      className="text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      {t("detail.viewList")}
+                    </button>
+                  </div>
+
+                  {/* Capacity Progress Bar */}
+                  {event.maxAttendees && (
+                    <div className="mt-3 space-y-1.5">
+                      <div className="flex justify-between text-[11px] text-muted-foreground font-medium">
+                        <span>{t("detail.spotsRemaining")}</span>
+                        <span>
+                          {t("detail.spotsRemainingOf", { left: Math.max(0, event.maxAttendees - event.attendeesCount), total: event.maxAttendees })}
+                        </span>
+                      </div>
+                      <Progress value={capacityPercent || 0} className="h-1.5 rounded-full" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Registration Action Buttons */}
+                <div className="space-y-2 pt-2 border-t border-border/40">
+                  {isPast ? (
+                    <Button disabled className="w-full rounded-xl text-xs" variant="outline">
+                      {t("detail.eventFinished")}
+                    </Button>
+                  ) : isRegistered ? (
+                    <div className="space-y-2.5">
+                      <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center justify-center gap-2">
                         <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                        <span>{t("detail.youAreAttendingExternal")}</span>
+                        <span>{hasTicketing && isCheckedIn ? t("detail.checkedInBadge") : t("detail.youAreAttending")}</span>
                       </div>
 
-                      {Boolean(event.hasTicketing) && (
+                      {hasTicketing && (
                         <Button
                           onClick={() => setIsTicketOpen(true)}
-                          variant="secondary"
-                          className="w-full rounded-xl font-semibold text-xs py-3.5 gap-1.5"
+                          className="w-full rounded-xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-all py-5 text-xs gap-1.5"
                         >
-                          <Ticket className="h-3.5 w-3.5" />
+                          <Ticket className="h-4 w-4" />
                           <span>{t("detail.viewTicketAndQr")}</span>
                         </Button>
                       )}
@@ -655,69 +778,30 @@ export function EventDetail() {
                         disabled={unregisterMutation.isPending}
                         className="w-full rounded-xl text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                       >
-                        {t("detail.cancelAttendanceExternal")}
+                        {t("detail.cancelParticipation")}
                       </Button>
                     </div>
                   ) : (
-                    <Button
-                      variant="outline"
-                      onClick={() => registerMutation.mutate("going")}
-                      disabled={registerMutation.isPending}
-                      className="w-full rounded-xl font-medium text-xs py-3.5 gap-1.5"
-                    >
-                      <Check className="h-3.5 w-3.5 text-primary" />
-                      <span>{registerMutation.isPending ? t("detail.updating") : t("detail.markPresenceExternal")}</span>
-                    </Button>
+                    <div className="space-y-2">
+                      <Button
+                        onClick={() => registerMutation.mutate("going")}
+                        disabled={registerMutation.isPending}
+                        className="w-full rounded-xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-all py-5 text-sm gap-2"
+                      >
+                        <Check className="h-4 w-4" />
+                        <span>
+                          {registerMutation.isPending
+                            ? t("detail.registering")
+                            : hasTicketing
+                            ? t("detail.gettingTicket")
+                            : t("detail.iParticipate")}
+                        </span>
+                      </Button>
+                    </div>
                   )}
                 </div>
-              ) : isRegistered ? (
-                /* Internal Registration: Registered State */
-                <div className="space-y-2.5">
-                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center justify-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                    <span>{isCheckedIn ? t("detail.checkedInBadge") : t("detail.youAreAttending")}</span>
-                  </div>
-
-                  {Boolean(event.hasTicketing) && (
-                    <Button
-                      onClick={() => setIsTicketOpen(true)}
-                      className="w-full rounded-xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-all py-5 text-xs gap-1.5"
-                    >
-                      <Ticket className="h-4 w-4" />
-                      <span>{t("detail.viewTicketAndQr")}</span>
-                    </Button>
-                  )}
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => unregisterMutation.mutate()}
-                    disabled={unregisterMutation.isPending}
-                    className="w-full rounded-xl text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                  >
-                    {t("detail.cancelParticipation")}
-                  </Button>
-                </div>
-              ) : (
-                /* Internal Registration: Not Registered State */
-                <div className="space-y-2">
-                  <Button
-                    onClick={() => registerMutation.mutate("going")}
-                    disabled={registerMutation.isPending}
-                    className="w-full rounded-xl font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-all py-5 text-sm gap-2"
-                  >
-                    <Check className="h-4 w-4" />
-                    <span>
-                      {registerMutation.isPending
-                        ? t("detail.registering")
-                        : Boolean(event.hasTicketing)
-                        ? t("detail.gettingTicket")
-                        : t("detail.iParticipate")}
-                    </span>
-                  </Button>
-                </div>
-              )}
-            </div>
+              </>
+            )}
 
             {/* Event Logistics & Time/Location */}
             <div className="space-y-3 pt-4 border-t border-border/40 text-xs text-muted-foreground">
@@ -798,33 +882,40 @@ export function EventDetail() {
         </div>
       </div>
 
-      {/* Attendees Modal */}
-      <EventAttendeesModal
-        open={isAttendeesOpen}
-        onOpenChange={setIsAttendeesOpen}
-        attendees={attendees}
-        eventTitle={event.title}
-        eventId={event.id}
-        isOrganizer={isOrganizer}
-        onOpenScanner={() => setIsScannerOpen(true)}
-        onAttendeeUpdated={handleAttendeeUpdated}
-      />
+      {/* Attendees Modal (Campus events only) */}
+      {!isExternal && (
+        <EventAttendeesModal
+          open={isAttendeesOpen}
+          onOpenChange={setIsAttendeesOpen}
+          attendees={attendees}
+          eventTitle={event.title}
+          eventId={event.id}
+          isOrganizer={isOrganizer}
+          hasTicketing={hasTicketing}
+          onOpenScanner={hasTicketing ? () => setIsScannerOpen(true) : undefined}
+          onAttendeeUpdated={handleAttendeeUpdated}
+        />
+      )}
 
-      {/* Ticket Modal */}
-      <EventTicketModal
-        open={isTicketOpen}
-        onOpenChange={setIsTicketOpen}
-        event={event}
-      />
+      {/* Ticket Modal (Only when ticketing is enabled) */}
+      {hasTicketing && (
+        <EventTicketModal
+          open={isTicketOpen}
+          onOpenChange={setIsTicketOpen}
+          event={event}
+        />
+      )}
 
-      {/* Scanner Check-in Modal */}
-      <EventScannerModal
-        open={isScannerOpen}
-        onOpenChange={setIsScannerOpen}
-        event={event}
-        attendees={attendees}
-        onCheckInSuccess={handleAttendeeUpdated}
-      />
+      {/* Scanner Check-in Modal (Only when ticketing is enabled) */}
+      {hasTicketing && (
+        <EventScannerModal
+          open={isScannerOpen}
+          onOpenChange={setIsScannerOpen}
+          event={event}
+          attendees={attendees}
+          onCheckInSuccess={handleAttendeeUpdated}
+        />
+      )}
 
       {/* Share Modal */}
       <EventShareModal

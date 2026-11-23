@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Calendar, Plus, UsersThree as Users, ArrowClockwise as RefreshCw, GridFour as LayoutGrid, List, MapPin, ArrowRight } from "@phosphor-icons/react";
+import { Calendar, Plus, UsersThree as Users, ArrowClockwise as RefreshCw, GridFour as LayoutGrid, List, MapPin, ArrowRight, ArrowSquareOut, Buildings } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs } from "@/components/ui/tabs";
@@ -32,6 +32,7 @@ export function Events() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [filters, setFilters] = useState<EventFilters>({
     category: "all",
+    mode: "all",
     search: "",
     timeframe: "all",
   });
@@ -106,6 +107,7 @@ export function Events() {
   const handleResetFilters = () => {
     setFilters({
       category: "all",
+      mode: "all",
       search: "",
       timeframe: "all",
     });
@@ -229,10 +231,26 @@ export function Events() {
                 )}
 
                 <div className="flex items-center gap-3 pt-1 text-xs text-muted-foreground flex-wrap">
-                  <span className="flex items-center gap-1 font-medium">
-                    <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span>{t("card.attendees", { count: featuredEvent.attendeesCount || 0 })}</span>
-                  </span>
+                  {featuredEvent.eventMode === "external" ? (
+                    <span className="flex items-center gap-1 font-medium text-primary">
+                      {featuredEvent.organizerName ? (
+                        <>
+                          <Buildings className="h-3.5 w-3.5" />
+                          <span>{t("page.organizedBy", { name: featuredEvent.organizerName })}</span>
+                        </>
+                      ) : (
+                        <>
+                          <ArrowSquareOut className="h-3.5 w-3.5" />
+                          <span>{t("page.externalBadge")}</span>
+                        </>
+                      )}
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 font-medium">
+                      <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span>{t("card.attendees", { count: featuredEvent.attendeesCount || 0 })}</span>
+                    </span>
+                  )}
                   <span>·</span>
                   <span className="flex items-center gap-1">
                     <MapPin className="h-3.5 w-3.5 text-muted-foreground" />

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Calendar, Clock, MapPin, Globe, Upload, Users, Check, ArrowLeft, X, Ticket, ArrowSquareOut, LinkSimple, Spinner as Loader2 } from "@phosphor-icons/react";
+import { Calendar, Clock, MapPin, Globe, Upload, Users, Check, ArrowLeft, X, Ticket, ArrowSquareOut, LinkSimple, Buildings, Megaphone, CaretDown, Spinner as Loader2 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,7 +20,7 @@ import { createEvent } from "@/services/eventService";
 import { getUserSpheres } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { cn, getEventUrl } from "@/lib/utils";
-import type { EventCategory, CreateEventInput } from "@/types/events.types";
+import type { EventCategory, EventMode, CreateEventInput } from "@/types/events.types";
 
 export function EventCreate() {
   const { t, i18n } = useTranslation("events");
@@ -29,12 +29,15 @@ export function EventCreate() {
 
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState<CreateEventInput>({
     title: "",
     description: "",
     category: "party",
+    eventMode: "campus",
+    organizerName: "",
     startDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 2).toISOString().slice(0, 16),
     endDate: new Date(Date.now() + 1000 * 60 * 60 * (24 * 2 + 3)).toISOString().slice(0, 16),
     location: "",
@@ -47,6 +50,16 @@ export function EventCreate() {
     sphereId: undefined,
     isFeatured: false,
   });
+
+  const isExternal = formData.eventMode === "external";
+
+  const handleModeChange = (mode: EventMode) => {
+    setFormData((prev) => ({
+      ...prev,
+      eventMode: mode,
+      ...(mode === "external" ? { hasTicketing: false, maxAttendees: undefined } : {}),
+    }));
+  };
 
   // Fetch spheres user is a member of (to attach event)
   const { data: userSpheres = [] } = useQuery({
@@ -120,8 +133,11 @@ export function EventCreate() {
 
     createMutation.mutate({
       ...formData,
-      hasTicketing: Boolean(formData.hasTicketing),
-      registrationUrl: formData.registrationUrl?.trim() || null,
+      eventMode: formData.eventMode || "campus",
+      organizerName: isExternal ? formData.organizerName?.trim() || null : null,
+      maxAttendees: isExternal ? undefined : formData.maxAttendees,
+      hasTicketing: isExternal ? false : Boolean(formData.hasTicketing),
+      registrationUrl: isExternal ? formData.registrationUrl?.trim() || null : null,
       coverImage: coverFile,
       startDate: new Date(formData.startDate).toISOString(),
       endDate: formData.endDate ? new Date(formData.endDate).toISOString() : undefined,
@@ -161,6 +177,72 @@ export function EventCreate() {
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Left Column: Form Fields */}
         <div className="lg:col-span-2 space-y-5">
+          {/* Section 0: Mode Selector (Intent-first Choice Architecture) */}
+          <div className="rounded-2xl border border-border/50 bg-card p-5 sm:p-6 space-y-4">
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">{t("createForm.modeSectionTitle")}</h2>
+              <p className="text-xs text-muted-foreground">{t("createForm.modeSectionDesc")}</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => handleModeChange("campus")}
+                className={cn(
+                  "flex items-start gap-3 p-4 rounded-xl border text-left transition-all cursor-pointer",
+                  !isExternal
+                    ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                    : "border-border/60 bg-muted/20 hover:bg-muted/50"
+                )}
+              >
+                <div
+                  className={cn(
+                    "h-9 w-9 rounded-lg flex items-center justify-center shrink-0",
+                    !isExternal ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  <Users className="h-4 w-4" />
+                </div>
+                <div className="space-y-1 min-w-0">
+                  <span className="text-xs font-semibold text-foreground block">
+                    {t("createForm.modeCampusTitle")}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground leading-snug block">
+                    {t("createForm.modeCampusDesc")}
+                  </span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleModeChange("external")}
+                className={cn(
+                  "flex items-start gap-3 p-4 rounded-xl border text-left transition-all cursor-pointer",
+                  isExternal
+                    ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                    : "border-border/60 bg-muted/20 hover:bg-muted/50"
+                )}
+              >
+                <div
+                  className={cn(
+                    "h-9 w-9 rounded-lg flex items-center justify-center shrink-0",
+                    isExternal ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  <Megaphone className="h-4 w-4" />
+                </div>
+                <div className="space-y-1 min-w-0">
+                  <span className="text-xs font-semibold text-foreground block">
+                    {t("createForm.modeExternalTitle")}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground leading-snug block">
+                    {t("createForm.modeExternalDesc")}
+                  </span>
+                </div>
+              </button>
+            </div>
+          </div>
+
           {/* Section: Informations générales */}
           <div className="rounded-2xl border border-border/50 bg-card p-5 sm:p-6 space-y-4">
             <div>
@@ -181,6 +263,27 @@ export function EventCreate() {
                 required
               />
             </div>
+
+            {isExternal && (
+              <div className="space-y-1.5">
+                <Label htmlFor="organizerName" className="text-xs font-medium text-foreground">
+                  {t("createForm.organizerName")}
+                </Label>
+                <div className="relative">
+                  <Buildings className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    id="organizerName"
+                    placeholder={t("createForm.organizerNamePlaceholder")}
+                    value={formData.organizerName || ""}
+                    onChange={(e) => setFormData({ ...formData, organizerName: e.target.value })}
+                    className="rounded-xl text-xs pl-9"
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {t("createForm.organizerNameHint")}
+                </p>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-foreground">
@@ -352,111 +455,183 @@ export function EventCreate() {
           <div className="rounded-2xl border border-border/50 bg-card p-5 sm:p-6 space-y-4">
             <div>
               <h2 className="text-sm font-semibold text-foreground">{t("createForm.optionsAndVisibility")}</h2>
-              <p className="text-xs text-muted-foreground">{t("createForm.optionsAndVisibilityDesc")}</p>
+              <p className="text-xs text-muted-foreground">
+                {isExternal ? t("createForm.externalOptionsDesc") : t("createForm.optionsAndVisibilityDesc")}
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="maxAttendees" className="text-xs font-medium text-foreground">
-                  {t("createForm.maxAttendees")}
-                </Label>
-                <div className="relative">
-                  <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    id="maxAttendees"
-                    type="number"
-                    placeholder={t("createForm.unlimited")}
-                    value={formData.maxAttendees || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        maxAttendees: e.target.value ? Number(e.target.value) : undefined,
-                      })
-                    }
-                    className="rounded-xl text-xs pl-9"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-foreground">
-                  {t("createForm.linkSphere")}
-                </Label>
-                <Select
-                  value={formData.sphereId ? String(formData.sphereId) : "none"}
-                  onValueChange={(val) =>
-                    setFormData({ ...formData, sphereId: val === "none" ? undefined : val })
-                  }
-                >
-                  <SelectTrigger className="rounded-xl text-xs">
-                    <SelectValue placeholder={t("createForm.noLinkedSphere")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">{t("createForm.generalEvent")}</SelectItem>
-                    {userSpheres.map((sphere: any) => (
-                      <SelectItem key={sphere.id} value={String(sphere.id)}>
-                        {sphere.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-3 pt-3 border-t border-border/40">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <Ticket className="h-3.5 w-3.5 text-primary" />
-                    <Label className="text-xs font-medium text-foreground">{t("createForm.ticketing")}</Label>
+            {isExternal ? (
+              <div className="space-y-4">
+                {/* Lien d'inscription externe */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="registrationUrl" className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                      <ArrowSquareOut className="h-3.5 w-3.5 text-primary" />
+                      {t("createForm.externalLink")}
+                    </Label>
+                    <span className="text-[10px] text-muted-foreground">{t("createForm.externalLinkHint")}</span>
+                  </div>
+                  <div className="relative">
+                    <LinkSimple className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      id="registrationUrl"
+                      placeholder="https://eventbrite.com/e/... ou https://forms.gle/..."
+                      value={formData.registrationUrl || ""}
+                      onChange={(e) => setFormData({ ...formData, registrationUrl: e.target.value })}
+                      className="rounded-xl text-xs pl-9"
+                    />
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    {t("createForm.ticketingDesc")}
+                    {t("createForm.externalLinkDesc")}
                   </p>
                 </div>
-                <Switch
-                  checked={Boolean(formData.hasTicketing)}
-                  onCheckedChange={(checked) => setFormData({ ...formData, hasTicketing: checked })}
-                />
-              </div>
 
-              {/* Lien d'inscription externe */}
-              <div className="space-y-1.5 pt-3 border-t border-border/40">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="registrationUrl" className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                    <ArrowSquareOut className="h-3.5 w-3.5 text-primary" />
-                    {t("createForm.externalLink")}
+                {/* Sphere optional link */}
+                <div className="space-y-1.5 pt-2 border-t border-border/40">
+                  <Label className="text-xs font-medium text-foreground">
+                    {t("createForm.linkSphere")}
                   </Label>
-                  <span className="text-[10px] text-muted-foreground">{t("createForm.externalLinkHint")}</span>
+                  <Select
+                    value={formData.sphereId ? String(formData.sphereId) : "none"}
+                    onValueChange={(val) =>
+                      setFormData({ ...formData, sphereId: val === "none" ? undefined : val })
+                    }
+                  >
+                    <SelectTrigger className="rounded-xl text-xs">
+                      <SelectValue placeholder={t("createForm.noLinkedSphere")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{t("createForm.generalEvent")}</SelectItem>
+                      {userSpheres.map((sphere: any) => (
+                        <SelectItem key={sphere.id} value={String(sphere.id)}>
+                          {sphere.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="relative">
-                  <LinkSimple className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input
-                    id="registrationUrl"
-                    placeholder="https://eventbrite.com/e/... ou https://forms.gle/..."
-                    value={formData.registrationUrl || ""}
-                    onChange={(e) => setFormData({ ...formData, registrationUrl: e.target.value })}
-                    className="rounded-xl text-xs pl-9"
+
+                <div className="flex items-center justify-between pt-3 border-t border-border/40">
+                  <div className="space-y-0.5">
+                    <Label className="text-xs font-medium text-foreground">{t("createForm.featureEvent")}</Label>
+                    <p className="text-[11px] text-muted-foreground">
+                      {t("createForm.featureEventDesc")}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={formData.isFeatured || false}
+                    onCheckedChange={(checked) => setFormData({ ...formData, isFeatured: checked })}
                   />
                 </div>
-                <p className="text-[11px] text-muted-foreground">
-                  {t("createForm.externalLinkDesc")}
-                </p>
               </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="maxAttendees" className="text-xs font-medium text-foreground">
+                      {t("createForm.maxAttendees")}
+                    </Label>
+                    <div className="relative">
+                      <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        id="maxAttendees"
+                        type="number"
+                        placeholder={t("createForm.unlimited")}
+                        value={formData.maxAttendees || ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            maxAttendees: e.target.value ? Number(e.target.value) : undefined,
+                          })
+                        }
+                        className="rounded-xl text-xs pl-9"
+                      />
+                    </div>
+                  </div>
 
-              <div className="flex items-center justify-between pt-3 border-t border-border/40">
-                <div className="space-y-0.5">
-                  <Label className="text-xs font-medium text-foreground">{t("createForm.featureEvent")}</Label>
-                  <p className="text-[11px] text-muted-foreground">
-                    {t("createForm.featureEventDesc")}
-                  </p>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-foreground">
+                      {t("createForm.linkSphere")}
+                    </Label>
+                    <Select
+                      value={formData.sphereId ? String(formData.sphereId) : "none"}
+                      onValueChange={(val) =>
+                        setFormData({ ...formData, sphereId: val === "none" ? undefined : val })
+                      }
+                    >
+                      <SelectTrigger className="rounded-xl text-xs">
+                        <SelectValue placeholder={t("createForm.noLinkedSphere")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">{t("createForm.generalEvent")}</SelectItem>
+                        {userSpheres.map((sphere: any) => (
+                          <SelectItem key={sphere.id} value={String(sphere.id)}>
+                            {sphere.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <Switch
-                  checked={formData.isFeatured || false}
-                  onCheckedChange={(checked) => setFormData({ ...formData, isFeatured: checked })}
-                />
-              </div>
-            </div>
+
+                {/* Collapsible Advanced Options (Ticketing OFF by default + Featured) */}
+                <div className="pt-3 border-t border-border/40">
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvanced((v) => !v)}
+                    className="w-full flex items-center justify-between text-left py-1 group cursor-pointer"
+                  >
+                    <div>
+                      <span className="text-xs font-semibold text-foreground block">
+                        {t("createForm.advancedOptions")}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground block">
+                        {t("createForm.advancedOptionsDesc")}
+                      </span>
+                    </div>
+                    <CaretDown
+                      className={cn(
+                        "h-4 w-4 text-muted-foreground transition-transform duration-200 shrink-0",
+                        showAdvanced && "rotate-180"
+                      )}
+                    />
+                  </button>
+
+                  {showAdvanced && (
+                    <div className="space-y-3 pt-4 mt-3 border-t border-border/40 animate-in fade-in duration-200">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <Ticket className="h-3.5 w-3.5 text-primary" />
+                            <Label className="text-xs font-medium text-foreground">{t("createForm.ticketing")}</Label>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground">
+                            {t("createForm.ticketingDesc")}
+                          </p>
+                        </div>
+                        <Switch
+                          checked={Boolean(formData.hasTicketing)}
+                          onCheckedChange={(checked) => setFormData({ ...formData, hasTicketing: checked })}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3 pt-3 border-t border-border/40">
+                        <div className="space-y-0.5">
+                          <Label className="text-xs font-medium text-foreground">{t("createForm.featureEvent")}</Label>
+                          <p className="text-[11px] text-muted-foreground">
+                            {t("createForm.featureEventDesc")}
+                          </p>
+                        </div>
+                        <Switch
+                          checked={formData.isFeatured || false}
+                          onCheckedChange={(checked) => setFormData({ ...formData, isFeatured: checked })}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Submit Button */}
@@ -474,7 +649,7 @@ export function EventCreate() {
             ) : (
               <>
                 <Check className="h-4 w-4 mr-2" />
-                {t("createForm.publish")}
+                {isExternal ? t("createForm.publishAnnouncement") : t("createForm.publish")}
               </>
             )}
           </Button>
@@ -505,7 +680,12 @@ export function EventCreate() {
                     {previewDay}
                   </span>
                 </div>
-                <div className="absolute top-2.5 right-2.5">
+                <div className="absolute top-2.5 right-2.5 flex items-center gap-1">
+                  {isExternal && (
+                    <span className="rounded-md bg-primary text-primary-foreground px-2 py-0.5 text-[10px] font-semibold">
+                      {t("card.external")}
+                    </span>
+                  )}
                   <span className="rounded-md bg-background/90 backdrop-blur-md px-2 py-0.5 text-[10px] font-medium text-foreground border border-border/40">
                     {t(`categories.${formData.category}Short`, { defaultValue: categoryMeta?.shortLabel || formData.category })}
                   </span>
@@ -517,6 +697,12 @@ export function EventCreate() {
                 <h3 className="font-semibold text-sm text-foreground line-clamp-1">
                   {formData.title || t("createForm.defaultTitle")}
                 </h3>
+                {isExternal && formData.organizerName?.trim() && (
+                  <p className="text-[11px] font-medium text-primary flex items-center gap-1 truncate">
+                    <Buildings className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{formData.organizerName.trim()}</span>
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground line-clamp-2">
                   {formData.description || t("createForm.defaultDescription")}
                 </p>

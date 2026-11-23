@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Calendar, Clock, MapPin, Globe, UsersThree as Users, Check, ShareNetwork as Share2 } from "@phosphor-icons/react";
+import { Calendar, Clock, MapPin, Globe, UsersThree as Users, Check, ShareNetwork as Share2, ArrowSquareOut, Buildings } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { getEventCategoryMeta } from "@/constants/eventCategories";
 import { registerToEvent, unregisterFromEvent } from "@/services/eventService";
@@ -16,6 +16,15 @@ interface EventTileProps {
   className?: string;
 }
 
+function getDomainLabel(url?: string | null): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
 export function EventTile({ event, onStatusChange, onShare, className = "" }: EventTileProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -24,6 +33,8 @@ export function EventTile({ event, onStatusChange, onShare, className = "" }: Ev
   const [localStatus, setLocalStatus] = useState<AttendeeStatus | null>(event.userStatus || null);
   const [attendeesCount, setAttendeesCount] = useState<number>(Number(event.attendeesCount || 0));
 
+  const isExternal = event.eventMode === "external";
+  const externalDomain = getDomainLabel(event.registrationUrl);
   const meta = getEventCategoryMeta(event.category);
   const dateLocale = i18n.language === "en" ? "en-US" : "fr-FR";
   const startDate = new Date(event.startDate);
@@ -121,15 +132,21 @@ export function EventTile({ event, onStatusChange, onShare, className = "" }: Ev
           </span>
         </div>
 
-        {/* Category Badge floating top-right */}
+        {/* Category & Mode Badges floating top-right */}
         <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
+          {isExternal && (
+            <span className="rounded-lg bg-primary/90 text-primary-foreground backdrop-blur-md px-2 py-0.5 text-[10px] font-semibold shadow-xs flex items-center gap-1">
+              <ArrowSquareOut className="h-2.5 w-2.5" />
+              {t("card.external")}
+            </span>
+          )}
           <span className="rounded-lg bg-background/85 backdrop-blur-md px-2 py-0.5 text-[10px] font-medium text-foreground border border-border/40 shadow-xs">
             {categoryLabel}
           </span>
         </div>
 
-        {/* Registered status indicator */}
-        {localStatus === "going" && (
+        {/* Registered status indicator (Campus events only) */}
+        {!isExternal && localStatus === "going" && (
           <div className="absolute bottom-2.5 left-2.5">
             <span className="flex items-center gap-1 rounded-lg bg-emerald-500/90 text-white backdrop-blur-md px-2 py-0.5 text-[10px] font-semibold shadow-xs">
               <Check className="h-3 w-3" /> {t("card.registered")}
@@ -165,13 +182,22 @@ export function EventTile({ event, onStatusChange, onShare, className = "" }: Ev
           </span>
         </div>
 
-        <div className="flex items-center justify-between pt-1">
-          <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-            <Users className="h-3 w-3" />
-            <span>{t("card.attendees", { count: attendeesCount })}</span>
-          </span>
+        <div className="flex items-center justify-between gap-2 pt-1">
+          {isExternal ? (
+            <span className="text-[11px] text-muted-foreground flex items-center gap-1 truncate min-w-0">
+              <Buildings className="h-3 w-3 shrink-0" />
+              <span className="truncate">
+                {event.organizerName || externalDomain || t("card.announcement")}
+              </span>
+            </span>
+          ) : (
+            <span className="text-[11px] text-muted-foreground flex items-center gap-1 shrink-0">
+              <Users className="h-3 w-3" />
+              <span>{t("card.attendees", { count: attendeesCount })}</span>
+            </span>
+          )}
 
-          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
             <Button
               size="icon"
               variant="ghost"
@@ -183,19 +209,44 @@ export function EventTile({ event, onStatusChange, onShare, className = "" }: Ev
             </Button>
 
             {!isPast && (
-              <Button
-                size="sm"
-                variant={localStatus === "going" ? "outline" : "secondary"}
-                className={`h-7 px-2 text-[11px] font-medium rounded-lg ${
-                  localStatus === "going"
-                    ? "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
-                    : "bg-secondary text-secondary-foreground hover:bg-muted border border-border/50"
-                }`}
-                onClick={handleQuickRegister}
-                disabled={isRegistering}
-              >
-                {isRegistering ? "..." : localStatus === "going" ? t("card.registered") : t("card.join")}
-              </Button>
+              isExternal ? (
+                event.registrationUrl ? (
+                  <Button
+                    size="sm"
+                    asChild
+                    variant="secondary"
+                    className="h-7 px-2 text-[11px] font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-muted border border-border/50 gap-1"
+                  >
+                    <a href={event.registrationUrl} target="_blank" rel="noopener noreferrer">
+                      <span>{t("card.registerExternalShort")}</span>
+                      <ArrowSquareOut className="h-3 w-3" />
+                    </a>
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="h-7 px-2 text-[11px] font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-muted border border-border/50"
+                    onClick={() => navigate(getEventUrl(event))}
+                  >
+                    {t("card.viewDetails")}
+                  </Button>
+                )
+              ) : (
+                <Button
+                  size="sm"
+                  variant={localStatus === "going" ? "outline" : "secondary"}
+                  className={`h-7 px-2 text-[11px] font-medium rounded-lg ${
+                    localStatus === "going"
+                      ? "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                      : "bg-secondary text-secondary-foreground hover:bg-muted border border-border/50"
+                  }`}
+                  onClick={handleQuickRegister}
+                  disabled={isRegistering}
+                >
+                  {isRegistering ? "..." : localStatus === "going" ? t("card.registered") : t("card.join")}
+                </Button>
+              )
             )}
           </div>
         </div>
