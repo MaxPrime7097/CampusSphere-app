@@ -32,8 +32,7 @@ export function EventTicketModal({
   const [copied, setCopied] = useState(false);
 
   const dateLocale = i18n.language === "en" ? "en-US" : "fr-FR";
-  const ticketCode =
-    event.userTicketCode || `CS-EVT-${event.id}-${currentUser?.id || "ME"}-7C9B`;
+  const ticketCode = event.userTicketCode || "";
   const meta = getEventCategoryMeta(event.category);
   const startDate = new Date(event.startDate);
 
@@ -54,6 +53,7 @@ export function EventTicketModal({
     : currentUser?.university || "Campus";
 
   const handleCopyCode = () => {
+    if (!ticketCode) return;
     navigator.clipboard.writeText(ticketCode);
     setCopied(true);
     toast({
@@ -136,27 +136,36 @@ export function EventTicketModal({
 
             {/* QR Code Section */}
             <div className="flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-dashed border-border/80 bg-background space-y-3">
-              <div className="p-2.5 bg-white rounded-xl shadow-xs border border-gray-100">
-                <QRCodeSVG value={ticketCode} size={150} fgColor="#111827" bgColor="#FFFFFF" />
-              </div>
+              {ticketCode ? (
+                <>
+                  <div className="p-2.5 bg-white rounded-xl shadow-xs border border-gray-100">
+                    <QRCodeSVG value={ticketCode} size={160} fgColor="#111827" bgColor="#FFFFFF" />
+                  </div>
 
-              <div className="text-center space-y-1">
-                <div className="flex items-center justify-center gap-1.5">
-                  <span className="font-mono text-xs font-bold text-foreground tracking-wider">
-                    {ticketCode}
-                  </span>
-                  <button
-                    onClick={handleCopyCode}
-                    className="text-muted-foreground hover:text-foreground transition-colors p-1 print:hidden"
-                    title={t("ticketModal.copyCode")}
-                  >
-                    {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-                  </button>
-                </div>
-                <p className="text-[10px] text-muted-foreground">
-                  {t("ticketModal.entryPassInstruction")}
+                  <div className="text-center space-y-1">
+                    <div className="flex items-center justify-center gap-1.5">
+                      <span className="font-mono text-xs font-bold text-foreground tracking-wider">
+                        {ticketCode}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleCopyCode}
+                        className="text-muted-foreground hover:text-foreground transition-colors p-1 print:hidden"
+                        title={t("ticketModal.copyCode")}
+                      >
+                        {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      {t("ticketModal.entryPassInstruction")}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground py-8">
+                  {t("ticketModal.codePending")}
                 </p>
-              </div>
+              )}
             </div>
 
             {/* Location info */}
@@ -188,7 +197,7 @@ export function EventTicketModal({
                 onClick={() => onOpenChange(false)}
                 className="flex-1 rounded-xl text-xs font-semibold"
               >
-                {t("createEvent.cancel")}
+                {t("ticketModal.close")}
               </Button>
             </div>
           </div>
