@@ -48,7 +48,7 @@ export function ResourcePreview({
               ) : (
                 <Download className="h-4 w-4" />
               )}
-              <span className="hidden md:inline">{t("card.download")}</span>
+              <span>{t("card.download")}</span>
             </Button>
           </div>
         </div>

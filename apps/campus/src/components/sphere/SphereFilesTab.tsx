@@ -35,7 +35,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import ModalLoadingFallback from "@/components/shared/ModalLoadingFallback";
-import { getFullUrl, uploadSphereFile } from "@/services/api";
+import { downloadUrlAsFile, getFullUrl, uploadSphereFile } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 
 const SphereUploadResourceModal = lazy(() =>
@@ -79,6 +79,29 @@ export function SphereFilesTab({
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
   const [copiedFileId, setCopiedFileId] = useState<string | number | null>(null);
+  const [downloadingFileIds, setDownloadingFileIds] = useState<Set<string>>(new Set());
+
+  const handleDownloadSphereFile = async (url: string, fileName: string, id: string | number) => {
+    const key = String(id);
+    if (!url || downloadingFileIds.has(key)) return;
+    setDownloadingFileIds((prev) => new Set(prev).add(key));
+    try {
+      await downloadUrlAsFile(url, fileName);
+      toast({ title: "Téléchargement lancé", description: fileName, duration: 2000 });
+    } catch {
+      toast({
+        title: "Erreur",
+        description: "Impossible de télécharger ce fichier.",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingFileIds((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }
+  };
 
   const getFileCategory = (fileName: string, fileType: string): FileCategory | "other" => {
     const name = (fileName || "").toLowerCase();
@@ -640,14 +663,18 @@ export function SphereFilesTab({
                     {fullFileUrl && (
                       <Button
                         size="sm"
-                        variant="ghost"
-                        asChild
-                        className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                        variant="secondary"
+                        className="h-7 px-2 text-xs font-medium gap-1 hover:bg-primary hover:text-primary-foreground transition-colors"
                         title="Télécharger"
+                        disabled={downloadingFileIds.has(String(res.id))}
+                        onClick={() => void handleDownloadSphereFile(fullFileUrl, fileName, res.id)}
                       >
-                        <a href={fullFileUrl} download={fileName} target="_blank" rel="noopener noreferrer">
+                        {downloadingFileIds.has(String(res.id)) ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
                           <Download className="h-3.5 w-3.5" />
-                        </a>
+                        )}
+                        <span className="hidden sm:inline">Télécharger</span>
                       </Button>
                     )}
 
@@ -743,10 +770,20 @@ export function SphereFilesTab({
                     </Button>
                   )}
                   {fullFileUrl && (
-                    <Button size="sm" variant="ghost" asChild className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" title="Télécharger">
-                      <a href={fullFileUrl} download={fileName} target="_blank" rel="noopener noreferrer">
-                        <Download className="h-4 w-4" />
-                      </a>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="h-8 px-2.5 text-xs gap-1.5 hover:bg-primary hover:text-primary-foreground transition-colors"
+                      title="Télécharger"
+                      disabled={downloadingFileIds.has(String(res.id))}
+                      onClick={() => void handleDownloadSphereFile(fullFileUrl, fileName, res.id)}
+                    >
+                      {downloadingFileIds.has(String(res.id)) ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Download className="h-3.5 w-3.5" />
+                      )}
+                      <span className="hidden sm:inline">Télécharger</span>
                     </Button>
                   )}
                   {canDelete && (

@@ -202,6 +202,14 @@ async function searchResources(q: string, limit: number, viewerId: number) {
     visibility: r.visibility.toLowerCase(),
     tags: r.tags,
     impact_score: r.impactScore,
+    download_count: r.downloadsCount,
+    view_count: r.viewsCount,
+    saves_count: r.savesCount,
+    stats: {
+      downloads: r.downloadsCount,
+      views: r.viewsCount,
+      saves: r.savesCount,
+    },
     created_at: r.createdAt.toISOString(),
   }));
 }

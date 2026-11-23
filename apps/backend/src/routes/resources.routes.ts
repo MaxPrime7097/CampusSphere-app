@@ -403,8 +403,13 @@ resourcesRouter.get("/folders/:folderId/download/", requireAuth, async (req, res
     );
   }
 
+  const { contentDisposition: folderDisposition } = buildDownloadFilename(
+    folder.name,
+    `${folder.name}.zip`,
+    "application/zip",
+  );
   res.setHeader("Content-Type", "application/zip");
-  res.setHeader("Content-Disposition", `attachment; filename="${folder.name.replace(/[^\w.-]+/g, "_")}.zip"`);
+  res.setHeader("Content-Disposition", folderDisposition);
 
   const archive = new ZipArchive({ zlib: { level: 6 } });
   archive.on("error", (err: Error) => {
@@ -417,24 +422,42 @@ resourcesRouter.get("/folders/:folderId/download/", requireAuth, async (req, res
   const used = new Map<string, number>();
   for (const resource of accessibleResources) {
     const key = resource.storageKey ?? keyFromUrl(resource.fileUrl);
-    if (!key) continue;
+    let buffer: Buffer | null = null;
+    if (key) {
+      try {
+        buffer = await storage.get(key);
+      } catch {
+        buffer = null;
+      }
+    }
+    if (!buffer && resource.fileUrl && (resource.fileUrl.startsWith("http://") || resource.fileUrl.startsWith("https://"))) {
+      try {
+        const resp = await fetch(resource.fileUrl);
+        if (resp.ok) buffer = Buffer.from(await resp.arrayBuffer());
+      } catch {
+        buffer = null;
+      }
+    }
+    if (!buffer) {
+      console.warn(`[resources] skipping unreadable object for resource ${resource.id}`);
+      continue;
+    }
+
     try {
-      const buffer = await storage.get(key);
-      let name = resource.title.replace(/[/\\]/g, "_");
-      const seen = used.get(name);
+      const ext = extractSafeExtension(resource.fileUrl, resource.fileType);
+      let baseName = resource.title.replace(/[/\\:*?"<>|\r\n]+/g, "_").trim() || `resource_${resource.id}`;
+      if (ext && baseName.toLowerCase().endsWith(`.${ext}`)) {
+        baseName = baseName.slice(0, -(ext.length + 1));
+      }
+      const seen = used.get(baseName.toLowerCase());
       if (seen !== undefined) {
-        used.set(name, seen + 1);
-        name = `${name}_${seen + 1}`;
+        used.set(baseName.toLowerCase(), seen + 1);
+        baseName = `${baseName}_${seen + 1}`;
       } else {
-        used.set(name, 0);
+        used.set(baseName.toLowerCase(), 0);
       }
 
-      // Add appropriate extension if not present in title
-      const ext = resource.fileUrl ? resource.fileUrl.split(".").pop()?.split("?")[0] : "";
-      if (ext && ext.length <= 5 && !name.toLowerCase().endsWith(`.${ext.toLowerCase()}`)) {
-        name = `${name}.${ext}`;
-      }
-
+      const name = ext ? `${baseName}.${ext}` : baseName;
       archive.append(buffer, { name });
     } catch (error) {
       console.warn(`[resources] skipping unreadable object for resource ${resource.id}`, error);
@@ -701,16 +724,84 @@ resourcesRouter.delete("/:id/", requireAuth, async (req, res) => {
   res.status(204).send();
 });
 
+const MIME_TO_EXT: Record<string, string> = {
+  "application/pdf": "pdf",
+  "application/msword": "doc",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "application/vnd.ms-powerpoint": "ppt",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+  "application/vnd.ms-excel": "xls",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+  "application/zip": "zip",
+  "application/x-zip-compressed": "zip",
+  "application/x-rar-compressed": "rar",
+  "text/plain": "txt",
+  "text/csv": "csv",
+  "text/markdown": "md",
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "image/svg+xml": "svg",
+};
+
+function extractSafeExtension(fileUrl?: string | null, fileType?: string | null): string {
+  if (fileUrl) {
+    try {
+      const pathname = fileUrl.startsWith("http") ? new URL(fileUrl).pathname : fileUrl.split("?")[0];
+      const lastSegment = pathname.split("/").pop() ?? "";
+      const dotIdx = lastSegment.lastIndexOf(".");
+      if (dotIdx > 0 && dotIdx < lastSegment.length - 1) {
+        const candidate = lastSegment.slice(dotIdx + 1).toLowerCase();
+        if (/^[a-z0-9]{1,10}$/.test(candidate)) {
+          return candidate;
+        }
+      }
+    } catch {
+      // Ignore malformed URLs and fall back to MIME type
+    }
+  }
+
+  const normalizedMime = (fileType ?? "").split(";")[0].trim().toLowerCase();
+  return MIME_TO_EXT[normalizedMime] ?? "";
+}
+
+function buildDownloadFilename(title: string, fileUrl?: string | null, fileType?: string | null): {
+  utf8Name: string;
+  asciiFallback: string;
+  contentDisposition: string;
+} {
+  const ext = extractSafeExtension(fileUrl, fileType);
+  const cleanUtf8Base = (title || "resource")
+    .replace(/[/\\:*?"<>|\r\n]+/g, "_")
+    .replace(/\s+/g, " ")
+    .trim() || "resource";
+
+  const hasExt = ext && cleanUtf8Base.toLowerCase().endsWith(`.${ext}`);
+  const utf8Name = ext && !hasExt ? `${cleanUtf8Base}.${ext}` : cleanUtf8Base;
+
+  const asciiFallback = utf8Name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w.-]+/g, "_")
+    .replace(/^_+|_+$/g, "") || `resource${ext ? `.${ext}` : ""}`;
+
+  return {
+    utf8Name,
+    asciiFallback,
+    contentDisposition: `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(utf8Name)}`,
+  };
+}
+
 // ── Interactions ────────────────────────────────────────────────────────────
 
 resourcesRouter.post("/:id/download/", async (req, res) => {
   const resource = await loadVisibleResource(req, req.user?.id ?? null);
-
-  const fileExt = resource.fileUrl ? resource.fileUrl.split(".").pop()?.split("?")[0] : "";
-  let filename = resource.title.replace(/[^\w.-]+/g, "_");
-  if (fileExt && !filename.toLowerCase().endsWith(`.${fileExt.toLowerCase()}`)) {
-    filename += `.${fileExt}`;
-  }
+  const { utf8Name, contentDisposition } = buildDownloadFilename(
+    resource.title,
+    resource.fileUrl,
+    resource.fileType,
+  );
 
   const key = resource.storageKey ?? keyFromUrl(resource.fileUrl);
   let buffer: Buffer | null = null;
@@ -737,7 +828,8 @@ resourcesRouter.post("/:id/download/", async (req, res) => {
   if (!buffer) {
     if (resource.fileUrl && (resource.fileUrl.startsWith("http://") || resource.fileUrl.startsWith("https://"))) {
       await prisma.resource.update({ where: { id: resource.id }, data: { downloadsCount: { increment: 1 } } });
-      return res.redirect(resource.fileUrl);
+      ok(res, { download_url: resource.fileUrl, filename: utf8Name });
+      return;
     }
     throw notFound("File not found or corrupted.");
   }
@@ -745,7 +837,7 @@ resourcesRouter.post("/:id/download/", async (req, res) => {
   await prisma.resource.update({ where: { id: resource.id }, data: { downloadsCount: { increment: 1 } } });
 
   res.setHeader("Content-Type", resource.fileType || "application/octet-stream");
-  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.setHeader("Content-Disposition", contentDisposition);
   res.send(buffer);
 });
 

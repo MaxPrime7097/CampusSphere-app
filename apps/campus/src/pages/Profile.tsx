@@ -173,8 +173,11 @@ function mapProfileToViewModel({
       resourceId: resource.id,
       name: resource.title || resource.filename || resource.fileName || "",
       filename: resource.filename || resource.fileName || resource.title || `resource-${resource.id}`,
+      subject: resource.subject || "",
       type: resource.type || "",
       size: formatFileSize(resource.fileSize || 0),
+      viewCount: Number(resource.viewCount ?? resource.view_count ?? resource.stats?.views ?? 0),
+      downloadCount: Number(resource.downloadCount ?? resource.download_count ?? resource.stats?.downloads ?? 0),
     })),
     stats: {
       posts: posts?.length || 0,
@@ -217,6 +220,7 @@ export function Profile() {
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [showMoodModal, setShowMoodModal] = useState(false);
   const [isSavingMood, setIsSavingMood] = useState(false);
+  const [downloadingResourceIds, setDownloadingResourceIds] = useState<Set<string>>(new Set());
 
   const [animateScore, setAnimateScore] = useState(false);
   const prevScoreRef = useRef<number | null>(null);
@@ -641,16 +645,12 @@ export function Profile() {
       return;
     }
 
+    const key = String(resourceId);
+    if (downloadingResourceIds.has(key)) return;
+    setDownloadingResourceIds((prev) => new Set(prev).add(key));
+
     try {
       const result = await downloadResource(resourceId);
-      const objectUrl = window.URL.createObjectURL(result.blob);
-      const link = document.createElement("a");
-      link.href = objectUrl;
-      link.download = result.filename || fileName || `resource-${resourceId}`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(objectUrl);
 
       toast({
         title: t("toasts.downloadStarted"),
@@ -672,6 +672,12 @@ export function Profile() {
           ? t("toasts.downloadForbiddenDesc")
           : error?.message || t("toasts.errorDesc"),
         variant: "destructive",
+      });
+    } finally {
+      setDownloadingResourceIds((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
       });
     }
   };
@@ -827,6 +833,7 @@ export function Profile() {
               userName={user.name}
               loading={loading}
               resourcesAvailable={resourcesAvailable}
+              downloadingIds={downloadingResourceIds}
               onDownloadFile={handleDownloadFile}
             />
           )}

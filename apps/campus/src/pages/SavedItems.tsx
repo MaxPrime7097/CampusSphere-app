@@ -153,8 +153,8 @@ function mapSavedResources(data: any): any[] {
     tags: r.tags || [],
     impactScore: r.impactScore || r.impact_score || 0,
     createdAt: r.createdAt || r.created_at || null,
-    viewCount: r.viewCount || r.view_count || 0,
-    downloadCount: r.downloadCount || r.download_count || 0,
+    viewCount: Number(r.viewCount ?? r.view_count ?? r.views_count ?? r.stats?.views ?? 0),
+    downloadCount: Number(r.downloadCount ?? r.download_count ?? r.downloads_count ?? r.stats?.downloads ?? 0),
   }));
 }
 

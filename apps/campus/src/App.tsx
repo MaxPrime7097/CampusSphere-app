@@ -174,6 +174,76 @@ const LegacyCsIncRedirect = () => {
   return <Navigate to={`${nextPath}${search}${hash}`} replace />;
 };
 
+const ResourceDownloadSync = (): null => {
+  useEffect(() => {
+    const bumpResource = (item: any, targetId: string) => {
+      if (!item || typeof item !== "object") return item;
+      if (String(item.id) !== targetId) return item;
+      const current = Number(
+        item.downloadCount ?? item.download_count ?? item.downloads_count ?? item.stats?.downloads ?? 0
+      );
+      const next = (Number.isFinite(current) ? current : 0) + 1;
+      return {
+        ...item,
+        downloadCount: next,
+        download_count: next,
+        stats: item.stats ? { ...item.stats, downloads: next } : { downloads: next },
+      };
+    };
+
+    const handler = (event: Event) => {
+      const resourceId = String((event as CustomEvent<{ resourceId?: string }>).detail?.resourceId ?? "");
+      if (!resourceId) return;
+
+      const listKeys: readonly (readonly unknown[])[] = [
+        ["resources"],
+        ["home", "recent-resources"],
+        ["saved-resources"],
+        ["search-discovery-resources"],
+      ];
+
+      for (const queryKey of listKeys) {
+        queryClient.setQueryData(queryKey, (old: any) => {
+          if (Array.isArray(old)) {
+            return old.map((item) => bumpResource(item, resourceId));
+          }
+          if (old && Array.isArray(old.data)) {
+            return { ...old, data: old.data.map((item: any) => bumpResource(item, resourceId)) };
+          }
+          return old;
+        });
+      }
+
+      queryClient.setQueriesData({ queryKey: ["profile-resources"] }, (old: any) =>
+        Array.isArray(old) ? old.map((item) => bumpResource(item, resourceId)) : old
+      );
+
+      queryClient.setQueryData(["resource", resourceId], (old: any) =>
+        old ? bumpResource(old, resourceId) : old
+      );
+
+      queryClient.setQueriesData({ queryKey: ["search"] }, (old: any) => {
+        if (!old?.search?.data?.resources || !Array.isArray(old.search.data.resources)) return old;
+        return {
+          ...old,
+          search: {
+            ...old.search,
+            data: {
+              ...old.search.data,
+              resources: old.search.data.resources.map((item: any) => bumpResource(item, resourceId)),
+            },
+          },
+        };
+      });
+    };
+
+    window.addEventListener("resource-downloaded", handler);
+    return () => window.removeEventListener("resource-downloaded", handler);
+  }, []);
+
+  return null;
+};
+
 const ScrollToTop = (): null => {
   const { pathname } = useLocation();
   const { isAuthenticated } = useAuth();
@@ -201,6 +271,7 @@ const App = (): React.ReactElement => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ResourceDownloadSync />
           <ScrollToTop />
           <Suspense fallback={<PageLoader />}>
             <Routes>

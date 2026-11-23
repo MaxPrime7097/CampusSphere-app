@@ -71,6 +71,9 @@ export function serializeResource(resource: SerializableResource, ctx: ResourceV
     folder_info: resource.folder ? { id: resource.folder.id, name: resource.folder.name } : null,
     tags: resource.tags,
     impact_score: resource.impactScore,
+    download_count: resource.downloadsCount,
+    view_count: resource.viewsCount,
+    saves_count: resource.savesCount,
     stats: {
       downloads: resource.downloadsCount,
       views: resource.viewsCount,

@@ -45,8 +45,8 @@ function mapResourceCard(r: Resource | any): ResourceCardData {
     tags: r.tags || [],
     impactScore: r.impactScore || r.impact_score || 0,
     createdAt: r.createdAt || r.created_at || null,
-    downloadCount: r.downloadCount || r.download_count || r.stats?.downloads || 0,
-    viewCount: r.viewCount || r.view_count || r.stats?.views || 0,
+    downloadCount: Number(r.downloadCount ?? r.download_count ?? r.downloads_count ?? r.stats?.downloads ?? 0),
+    viewCount: Number(r.viewCount ?? r.view_count ?? r.views_count ?? r.stats?.views ?? 0),
     isSaved: Boolean(r.isSaved || r.is_saved),
   };
 }
@@ -193,6 +193,7 @@ export function Resources() {
 
   const handleDownload = async (e: React.MouseEvent, resourceId: string) => {
     e.stopPropagation();
+    if (downloadingIds.has(resourceId)) return;
     if (!canPerformAction) {
       toast({
         title: t("page.toasts.uncertifiedTitle"),
@@ -210,6 +211,9 @@ export function Resources() {
     setDownloadingIds((prev) => new Set(prev).add(resourceId));
     try {
       await downloadResource(resourceId);
+      setFolderResources((prev) =>
+        prev.map((r) => (r.id === resourceId ? { ...r, downloadCount: (r.downloadCount || 0) + 1 } : r))
+      );
       toast({ title: t("page.toasts.downloadSuccess"), description: t("page.toasts.downloadSuccessDesc") });
     } catch (error: any) {
       toast({ title: t("page.toasts.error"), description: error?.message || t("page.toasts.downloadError"), variant: "destructive" });
@@ -454,8 +458,16 @@ export function Resources() {
                     });
                     return;
                   }
-                  await downloadFolderZip(f.id, f.name);
-                  toast({ title: t("page.toasts.downloadingZip") });
+                  try {
+                    await downloadFolderZip(f.id, f.name);
+                    toast({ title: t("page.toasts.downloadingZip") });
+                  } catch (error: any) {
+                    toast({
+                      title: t("page.toasts.error"),
+                      description: error?.message || t("page.toasts.downloadError"),
+                      variant: "destructive",
+                    });
+                  }
                 }}
                 onEditFolder={(f) => {
                   setEditingFolder(f);

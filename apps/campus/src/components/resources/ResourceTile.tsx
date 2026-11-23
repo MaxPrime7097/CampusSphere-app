@@ -108,9 +108,17 @@ export const ResourceTile = React.memo(
     const [studyOpen, setStudyOpen] = useState(false);
     const [folderModalOpen, setFolderModalOpen] = useState(false);
 
-    const ext = resource.fileUrl?.split(".").pop()?.toUpperCase() || "DOC";
+    const rawExt = resource.fileUrl?.split("?")[0]?.split(".").pop()?.trim() || "";
+    const ext = rawExt && rawExt.length <= 6 && !rawExt.includes("/") ? rawExt.toUpperCase() : "DOC";
     const size = (resource as any).fileSize || (resource as any).file_size;
     const typeLabel = t(`page.chips.${resource.type}` as any, { defaultValue: config.label });
+    const downloadCount = Number(
+      (resource as any).downloadCount ??
+        (resource as any).download_count ??
+        (resource as any).downloads_count ??
+        (resource as any).stats?.downloads ??
+        0
+    );
 
     return (
       <>
@@ -122,7 +130,7 @@ export const ResourceTile = React.memo(
               navigate(getResourceUrl(resource));
             }
           }}
-          className={cn("group flex flex-col cursor-pointer transition-all", className)}
+          className={cn("group flex flex-col h-full cursor-pointer transition-all", className)}
         >
           {/* ─── Spotify-Style Visual Tile (No outer card border) ─── */}
           <div
@@ -161,15 +169,15 @@ export const ResourceTile = React.memo(
               </div>
             </div>
 
-            {/* Bottom Row: Format/Size & Hover Actions */}
+            {/* Bottom Row: Format/Size & Secondary Actions */}
             <div className="flex items-center justify-between z-10 pt-1 gap-1">
-              <span className="text-[10px] font-mono text-muted-foreground bg-background/70 backdrop-blur-md px-1.5 py-0.5 rounded border border-border/30 truncate max-w-[85px] sm:max-w-none">
+              <span className="text-[10px] font-mono text-muted-foreground bg-background/70 backdrop-blur-md px-1.5 py-0.5 rounded border border-border/30 truncate max-w-[110px] sm:max-w-none">
                 {ext} {size ? `· ${formatFileSize(size)}` : ""}
               </span>
 
-              {/* Action Buttons (Smooth hover reveal on desktop, always visible on mobile) */}
+              {/* Secondary Quick Actions (Always visible on touch, hover/focus reveal on desktop) */}
               <div
-                className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 shrink-0"
+                className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity duration-200 shrink-0"
                 onClick={(e) => e.stopPropagation()}
               >
                 <Button
@@ -204,57 +212,64 @@ export const ResourceTile = React.memo(
                 >
                   <SpheraIcon size="sm" />
                 </Button>
+              </div>
+            </div>
+          </div>
 
+          {/* ─── Spotify-Style Typography (Pure whitespace below, no card container) ─── */}
+          <div className="pt-2.5 flex-1 flex flex-col min-w-0">
+            <div className="space-y-1 min-w-0">
+              <h3 className="font-medium text-sm text-foreground line-clamp-1 group-hover:underline">
+                {resource.title}
+              </h3>
+
+              <p className="text-xs text-muted-foreground truncate">
+                {(resource as any).subject && !["general", "général", "autre", "other"].includes(String((resource as any).subject).toLowerCase()) && (
+                  <>
+                    <span>{(resource as any).subject}</span>
+                    <span> · </span>
+                  </>
+                )}
+                <span>{(resource as any).authorName || (resource as any).author?.name || t("card.student")}</span>
+              </p>
+
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground pt-0.5">
+                <span>
+                  {downloadCount > 1
+                    ? t("card.downloads_other", { count: downloadCount })
+                    : t("card.downloads_one", { count: downloadCount })}
+                </span>
+                {resource.impactScore ? (
+                  <>
+                    <span>·</span>
+                    <span className="text-primary font-medium inline-flex items-center gap-0.5">
+                      <Zap className="h-3 w-3 text-primary" weight="fill" />
+                      {resource.impactScore}
+                    </span>
+                  </>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Always-visible 1-click Download Action */}
+            {onDownload && (
+              <div className="pt-2.5 mt-auto" onClick={(e) => e.stopPropagation()}>
                 <Button
-                  size="icon"
+                  size="sm"
                   variant="secondary"
-                  className="h-7 w-7 rounded-full bg-secondary hover:bg-muted border border-border/40 shadow-xs text-secondary-foreground shrink-0"
+                  className="w-full h-8 text-xs gap-1.5 rounded-xl border border-border/50 bg-secondary/75 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors font-medium"
                   onClick={onDownload}
                   disabled={isDownloading}
-                  title={t("card.download")}
                 >
                   {isDownloading ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
                     <Download className="h-3.5 w-3.5" />
                   )}
+                  <span>{isDownloading ? "..." : t("card.download")}</span>
                 </Button>
               </div>
-            </div>
-          </div>
-
-          {/* ─── Spotify-Style Typography (Pure whitespace below, no card container) ─── */}
-          <div className="pt-2.5 space-y-1 min-w-0">
-            <h3 className="font-medium text-sm text-foreground line-clamp-1 group-hover:underline">
-              {resource.title}
-            </h3>
-
-            <p className="text-xs text-muted-foreground truncate">
-              {(resource as any).subject && !["general", "général", "autre", "other"].includes(String((resource as any).subject).toLowerCase()) && (
-                <>
-                  <span>{(resource as any).subject}</span>
-                  <span> · </span>
-                </>
-              )}
-              <span>{(resource as any).authorName || (resource as any).author?.name || t("card.student")}</span>
-            </p>
-
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground pt-0.5">
-              <span>
-                {resource.downloadCount > 1
-                  ? t("card.downloads_other", { count: resource.downloadCount })
-                  : t("card.downloads_one", { count: resource.downloadCount || 0 })}
-              </span>
-              {resource.impactScore ? (
-                <>
-                  <span>·</span>
-                  <span className="text-primary font-medium inline-flex items-center gap-0.5">
-                    <Zap className="h-3 w-3 text-primary" weight="fill" />
-                    {resource.impactScore}
-                  </span>
-                </>
-              ) : null}
-            </div>
+            )}
           </div>
         </div>
 

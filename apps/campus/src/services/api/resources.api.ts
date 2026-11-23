@@ -5,12 +5,97 @@ import {
   ApiRequestError,
   apiFetch,
   getAccessToken,
+  getRefreshToken,
   normalizeResource,
   normalizeResources,
   parseBackendError,
+  performRefreshRaw,
+  setTokens,
   unwrapItem,
   unwrapList,
 } from "./client";
+
+function extractFilenameFromDisposition(disposition: string | null, fallback: string): string {
+  if (!disposition) return fallback;
+
+  const utf8Match = disposition.match(/filename\*\s*=\s*UTF-8''([^;\r\n]+)/i);
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1].trim().replace(/^"|"$/g, ""));
+    } catch {
+      // Fall through to standard filename parameter
+    }
+  }
+
+  const quotedMatch = disposition.match(/filename\s*=\s*"([^"]+)"/i);
+  if (quotedMatch?.[1]) return quotedMatch[1].trim();
+
+  const plainMatch = disposition.match(/filename\s*=\s*([^;\r\n]+)/i);
+  if (plainMatch?.[1]) return plainMatch[1].trim();
+
+  return fallback;
+}
+
+export function triggerBlobDownload(blob: Blob, filename: string): void {
+  if (typeof window === "undefined") return;
+  const objectUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filename;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  // Keep object URL alive long enough for Safari/iOS/Firefox and large files
+  window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 60_000);
+}
+
+export async function downloadUrlAsFile(url: string, filename: string): Promise<void> {
+  if (typeof window === "undefined" || !url) return;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const blob = await response.blob();
+    const resolvedName = extractFilenameFromDisposition(
+      response.headers.get("content-disposition"),
+      filename,
+    );
+    triggerBlobDownload(blob, resolvedName);
+  } catch {
+    // Fallback if cross-origin storage blocks fetch
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+}
+
+async function fetchWithAuthRefresh(
+  url: string,
+  options: { method?: string; token?: string } = {},
+): Promise<Response> {
+  const { method = "GET", token } = options;
+  const effectiveToken = token || getAccessToken();
+
+  const doFetch = (bearer?: string) =>
+    fetch(url, {
+      method,
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : {},
+      credentials: "include",
+    });
+
+  let response = await doFetch(effectiveToken);
+
+  if (response.status === 401 && !token) {
+    const refresh = getRefreshToken();
+    if (refresh) {
+      const nextToken = await performRefreshRaw(refresh).catch((): null => null);
+      if (nextToken && nextToken !== "TEMPORARY_ERROR") {
+        setTokens(nextToken, refresh);
+        response = await doFetch(nextToken);
+      }
+    }
+  }
+
+  return response;
+}
 
 // ============================================================================
 // RESOURCE FOLDERS
@@ -72,23 +157,24 @@ export async function deleteFolder(id: number | string, token?: string) {
 }
 
 export async function downloadFolderZip(id: number | string, name: string, token?: string) {
-  const effectiveToken = token || getAccessToken();
   const url = `${API_BASE_URL.replace(/\/$/, "")}/api/resources/folders/${id}/download/`;
-  const response = await fetch(url, {
-    headers: effectiveToken ? { Authorization: `Bearer ${effectiveToken}` } : {},
-    credentials: "include",
-  });
+  const response = await fetchWithAuthRefresh(url, { method: "GET", token });
   if (!response.ok) {
+    const contentType = (response.headers.get("content-type") || "").toLowerCase();
+    if (contentType.includes("application/json")) {
+      const errJson = await response.json().catch((): null => null);
+      throw new Error(
+        errJson?.detail || errJson?.error || errJson?.message || `Erreur lors du téléchargement: ${response.status}`
+      );
+    }
     throw new Error(`Erreur lors du téléchargement: ${response.status}`);
   }
   const blob = await response.blob();
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = `${name}.zip`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(link.href);
+  const filename = extractFilenameFromDisposition(
+    response.headers.get("content-disposition"),
+    `${name}.zip`
+  );
+  triggerBlobDownload(blob, filename);
 }
 
 export async function addResourceToFolder(
@@ -230,22 +316,23 @@ export async function deleteResource(id: number | string, token?: string) {
   });
 }
 
+function notifyResourceDownloaded(id: number | string): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent("resource-downloaded", { detail: { resourceId: String(id) } })
+  );
+}
+
 export async function downloadResource(
   id: number | string,
   token?: string,
   options: { triggerDownload?: boolean } = { triggerDownload: true }
 ) {
   const url = `${API_BASE_URL.replace(/\/$/, "")}/api/resources/${id}/download/`;
-  const effectiveToken = token || getAccessToken();
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: effectiveToken ? { Authorization: `Bearer ${effectiveToken}` } : {},
-    credentials: "include",
-  });
+  const response = await fetchWithAuthRefresh(url, { method: "POST", token });
+  const contentType = (response.headers.get("content-type") || "").toLowerCase();
 
   if (!response.ok) {
-    const contentType = (response.headers.get("content-type") || "").toLowerCase();
     if (contentType.includes("application/json")) {
       const errJson = await response.json().catch((): null => null);
       throw new Error(errJson?.detail || errJson?.error || errJson?.message || `Request failed: ${response.status}`);
@@ -255,22 +342,32 @@ export async function downloadResource(
     throw new Error(text || `Request failed: ${response.status}`);
   }
 
-  const blob = await response.blob();
-  const disposition = response.headers.get("content-disposition") || "";
-  const filenameMatch = disposition.match(/filename="?([^"]+)"?/i);
-  const filename = filenameMatch?.[1] || `resource-${id}`;
-
-  if (options.triggerDownload !== false && typeof window !== "undefined") {
-    const objectUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = objectUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000);
+  // Handle JSON fallback when backend cannot proxy an external storage URL directly
+  if (contentType.includes("application/json")) {
+    const json = await response.json().catch((): null => null);
+    const payload = unwrapItem<any>(json) ?? json;
+    const fallbackUrl = payload?.download_url ?? payload?.downloadUrl ?? payload?.file_url ?? payload?.fileUrl;
+    const fallbackName = payload?.filename || `resource-${id}`;
+    if (fallbackUrl) {
+      if (options.triggerDownload !== false && typeof window !== "undefined") {
+        await downloadUrlAsFile(fallbackUrl, fallbackName);
+      }
+      notifyResourceDownloaded(id);
+      return { blob: new Blob(), filename: fallbackName };
+    }
   }
 
+  const blob = await response.blob();
+  const filename = extractFilenameFromDisposition(
+    response.headers.get("content-disposition"),
+    `resource-${id}`
+  );
+
+  if (options.triggerDownload !== false && typeof window !== "undefined") {
+    triggerBlobDownload(blob, filename);
+  }
+
+  notifyResourceDownloaded(id);
   return { blob, filename };
 }
 

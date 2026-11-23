@@ -53,11 +53,13 @@ interface ResourceHeaderProps {
   };
   isSaved: boolean;
   isSaving: boolean;
+  isDownloading?: boolean;
   isSharing: boolean;
   isReporting: boolean;
   isDeleting: boolean;
   folders: ResourceFolder[];
   currentFolderId: string;
+  onDownload?: () => void;
   onSave: () => void;
   onOpenEdit: () => void;
   onOpenDelete: () => void;
@@ -70,11 +72,13 @@ export function ResourceHeader({
   resource,
   isSaved,
   isSaving,
+  isDownloading = false,
   isSharing,
   isReporting,
   isDeleting,
   folders,
   currentFolderId,
+  onDownload,
   onSave,
   onOpenEdit,
   onOpenDelete,
@@ -426,6 +430,24 @@ export function ResourceHeader({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 md:justify-end">
+            {onDownload && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={onDownload}
+                disabled={isDownloading}
+                className="gap-2 font-semibold shadow-xs"
+                aria-label={t("card.download")}
+              >
+                {isDownloading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                <span>{isDownloading ? "..." : t("card.download")}</span>
+              </Button>
+            )}
+
             <Button
               variant={isSaved ? "secondary" : "outline"}
               size="sm"

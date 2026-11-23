@@ -357,6 +357,13 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
   const relativeTime = resource.createdAt ? formatRelativeTime(resource.createdAt) : null;
   const rawSize = resource.fileSize || (resource as any).file_size || (resource as any).size;
   const formattedSize = rawSize ? formatFileSize(rawSize) : null;
+  const downloadCount = Number(
+    resource.downloadCount ??
+      (resource as any).download_count ??
+      (resource as any).downloads_count ??
+      (resource as any).stats?.downloads ??
+      0
+  );
 
   return (
     <>
@@ -491,10 +498,10 @@ export function ResourceFeedCard({ resource }: ResourceFeedCardProps) {
               <span className="text-muted-foreground text-[11px] flex items-center gap-1.5">
                 <Download className="h-3.5 w-3.5 shrink-0" />
                 <span>
-                  {resource.downloadCount != null && resource.downloadCount > 0
-                    ? (resource.downloadCount > 1
-                      ? t("feedCard.downloadCount_plural", { count: resource.downloadCount })
-                      : t("feedCard.downloadCount", { count: resource.downloadCount }))
+                  {downloadCount > 0
+                    ? (downloadCount > 1
+                      ? t("feedCard.downloadCount_plural", { count: downloadCount })
+                      : t("feedCard.downloadCount", { count: downloadCount }))
                     : t("feedCard.zeroDownloads")}
                 </span>
               </span>

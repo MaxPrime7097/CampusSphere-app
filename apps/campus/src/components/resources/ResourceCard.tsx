@@ -110,6 +110,13 @@ export const ResourceCard = React.memo(
     const [folderModalOpen, setFolderModalOpen] = React.useState(false);
 
     const typeLabel = t(`page.chips.${resource.type}` as any, { defaultValue: style.label });
+    const downloadCount = Number(
+      (resource as any).downloadCount ??
+        (resource as any).download_count ??
+        (resource as any).downloads_count ??
+        (resource as any).stats?.downloads ??
+        0
+    );
 
     return (
       <>
@@ -156,6 +163,11 @@ export const ResourceCard = React.memo(
                     <span className="font-mono text-[10px]">{formatFileSize((resource as any).fileSize || (resource as any).file_size)}</span>
                   </>
                 )}
+                <span>·</span>
+                <span className="inline-flex items-center gap-1 shrink-0">
+                  <Download className="h-3 w-3" />
+                  <span>{downloadCount}</span>
+                </span>
               </div>
             </div>
           </div>
@@ -226,14 +238,15 @@ export const ResourceCard = React.memo(
             <Button
               size="sm"
               variant="secondary"
-              className="h-8 text-xs px-2.5 gap-1.5 rounded-lg border border-border/60 hover:bg-muted font-normal text-secondary-foreground"
+              className="h-8 text-xs px-2.5 gap-1.5 rounded-lg border border-border/60 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors font-medium text-secondary-foreground"
               onClick={onDownload}
               disabled={isDownloading}
+              title={t("card.download")}
             >
               {isDownloading ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
-                <Download className="h-3 w-3" />
+                <Download className="h-3.5 w-3.5" />
               )}
               <span className="hidden sm:inline">{t("card.download")}</span>
             </Button>

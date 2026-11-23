@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   createConnection,
   deleteConnection,
+  downloadResource,
   globalSearch,
   listSpheres,
   listResources,
@@ -19,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MagnifyingGlass as Search, UsersThree as Users, Spinner as Loader2, SealCheck as BadgeCheck, X, Calendar, ChatTeardrop, Lightning as Zap } from "@phosphor-icons/react";
+import { MagnifyingGlass as Search, UsersThree as Users, Spinner as Loader2, SealCheck as BadgeCheck, X, Calendar, ChatTeardrop, Lightning as Zap, Download } from "@phosphor-icons/react";
 import { useToast } from "@/hooks/use-toast";
 import { cn, formatSlugToLabel, getPostUrl, getEventUrl, getResourceUrl, getSphereUrl } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/date";
@@ -72,6 +73,7 @@ interface SearchResource {
   authorName: string;
   createdAt: string;
   tags: string[];
+  downloadCount: number;
 }
 
 interface SearchSphere {
@@ -128,6 +130,34 @@ export function SearchResults() {
   const [connectionIdsByUser, setConnectionIdsByUser] = useState<Record<string, string>>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [followLoadingUserId, setFollowLoadingUserId] = useState<string | null>(null);
+  const [downloadingResourceIds, setDownloadingResourceIds] = useState<Set<string>>(new Set());
+
+  const handleDownloadResource = async (e: React.MouseEvent, resourceId: string | number, title?: string) => {
+    e.stopPropagation();
+    const key = String(resourceId);
+    if (downloadingResourceIds.has(key)) return;
+    setDownloadingResourceIds((prev) => new Set(prev).add(key));
+    try {
+      await downloadResource(resourceId);
+      toast({
+        title: "Téléchargement lancé",
+        description: title || "La ressource est en cours de téléchargement.",
+        duration: 2000,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de télécharger la ressource.",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadingResourceIds((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }
+  };
   const [searchResults, setSearchResults] = useState<{
     users: SearchUser[];
     resources: SearchResource[];
@@ -256,6 +286,7 @@ export function SearchResults() {
           authorName: r.author_info?.name || r.author_name || r.author?.name || "Auteur inconnu",
           createdAt: r.created_at || r.createdAt,
           tags: r.tags || [],
+          downloadCount: Number(r.download_count ?? r.downloadCount ?? r.downloads_count ?? r.stats?.downloads ?? 0),
         })),
         spheres: (searchData.spheres || []).map((s: any) => ({
           id: String(s.id),
@@ -763,9 +794,32 @@ export function SearchResults() {
                         </h4>
                       </div>
 
-                      <div className="flex items-center justify-between pt-2 border-t border-border/30 text-xs text-muted-foreground">
-                        <span className="truncate">{res.authorName || "Étudiant"}</span>
-                        <span className="font-medium text-foreground">{t("search.discovery.consult")}</span>
+                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/30 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="truncate">{res.authorName || "Étudiant"}</span>
+                          <span>·</span>
+                          <span className="inline-flex items-center gap-1 shrink-0">
+                            <Download className="h-3 w-3" />
+                            <span>{Number(res.downloadCount ?? res.download_count ?? res.stats?.downloads ?? 0)}</span>
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="h-7 px-2 text-xs gap-1 rounded-lg hover:bg-primary hover:text-primary-foreground transition-colors"
+                            disabled={downloadingResourceIds.has(String(res.id))}
+                            onClick={(e) => void handleDownloadResource(e, res.id, res.title)}
+                            title="Télécharger"
+                          >
+                            {downloadingResourceIds.has(String(res.id)) ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Download className="h-3.5 w-3.5" />
+                            )}
+                            <span>Télécharger</span>
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1147,9 +1201,30 @@ export function SearchResults() {
                             </h4>
                           </div>
 
-                          <div className="flex items-center justify-between pt-2 border-t border-border/30 text-xs text-muted-foreground">
-                            <span className="truncate">{res.authorName}</span>
-                            <span className="font-medium text-foreground">Consulter</span>
+                          <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/30 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="truncate">{res.authorName}</span>
+                              <span>·</span>
+                              <span className="inline-flex items-center gap-1 shrink-0">
+                                <Download className="h-3 w-3" />
+                                <span>{res.downloadCount}</span>
+                              </span>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="h-7 px-2 text-xs gap-1 rounded-lg hover:bg-primary hover:text-primary-foreground transition-colors shrink-0"
+                              disabled={downloadingResourceIds.has(String(res.id))}
+                              onClick={(e) => void handleDownloadResource(e, res.id, res.title)}
+                              title="Télécharger"
+                            >
+                              {downloadingResourceIds.has(String(res.id)) ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Download className="h-3.5 w-3.5" />
+                              )}
+                              <span>Télécharger</span>
+                            </Button>
                           </div>
                         </div>
                       ))}
@@ -1372,9 +1447,30 @@ export function SearchResults() {
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-border/30 text-xs text-muted-foreground">
-                      <span className="truncate">{res.authorName}</span>
-                      <span className="font-medium text-foreground">Consulter</span>
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/30 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="truncate">{res.authorName}</span>
+                        <span>·</span>
+                        <span className="inline-flex items-center gap-1 shrink-0">
+                          <Download className="h-3 w-3" />
+                          <span>{res.downloadCount}</span>
+                        </span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-7 px-2 text-xs gap-1 rounded-lg hover:bg-primary hover:text-primary-foreground transition-colors shrink-0"
+                        disabled={downloadingResourceIds.has(String(res.id))}
+                        onClick={(e) => void handleDownloadResource(e, res.id, res.title)}
+                        title="Télécharger"
+                      >
+                        {downloadingResourceIds.has(String(res.id)) ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Download className="h-3.5 w-3.5" />
+                        )}
+                        <span>Télécharger</span>
+                      </Button>
                     </div>
                   </div>
                 ))}
