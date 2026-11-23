@@ -9,7 +9,7 @@
 import { badRequest, serviceUnavailable } from "../../lib/errors.js";
 import { parseJsonWithFallback, UnparseableModelOutputError } from "./json.js";
 import { annalePrompt, qaPrompt, freeChatPrompt, suggestionsPrompt, toolPrompt, quizFromSelectionPrompt, flashcardFromSelectionPrompt, type AnnaleMode, type ToolType } from "./prompts.js";
-import { AllProvidersFailedError, callWithFallback, streamWithFallback, TOKENS_ANNALE, TOKENS_DEFAULT, TOKENS_FLASHCARDS, TOKENS_QUIZ } from "./providers.js";
+import { AllProvidersFailedError, callWithFallback, streamWithFallback, TOKENS_ANNALE, TOKENS_DEFAULT, TOKENS_FICHE, TOKENS_FLASHCARDS, TOKENS_QUIZ } from "./providers.js";
 import { buildContextPrefix, buildStyleInstructions, getUserAcademicContext, getUserPreferences } from "./userContext.js";
 import { extractRelevantPassages, type QaEntry } from "./rag.js";
 export { type QaEntry } from "./rag.js";
@@ -25,9 +25,9 @@ export const VALID_TOOL_TYPES: readonly ToolType[] = ["fiche", "quiz", "flashcar
 export const isToolType = (value: string): value is ToolType =>
   (VALID_TOOL_TYPES as readonly string[]).includes(value);
 
-/** Token budget per tool type. Quiz and flashcards get more room for 20 items. */
+/** Token budget per tool type. Fiche, quiz, and flashcards need generous room for structured content. */
 const TOOL_TOKENS: Record<ToolType, number> = {
-  fiche: TOKENS_DEFAULT,
+  fiche: TOKENS_FICHE,
   quiz: TOKENS_QUIZ,
   flashcards: TOKENS_FLASHCARDS,
   mindmap: 4000,
@@ -103,8 +103,21 @@ function validateToolOutput(toolType: ToolType, data: Record<string, unknown>): 
       throw new UnparseableModelOutputError("Le modèle n'a pas retourné de cartes mémoires valides.");
     }
   } else if (toolType === "fiche") {
-    if (typeof data.resume !== "string" && !Array.isArray(data.points_cles)) {
-      throw new UnparseableModelOutputError("Le modèle n'a pas retourné de résumé ou points clés valides.");
+    const validChapters = Array.isArray(data.chapitres)
+      ? data.chapitres.filter(
+          (c: unknown) =>
+            c !== null &&
+            typeof c === "object" &&
+            typeof (c as Record<string, unknown>).titre === "string" &&
+            String((c as Record<string, unknown>).titre).trim().length > 0 &&
+            typeof (c as Record<string, unknown>).resume === "string" &&
+            String((c as Record<string, unknown>).resume).trim().length > 0,
+        )
+      : [];
+    if (validChapters.length === 0) {
+      throw new UnparseableModelOutputError(
+        "Le modèle n'a pas retourné de chapitres structurés valides pour la fiche.",
+      );
     }
   } else if (toolType === "mindmap") {
     if (typeof data.noeud_central !== "string" || !Array.isArray(data.branches)) {
@@ -132,7 +145,8 @@ export async function generateTool(
   userId?: number,
 ): Promise<Record<string, unknown>> {
   assertUsableSource(text);
-  const prefix = await resolveContextPrefix(userId);
+  // Ignore profile language override for document-grounded tools so the course's detected language mandate is never contradicted
+  const prefix = await resolveContextPrefix(userId, { ignoreLanguageOverride: true });
 
   let countInstruction = "";
   if (userId) {

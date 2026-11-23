@@ -8,6 +8,7 @@ import { initTheme } from './utils/theme'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from './lib/queryClient'
 import App from './App'
+import 'katex/dist/katex.min.css'
 import './index.css'
 import i18n from './i18n'
 
