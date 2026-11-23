@@ -1748,6 +1748,14 @@ export function StudyWorkspacePanel({
                 content={
                   activeArtefactObj?.content || sessionContent?.mindmap || sessionContent
                 }
+                sessionId={sessionId}
+                sessionType={isAnnale ? 'annale' : 'session'}
+                artefactId={activeView.artefactId}
+                onGenerateBranchQuiz={(branchTitle, branchSummary) => {
+                  onGenerateChapterQuiz(branchTitle, branchSummary)
+                  showPanelFeedback(`Génération du quiz « ${branchTitle} » lancée !`, 'info')
+                }}
+                onSaveNote={handleSaveInlineNote}
                 workspaceSlots={workspaceSlots}
               />
             )}

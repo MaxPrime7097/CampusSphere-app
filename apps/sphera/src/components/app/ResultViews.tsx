@@ -279,6 +279,11 @@ export function QuizView({
     return null
   }, [storageKey, questions.length])
 
+  const [activeQuestionIndices, setActiveQuestionIndices] = useState<number[]>(() =>
+    questions.map((_: any, i: number) => i)
+  )
+  const [isRetryMode, setIsRetryMode] = useState(false)
+  const [recapFilter, setRecapFilter] = useState<'all' | 'wrong'>('all')
   const [currentIndex, setCurrentIndex] = useState(() => initialProgress?.currentIndex ?? 0)
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [score, setScore] = useState(() => initialProgress?.score ?? 0)
@@ -286,16 +291,16 @@ export function QuizView({
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS)
   const [timerActive, setTimerActive] = useState(true)
   const [timerPaused, setTimerPaused] = useState(false)
-  const [answers, setAnswers] = useState<Array<{ selected: string | null; correct: boolean }>>(
+  const [answers, setAnswers] = useState<Array<{ origIndex?: number; selected: string | null; correct: boolean }>>(
     () => initialProgress?.answers ?? []
   )
   const [showExplanation, setShowExplanation] = useState(false)
 
   const inlineAsk = useInlineSpheraAsk({ sessionId, sessionType })
 
-  // Save progress automatically whenever user answers or advances
+  // Save progress automatically whenever user answers or advances (only for full quiz runs)
   useEffect(() => {
-    if (finished || !questions.length) return
+    if (isRetryMode || finished || !questions.length) return
     const nextResumeIndex =
       selectedOption !== null ? currentIndex + 1 : currentIndex
     if (nextResumeIndex > 0 && nextResumeIndex < questions.length && answers.length > 0) {
@@ -312,19 +317,20 @@ export function QuizView({
         )
       } catch {}
     }
-  }, [currentIndex, selectedOption, score, answers, finished, storageKey, questions.length])
+  }, [isRetryMode, currentIndex, selectedOption, score, answers, finished, storageKey, questions.length])
 
   // Clear saved progress on finish
   useEffect(() => {
-    if (finished) {
+    if (finished && !isRetryMode) {
       try {
         localStorage.removeItem(storageKey)
       } catch {}
     }
-  }, [finished, storageKey])
+  }, [finished, isRetryMode, storageKey])
 
-  const total = questions.length
-  const currentQuestion = questions[currentIndex]
+  const activeTotal = activeQuestionIndices.length
+  const activeOrigIndex = activeQuestionIndices[currentIndex] ?? 0
+  const currentQuestion = questions[activeOrigIndex]
 
   const handleTimeout = useCallback(() => {
     if (selectedOption !== null) return;
@@ -332,18 +338,18 @@ export function QuizView({
     setTimerActive(false);
     setTimerPaused(false);
     setShowExplanation(true);
-    setAnswers(prev => [...prev, { selected: null, correct: false }]);
-  }, [selectedOption])
+    setAnswers(prev => [...prev, { origIndex: activeOrigIndex, selected: null, correct: false }]);
+  }, [selectedOption, activeOrigIndex])
 
   useEffect(() => {
-    if (!timerActive || timerPaused || finished || !total) return;
+    if (!timerActive || timerPaused || finished || !activeTotal) return;
     if (timeLeft <= 0) {
       handleTimeout();
       return;
     }
     const id = setTimeout(() => setTimeLeft(t => t - 1), 1000);
     return () => clearTimeout(id);
-  }, [timeLeft, timerActive, timerPaused, finished, total, handleTimeout])
+  }, [timeLeft, timerActive, timerPaused, finished, activeTotal, handleTimeout])
 
   const handleSelect = useCallback((optionLetter: string) => {
     if (selectedOption !== null || !currentQuestion) return;
@@ -353,12 +359,12 @@ export function QuizView({
     setShowExplanation(true);
     const isCorrect = optionLetter === currentQuestion.bonne_reponse;
     if (isCorrect) setScore(s => s + 1);
-    setAnswers(prev => [...prev, { selected: optionLetter, correct: isCorrect }]);
-  }, [selectedOption, currentQuestion])
+    setAnswers(prev => [...prev, { origIndex: activeOrigIndex, selected: optionLetter, correct: isCorrect }]);
+  }, [selectedOption, currentQuestion, activeOrigIndex])
 
   const handleNext = useCallback(() => {
     if (selectedOption === null) return;
-    if (currentIndex + 1 >= total) {
+    if (currentIndex + 1 >= activeTotal) {
       setFinished(true);
     } else {
       setCurrentIndex(i => i + 1);
@@ -368,7 +374,7 @@ export function QuizView({
       setTimerActive(true);
       setTimerPaused(false);
     }
-  }, [selectedOption, currentIndex, total])
+  }, [selectedOption, currentIndex, activeTotal])
 
   // Keyboard shortcuts: A-D / 1-4 to answer, Enter to advance
   useEffect(() => {
@@ -404,6 +410,34 @@ export function QuizView({
     try {
       localStorage.removeItem(storageKey);
     } catch {}
+    setActiveQuestionIndices(questions.map((_: any, i: number) => i));
+    setIsRetryMode(false);
+    setRecapFilter('all');
+    setCurrentIndex(0);
+    setSelectedOption(null);
+    setScore(0);
+    setFinished(false);
+    setTimeLeft(TIMER_SECONDS);
+    setTimerActive(true);
+    setTimerPaused(false);
+    setAnswers([]);
+    setShowExplanation(false);
+  }
+
+  const handleRetryWrong = () => {
+    const wrongIndices = answers
+      .map((ans, idx) => ({ ans, origIdx: ans.origIndex ?? activeQuestionIndices[idx] ?? idx }))
+      .filter(({ ans }) => !ans.correct)
+      .map(({ origIdx }) => origIdx);
+
+    if (wrongIndices.length === 0) {
+      handleRestart();
+      return;
+    }
+
+    setActiveQuestionIndices(wrongIndices);
+    setIsRetryMode(true);
+    setRecapFilter('all');
     setCurrentIndex(0);
     setSelectedOption(null);
     setScore(0);
@@ -439,7 +473,7 @@ export function QuizView({
   const timerPercent = (timeLeft / TIMER_SECONDS) * 100;
   const timerColor = timeLeft > 15 ? "bg-sphera-green" : timeLeft > 7 ? "bg-yellow-500" : "bg-red-500";
 
-  const progressPct = finished ? 100 : ((currentIndex + (selectedOption !== null ? 1 : 0)) / total) * 100
+  const progressPct = finished ? 100 : (activeTotal > 0 ? ((currentIndex + (selectedOption !== null ? 1 : 0)) / activeTotal) * 100 : 0)
   const hasPortal = Boolean(workspaceSlots?.headerSlot)
 
   const progressBarPortal = workspaceSlots?.progressSlot
@@ -455,10 +489,18 @@ export function QuizView({
     : null
 
   if (finished) {
-    const pct = Math.round((score / total) * 100);
+    const pct = activeTotal > 0 ? Math.round((score / activeTotal) * 100) : 0;
+    const wrongCount = answers.filter((a) => !a.correct).length;
+    const visibleAnswers =
+      recapFilter === 'wrong'
+        ? answers
+            .map((ans, idx) => ({ ans, idx, origIdx: ans.origIndex ?? activeQuestionIndices[idx] ?? idx }))
+            .filter(({ ans }) => !ans.correct)
+        : answers.map((ans, idx) => ({ ans, idx, origIdx: ans.origIndex ?? activeQuestionIndices[idx] ?? idx }));
     
     let message = t('resultViews.quizMessageKeepGoing');
-    if (pct === 100) { message = t('resultViews.quizMessagePerfect'); }
+    if (isRetryMode && wrongCount === 0) { message = 'Bravo ! Toutes tes erreurs sont corrigées !'; }
+    else if (pct === 100) { message = t('resultViews.quizMessagePerfect'); }
     else if (pct >= 80) { message = t('resultViews.quizMessageGreat'); }
     else if (pct >= 60) { message = t('resultViews.quizMessageGood'); }
 
@@ -468,7 +510,7 @@ export function QuizView({
             <div className="flex items-center gap-2 min-w-0">
               <Trophy className="w-4 h-4 text-sphera-green shrink-0" />
               <span className="text-xs sm:text-sm font-semibold text-white truncate">
-                Résultats • {score}/{total} ({pct}%)
+                {isRetryMode ? 'Rattrapage' : 'Résultats'} • {score}/{activeTotal} ({pct}%)
               </span>
             </div>
           </div>,
@@ -478,14 +520,29 @@ export function QuizView({
 
     const finishedFooterPortal = workspaceSlots?.footerSlot
       ? createPortal(
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-2xl mx-auto flex flex-col sm:flex-row gap-2.5">
             <button
               type="button"
               onClick={handleRestart}
-              className="sphera-primary-btn w-full justify-center py-3 text-sm sm:text-base cursor-pointer"
+              className={`${
+                wrongCount > 0
+                  ? 'flex-1 py-2.5 px-4 rounded-xl bg-sphera-surface border border-sphera-border text-white text-sm font-medium hover:bg-sphera-surface-2'
+                  : 'sphera-primary-btn w-full py-3 text-sm sm:text-base'
+              } flex items-center justify-center gap-2 transition-colors cursor-pointer`}
             >
-              <RotateCcw className="h-4 w-4 mr-2" /> {t('resultViews.quizRestartBtn')}
+              <RotateCcw className="h-4 w-4" />
+              <span>{wrongCount > 0 ? t('resultViews.restartAll') : t('resultViews.quizRestartBtn')}</span>
             </button>
+            {wrongCount > 0 && (
+              <button
+                type="button"
+                onClick={handleRetryWrong}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-sphera-green text-black text-sm font-bold hover:bg-green-400 transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(34,197,94,0.2)]"
+              >
+                <Zap weight="fill" className="h-4 w-4" />
+                <span>Refaire {wrongCount > 1 ? `les ${wrongCount} erreurs` : 'l’erreur'}</span>
+              </button>
+            )}
           </div>,
           workspaceSlots.footerSlot
         )
@@ -503,7 +560,7 @@ export function QuizView({
           </div>
           <p className="text-lg sm:text-xl text-white font-bold mb-1.5">{message}</p>
           <p className="text-3xl font-bold text-white mb-1.5">
-            {score} <span className="text-sphera-text-muted font-normal text-xl">/ {total}</span>
+            {score} <span className="text-sphera-text-muted font-normal text-xl">/ {activeTotal}</span>
           </p>
           <p className="text-sm text-sphera-text-muted">{t('resultViews.successRate', { pct })}</p>
           <div className="h-2 w-full bg-sphera-bg rounded-full overflow-hidden mt-5">
@@ -512,29 +569,54 @@ export function QuizView({
         </div>
 
         <div className="space-y-3">
-          <h3 className="font-semibold text-white mb-3">{t('resultViews.recapTitle')}</h3>
-          {answers.map((ans, i) => {
-            const recapKey = `quiz-recap-${i}`
+          <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
+            <h3 className="font-semibold text-white">{t('resultViews.recapTitle')}</h3>
+            {wrongCount > 0 && wrongCount < answers.length && (
+              <div className="inline-flex p-0.5 rounded-lg bg-sphera-surface border border-sphera-border text-xs">
+                <button
+                  type="button"
+                  onClick={() => setRecapFilter('all')}
+                  className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+                    recapFilter === 'all' ? 'bg-sphera-surface-2 text-white font-semibold' : 'text-sphera-text-muted hover:text-white'
+                  }`}
+                >
+                  Toutes ({answers.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRecapFilter('wrong')}
+                  className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+                    recapFilter === 'wrong' ? 'bg-red-500/20 text-red-400 font-semibold' : 'text-sphera-text-muted hover:text-white'
+                  }`}
+                >
+                  Erreurs ({wrongCount})
+                </button>
+              </div>
+            )}
+          </div>
+          {visibleAnswers.map(({ ans, origIdx }) => {
+            const recapKey = `quiz-recap-${origIdx}`
             const inlineEntry = inlineAsk.entries[recapKey]
             const canAsk = Boolean(sessionId || onAskQuestion)
+            const qObj = questions[origIdx]
             return (
-              <div key={i} className={`rounded-xl p-4 border text-sm ${ans.correct ? "border-sphera-green/30 bg-sphera-green/5" : "border-red-500/30 bg-red-500/5"}`}>
+              <div key={origIdx} className={`rounded-xl p-4 border text-sm ${ans.correct ? "border-sphera-green/30 bg-sphera-green/5" : "border-red-500/30 bg-red-500/5"}`}>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     {ans.correct ? <CheckCircle2 className="h-5 w-5 text-sphera-green flex-shrink-0" /> : <XCircle className="h-5 w-5 text-red-500 flex-shrink-0" />}
                     <div className="flex-1 text-white leading-relaxed">
-                      <span className="font-bold mr-2">Q{i + 1}.</span> {formatText(questions[i]?.question)}
+                      <span className="font-bold mr-2">Q{origIdx + 1}.</span> {formatText(qObj?.question)}
                     </div>
                     {!ans.correct && (
                       <span className="px-2 py-1 rounded bg-sphera-green/20 text-sphera-green text-xs font-bold border border-sphera-green/30 flex-shrink-0">
-                        {questions[i]?.bonne_reponse}
+                        {qObj?.bonne_reponse}
                       </span>
                     )}
                   </div>
                   {canAsk && (
                     <button
                       type="button"
-                      onClick={() => triggerAskForQuestion(recapKey, questions[i], ans.selected, i)}
+                      onClick={() => triggerAskForQuestion(recapKey, qObj, ans.selected, origIdx)}
                       disabled={inlineEntry?.isStreaming}
                       className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 hover:border-sphera-green/40 text-xs text-sphera-text-muted hover:text-sphera-green transition-colors shrink-0 self-end sm:self-center cursor-pointer disabled:opacity-60"
                       title="Obtenir une explication de Sphera directement ici"
@@ -550,7 +632,7 @@ export function QuizView({
                     entry={inlineEntry}
                     onStop={() => inlineAsk.stop(recapKey)}
                     onClose={() => inlineAsk.close(recapKey)}
-                    onRetry={() => triggerAskForQuestion(recapKey, questions[i], ans.selected, i)}
+                    onRetry={() => triggerAskForQuestion(recapKey, qObj, ans.selected, origIdx)}
                     onSaveNote={onSaveNote}
                   />
                 )}
@@ -560,9 +642,16 @@ export function QuizView({
         </div>
 
         {!workspaceSlots?.footerSlot && (
-          <button onClick={handleRestart} className="sphera-primary-btn w-full justify-center py-3 mt-4">
-            <RotateCcw className="h-4 w-4 mr-2" /> {t('resultViews.quizRestartBtn')}
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
+            <button onClick={handleRestart} className="flex-1 py-3 px-4 rounded-xl bg-sphera-surface border border-sphera-border text-white font-medium flex justify-center items-center gap-2 hover:bg-sphera-surface-2 transition-colors">
+              <RotateCcw className="h-4 w-4" /> {t('resultViews.quizRestartBtn')}
+            </button>
+            {wrongCount > 0 && (
+              <button onClick={handleRetryWrong} className="flex-1 py-3 px-4 rounded-xl bg-sphera-green text-black font-bold flex justify-center items-center gap-2 hover:bg-green-400 transition-colors">
+                <Zap weight="fill" className="h-4 w-4" /> Refaire {wrongCount > 1 ? `les ${wrongCount} erreurs` : 'l’erreur'}
+              </button>
+            )}
+          </div>
         )}
       </div>
     );
@@ -570,7 +659,7 @@ export function QuizView({
 
   if (!currentQuestion) return null;
 
-  const activeAskKey = `quiz-q-${currentIndex}`
+  const activeAskKey = `quiz-q-${activeOrigIndex}`
   const activeInlineEntry = inlineAsk.entries[activeAskKey]
   const canAsk = Boolean(sessionId || onAskQuestion)
 
@@ -580,11 +669,17 @@ export function QuizView({
           {/* Center/Left: Question counter + Score */}
           <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
             <span className="text-xs sm:text-sm text-sphera-text-muted font-medium whitespace-nowrap">
-              <span className="hidden sm:inline">Question </span>
-              <span className="sm:hidden">Q</span>
+              <span className="hidden sm:inline">{isRetryMode ? 'Rattrapage ' : 'Question '}</span>
+              <span className="sm:hidden">{isRetryMode ? 'R' : 'Q'}</span>
               <span className="text-white font-bold">{currentIndex + 1}</span>
-              <span className="text-sphera-text-muted/80">/{total}</span>
+              <span className="text-sphera-text-muted/80">/{activeTotal}</span>
             </span>
+
+            {isRetryMode && (
+              <span className="hidden md:inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">
+                Erreurs
+              </span>
+            )}
 
             <div className="bg-sphera-surface px-2.5 py-1 rounded-full border border-sphera-border flex items-center gap-1.5 text-xs shrink-0">
               <Trophy className="h-3.5 w-3.5 text-yellow-500 shrink-0" />
@@ -595,12 +690,12 @@ export function QuizView({
           </div>
 
           {/* Right: Discreet Restart button when in progress */}
-          {(currentIndex > 0 || answers.length > 0) && (
+          {(currentIndex > 0 || answers.length > 0 || isRetryMode) && (
             <button
               type="button"
               onClick={handleRestart}
               className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-xs text-sphera-text-muted hover:text-white transition-colors shrink-0 cursor-pointer"
-              title="Recommencer le quiz depuis le début"
+              title="Recommencer tout le quiz depuis le début"
             >
               <RotateCcw className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden sm:inline">Recommencer</span>
@@ -627,7 +722,7 @@ export function QuizView({
                 disabled
                 className="w-full sm:w-auto sm:min-w-[200px] py-2.5 px-5 rounded-xl bg-sphera-surface border border-sphera-border text-sphera-text-muted/60 font-semibold text-sm flex items-center justify-center gap-2 cursor-not-allowed transition-all"
               >
-                {currentIndex + 1 >= total ? (
+                {currentIndex + 1 >= activeTotal ? (
                   <>
                     <Trophy className="h-4 w-4" />
                     <span>{t('resultViews.quizSeeResults')}</span>
@@ -646,7 +741,7 @@ export function QuizView({
               onClick={handleNext}
               className="sphera-primary-btn w-full justify-center py-3 text-sm sm:text-base cursor-pointer shadow-[0_0_20px_rgba(34,197,94,0.2)] animate-in fade-in duration-150"
             >
-              {currentIndex + 1 >= total ? (
+              {currentIndex + 1 >= activeTotal ? (
                 <span className="flex items-center gap-2">
                   <Trophy className="h-5 w-5" /> {t('resultViews.quizSeeResults')}
                 </span>
@@ -677,7 +772,7 @@ export function QuizView({
         <>
           <div className="flex items-center justify-between text-sm">
             <span className="text-sphera-text-muted font-medium">
-              Question <span className="text-white font-bold">{currentIndex + 1}</span> / {total}
+              {isRetryMode ? 'Rattrapage' : 'Question'} <span className="text-white font-bold">{currentIndex + 1}</span> / {activeTotal}
             </span>
             <div className="flex items-center gap-2">
               {(currentIndex > 0 || answers.length > 0) && (
@@ -796,7 +891,7 @@ export function QuizView({
             <div className="pt-2 border-t border-yellow-500/20 flex justify-end">
               <button
                 type="button"
-                onClick={() => triggerAskForQuestion(activeAskKey, currentQuestion, selectedOption, currentIndex)}
+                onClick={() => triggerAskForQuestion(activeAskKey, currentQuestion, selectedOption, activeOrigIndex)}
                 disabled={activeInlineEntry?.isStreaming}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 hover:border-sphera-green/40 text-xs font-medium text-white hover:text-sphera-green transition-all shadow-xs cursor-pointer disabled:opacity-60"
               >
@@ -835,7 +930,7 @@ export function QuizView({
             <div className="pt-3 mt-3 border-t border-sphera-border/40 flex justify-end">
               <button
                 type="button"
-                onClick={() => triggerAskForQuestion(activeAskKey, currentQuestion, selectedOption, currentIndex)}
+                onClick={() => triggerAskForQuestion(activeAskKey, currentQuestion, selectedOption, activeOrigIndex)}
                 disabled={activeInlineEntry?.isStreaming}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 hover:border-sphera-green/40 text-xs font-medium text-white hover:text-sphera-green transition-all shadow-xs cursor-pointer disabled:opacity-60"
               >
@@ -853,7 +948,7 @@ export function QuizView({
           entry={activeInlineEntry}
           onStop={() => inlineAsk.stop(activeAskKey)}
           onClose={() => inlineAsk.close(activeAskKey)}
-          onRetry={() => triggerAskForQuestion(activeAskKey, currentQuestion, selectedOption, currentIndex)}
+          onRetry={() => triggerAskForQuestion(activeAskKey, currentQuestion, selectedOption, activeOrigIndex)}
           onSaveNote={onSaveNote}
         />
       )}
@@ -861,7 +956,7 @@ export function QuizView({
       {/* Standalone Next button fallback when rendered outside StudyWorkspacePanel */}
       {!workspaceSlots?.footerSlot && selectedOption !== null && (
         <button onClick={handleNext} className="sphera-primary-btn w-full justify-center py-4 mt-4 text-base">
-          {currentIndex + 1 >= total ? (
+          {currentIndex + 1 >= activeTotal ? (
             <span className="flex items-center gap-2"><Trophy className="h-5 w-5" /> {t('resultViews.quizSeeResults')}</span>
           ) : (
             <span className="flex items-center gap-2">{t('resultViews.quizNextQuestion')} <ChevronRight className="h-5 w-5" /></span>
@@ -1125,7 +1220,7 @@ export function FlashcardsView({
             {knownCount === activeTotal ? <Trophy className="w-7 h-7" /> : <BookOpen className="w-7 h-7" />}
           </div>
           <p className="text-3xl font-bold text-white mb-1.5">
-            {knownCount} <span className="text-sphera-text-muted font-normal text-xl">/ {activeTotal} {t('resultViews.memorized', { count: activeTotal })}</span>
+            {knownCount} <span className="text-sphera-text-muted font-normal text-xl">/ {activeTotal} {t('resultViews.memorized', { count: knownCount })}</span>
           </p>
           <p className="text-sm text-sphera-text-muted">
             {reviewCount > 0 ? t('resultViews.cardsToReview', { count: reviewCount }) : t('resultViews.allMastered')}
@@ -2410,9 +2505,19 @@ function getBranchColor(couleurStr?: string, index: number = 0) {
 
 export function MindmapView({
   content,
+  sessionId,
+  sessionType = 'session',
+  artefactId,
+  onGenerateBranchQuiz,
+  onSaveNote,
   workspaceSlots,
 }: {
   content: any
+  sessionId?: string | number | null
+  sessionType?: 'session' | 'annale'
+  artefactId?: string | number
+  onGenerateBranchQuiz?: (branchTitle: string, branchSummary: string) => void
+  onSaveNote?: (title: string, text: string) => Promise<void> | void
   workspaceSlots?: WorkspaceSlots
 }) {
   const { t } = useTranslation('study')
@@ -2423,13 +2528,57 @@ export function MindmapView({
   const [viewMode, setViewMode] = useState<'canvas' | 'tree'>('canvas');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [collapsedBranches, setCollapsedBranches] = useState<Record<number, boolean>>({});
+  const [testMode, setTestMode] = useState(false);
+  const [selectedConcept, setSelectedConcept] = useState<{
+    id: string;
+    label: string;
+    branchLabel: string;
+    branchSummary: string;
+    colorHex: string;
+    isSubConcept: boolean;
+  } | null>(null);
   const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
+
+  const inlineAsk = useInlineSpheraAsk({ sessionId, sessionType });
+
+  // Persistent concept mastery state
+  const masteryStorageKey = useMemo(
+    () => `sphera_mm_mastered_${sessionId || 'local'}_${artefactId || 'main'}`,
+    [sessionId, artefactId]
+  );
+
+  const [masteredIds, setMasteredIds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem(masteryStorageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return new Set(parsed);
+      }
+    } catch {}
+    return new Set();
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(masteryStorageKey, JSON.stringify(Array.from(masteredIds)));
+    } catch {}
+  }, [masteredIds, masteryStorageKey]);
+
+  const toggleMastered = useCallback((conceptId: string) => {
+    setMasteredIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(conceptId)) next.delete(conceptId);
+      else next.add(conceptId);
+      return next;
+    });
+  }, []);
 
   const toggleBranch = (idx: number) => {
     setCollapsedBranches(prev => ({ ...prev, [idx]: !prev[idx] }));
   };
 
   const expandAll = () => {
+    setTestMode(false);
     setCollapsedBranches({});
     setTimeout(() => {
       reactFlowInstance.current?.fitView({ padding: 0.2, duration: 300 });
@@ -2445,15 +2594,82 @@ export function MindmapView({
     }, 50);
   };
 
+  const handleToggleTestMode = () => {
+    setTestMode((prev) => {
+      const next = !prev;
+      if (next) {
+        const all: Record<number, boolean> = {};
+        branches.forEach((_, i) => { all[i] = true; });
+        setCollapsedBranches(all);
+        setTimeout(() => {
+          reactFlowInstance.current?.fitView({ padding: 0.22, duration: 300 });
+        }, 50);
+      } else {
+        setCollapsedBranches({});
+        setTimeout(() => {
+          reactFlowInstance.current?.fitView({ padding: 0.2, duration: 300 });
+        }, 50);
+      }
+      return next;
+    });
+  };
+
   const handleRecenter = () => {
     reactFlowInstance.current?.fitView({ padding: 0.2, duration: 400 });
   };
 
+  const getBranchSummary = useCallback((b: any): string => {
+    const subs: any[] = Array.isArray(b?.sous_branches) ? b.sous_branches : [];
+    const subLabels = subs.map((sb) =>
+      typeof sb === 'string' ? sb : (sb.label || sb.nom || sb.texte || '')
+    ).filter(Boolean);
+    return subLabels.length > 0 ? `${b.label} : ${subLabels.join(', ')}` : String(b?.label || '');
+  }, []);
+
+  const selectBranchConcept = useCallback((branchIdx: number, subIdx?: number) => {
+    const b = branches[branchIdx];
+    if (!b) return;
+    const color = getBranchColor(b.couleur, branchIdx);
+    const branchSummary = getBranchSummary(b);
+    if (subIdx !== undefined) {
+      const subs: any[] = Array.isArray(b.sous_branches) ? b.sous_branches : [];
+      const sb = subs[subIdx];
+      if (!sb) return;
+      const subLabel = typeof sb === 'string' ? sb : (sb.label || sb.nom || sb.texte || JSON.stringify(sb));
+      setSelectedConcept({
+        id: `branch-${branchIdx}-sub-${subIdx}`,
+        label: subLabel,
+        branchLabel: b.label,
+        branchSummary,
+        colorHex: color.hex,
+        isSubConcept: true,
+      });
+    } else {
+      setSelectedConcept({
+        id: `branch-${branchIdx}`,
+        label: b.label,
+        branchLabel: b.label,
+        branchSummary,
+        colorHex: color.hex,
+        isSubConcept: false,
+      });
+    }
+  }, [branches, getBranchSummary]);
+
   const onNodeClick = (_event: React.MouseEvent, node: Node) => {
+    const subMatch = node.id.match(/^branch-(\d+)-sub-(\d+)$/);
+    if (subMatch) {
+      selectBranchConcept(parseInt(subMatch[1], 10), parseInt(subMatch[2], 10));
+      return;
+    }
     if (node.id.startsWith('branch-')) {
       const idx = parseInt(node.id.replace('branch-', ''), 10);
       if (!isNaN(idx)) {
-        toggleBranch(idx);
+        selectBranchConcept(idx);
+        // In visual test mode, clicking a collapsed branch reveals it for verification
+        if (collapsedBranches[idx]) {
+          toggleBranch(idx);
+        }
       }
     } else if (node.id === 'central') {
       const anyCollapsed = branches.some((_, i) => collapsedBranches[i]);
@@ -2464,6 +2680,34 @@ export function MindmapView({
       }
     }
   };
+
+  const triggerExplainConcept = (concept: NonNullable<typeof selectedConcept>) => {
+    if (!sessionId) return;
+    const isEn = isTextEnglish(`${centralNode} ${concept.branchLabel} ${concept.label}`);
+    const prompt = isEn
+      ? `In the context of "${centralNode}" (branch "${concept.branchLabel}"), clearly and concisely explain the concept "${concept.label}" in English based on the course, with a concrete example and how it connects to the rest of the chapter.`
+      : `Dans le cadre du cours « ${centralNode} » (branche « ${concept.branchLabel} »), explique clairement et de façon concise le concept « ${concept.label} » à partir du cours, avec un exemple concret et son lien avec le reste du chapitre.`;
+    inlineAsk.ask(
+      `mm-${concept.id}`,
+      prompt,
+      isEn ? `Concept • ${concept.label}` : `Concept • ${concept.label}`
+    );
+  };
+
+  const totalSubBranches = branches.reduce((acc, b) => acc + (Array.isArray(b.sous_branches) ? b.sous_branches.length : 0), 0);
+  const totalConcepts = branches.length + totalSubBranches;
+  const masteredCount = useMemo(() => {
+    let count = 0;
+    branches.forEach((b, i) => {
+      if (masteredIds.has(`branch-${i}`)) count++;
+      const subs: any[] = Array.isArray(b.sous_branches) ? b.sous_branches : [];
+      subs.forEach((_, j) => {
+        if (masteredIds.has(`branch-${i}-sub-${j}`)) count++;
+      });
+    });
+    return count;
+  }, [branches, masteredIds]);
+  const masteryPct = totalConcepts > 0 ? Math.round((masteredCount / totalConcepts) * 100) : 0;
 
   // Build the Horizontal Tree (Left-to-Right) structure for ReactFlow
   const { nodes, edges } = useMemo<FlowData>(() => {
@@ -2526,7 +2770,7 @@ export function MindmapView({
               {centralNode}
             </span>
             <span className="text-[10px] text-sphera-text-muted mt-1 font-mono">
-              {branches.length} branches principales
+              {branches.length} branches · {masteryPct}% maîtrisé
             </span>
           </div>
         ),
@@ -2554,6 +2798,8 @@ export function MindmapView({
       const subBranches: any[] = Array.isArray(b.sous_branches) ? b.sous_branches : [];
       const subCount = subBranches.length;
       const isCollapsed = Boolean(collapsedBranches[i]);
+      const isMastered = masteredIds.has(branchId);
+      const isSelected = selectedConcept?.id === branchId;
       const currentBranchHeight = branchHeights[i];
 
       const branchY = currentY + currentBranchHeight / 2 - 25;
@@ -2564,13 +2810,17 @@ export function MindmapView({
         targetPosition: Position.Left,
         data: {
           label: (
-            <div className="flex items-center justify-between gap-3 p-2.5 text-left select-none cursor-pointer">
+            <div className="flex items-center justify-between gap-2.5 p-2.5 text-left select-none cursor-pointer">
               <div className="flex items-center gap-2 min-w-0">
-                <span
-                  className="w-2.5 h-2.5 rounded-full shrink-0"
-                  style={{ backgroundColor: color.hex }}
-                />
-                <span className="font-semibold text-xs sm:text-sm text-white leading-tight truncate">
+                {isMastered ? (
+                  <CheckCircle2 weight="fill" className="w-4 h-4 text-emerald-400 shrink-0" />
+                ) : (
+                  <span
+                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: color.hex }}
+                  />
+                )}
+                <span className={`font-semibold text-xs sm:text-sm leading-tight truncate ${isMastered ? 'text-emerald-300' : 'text-white'}`}>
                   {b.label}
                 </span>
               </div>
@@ -2581,7 +2831,7 @@ export function MindmapView({
                     e.stopPropagation();
                     toggleBranch(i);
                   }}
-                  className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-bold transition-all border flex items-center gap-0.5 ${
+                  className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-bold transition-all border flex items-center gap-0.5 cursor-pointer ${
                     isCollapsed
                       ? 'bg-sphera-surface-2 text-sphera-text-muted border-sphera-border hover:text-white'
                       : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
@@ -2596,13 +2846,15 @@ export function MindmapView({
         },
         position: { x: 380, y: branchY },
         style: {
-          background: 'rgba(24, 27, 37, 0.96)',
-          border: `1px solid ${isCollapsed ? 'rgba(255, 255, 255, 0.1)' : `${color.hex}55`}`,
+          background: isMastered ? 'rgba(6, 78, 59, 0.35)' : 'rgba(24, 27, 37, 0.96)',
+          border: isSelected
+            ? '2px solid #22c55e'
+            : `1px solid ${isMastered ? 'rgba(16, 185, 129, 0.6)' : isCollapsed ? 'rgba(255, 255, 255, 0.12)' : `${color.hex}55`}`,
           borderRadius: '10px',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.25)',
+          boxShadow: isSelected ? '0 0 18px rgba(34, 197, 94, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.25)',
           color: '#fff',
-          minWidth: 180,
-          maxWidth: 250,
+          minWidth: 185,
+          maxWidth: 255,
           cursor: 'pointer',
           zIndex: 5,
         },
@@ -2613,7 +2865,7 @@ export function MindmapView({
         source: 'central',
         target: branchId,
         type: 'smoothstep',
-        style: { stroke: `${color.hex}88`, strokeWidth: 1.5 },
+        style: { stroke: isMastered ? '#10b981' : `${color.hex}88`, strokeWidth: 1.5 },
       });
 
       // Sub-branches placed horizontally to the right of branch
@@ -2622,6 +2874,8 @@ export function MindmapView({
           const subId = `${branchId}-sub-${j}`;
           const subLabel = typeof sb === 'string' ? sb : (sb.label || sb.nom || sb.texte || JSON.stringify(sb));
           const subY = currentY + j * SUB_ITEM_HEIGHT + 2;
+          const isSubMastered = masteredIds.has(subId);
+          const isSubSelected = selectedConcept?.id === subId;
 
           nodesList.push({
             id: subId,
@@ -2629,22 +2883,29 @@ export function MindmapView({
             targetPosition: Position.Left,
             data: {
               label: (
-                <div className="flex items-start gap-1.5 p-2 text-xs text-white/90 leading-snug select-none">
-                  <span className="text-sphera-text-muted text-[10px] mt-0.5">•</span>
-                  <span>{subLabel}</span>
+                <div className="flex items-start gap-1.5 p-2 text-xs leading-snug select-none cursor-pointer">
+                  {isSubMastered ? (
+                    <CheckCircle2 weight="fill" className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                  ) : (
+                    <span className="text-sphera-text-muted text-[10px] mt-0.5">•</span>
+                  )}
+                  <span className={isSubMastered ? 'text-emerald-300 font-medium' : 'text-white/90'}>{subLabel}</span>
                 </div>
               ),
             },
             position: { x: 700, y: subY },
             style: {
-              background: 'rgba(18, 20, 28, 0.94)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              background: isSubMastered ? 'rgba(6, 78, 59, 0.3)' : 'rgba(18, 20, 28, 0.94)',
+              border: isSubSelected
+                ? '2px solid #22c55e'
+                : `1px solid ${isSubMastered ? 'rgba(16, 185, 129, 0.55)' : 'rgba(255, 255, 255, 0.08)'}`,
               borderRadius: '8px',
-              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.2)',
+              boxShadow: isSubSelected ? '0 0 14px rgba(34, 197, 94, 0.25)' : '0 2px 6px rgba(0, 0, 0, 0.2)',
               color: '#e2e8f0',
-              minWidth: 170,
-              maxWidth: 230,
+              minWidth: 175,
+              maxWidth: 240,
               fontSize: '11px',
+              cursor: 'pointer',
               zIndex: 2,
             },
           });
@@ -2654,7 +2915,7 @@ export function MindmapView({
             source: branchId,
             target: subId,
             type: 'smoothstep',
-            style: { stroke: `${color.hex}55`, strokeWidth: 1.2 },
+            style: { stroke: isSubMastered ? '#10b981' : `${color.hex}55`, strokeWidth: 1.2 },
           });
         });
       }
@@ -2663,22 +2924,76 @@ export function MindmapView({
     });
 
     return { nodes: nodesList, edges: edgesList };
-  }, [centralNode, branches, collapsedBranches]);
+  }, [centralNode, branches, collapsedBranches, masteredIds, selectedConcept?.id, masteryPct]);
 
-  const renderSubBranches = (subList: any[], level = 1) => {
+  const renderSubBranches = (subList: any[], branchIdx: number, level = 1) => {
     if (!Array.isArray(subList) || subList.length === 0) return null;
     return (
-      <ul className={`space-y-2 ${level > 1 ? 'ml-4 pl-3 border-l border-sphera-border/60' : 'mt-2'}`}>
+      <ul className={`space-y-1.5 ${level > 1 ? 'ml-4 pl-3 border-l border-sphera-border/60' : 'mt-2'}`}>
         {subList.map((item, idx) => {
           const label = typeof item === 'string' ? item : (item.label || item.nom || item.texte || JSON.stringify(item));
           const hasChildren = Array.isArray(item?.sous_branches) && item.sous_branches.length > 0;
+          const subId = `branch-${branchIdx}-sub-${idx}`;
+          const isMastered = level === 1 && masteredIds.has(subId);
+          const isSelected = level === 1 && selectedConcept?.id === subId;
+
           return (
             <li key={idx} className="text-sm">
-              <div className="flex items-start gap-2 text-white/90">
-                <span className="text-sphera-text-muted mt-1 text-xs">•</span>
-                <span className="leading-snug">{formatText(label)}</span>
+              <div
+                onClick={() => level === 1 && selectBranchConcept(branchIdx, idx)}
+                className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg transition-colors ${
+                  level === 1 ? 'cursor-pointer hover:bg-sphera-surface' : ''
+                } ${isSelected ? 'bg-sphera-green/10 border border-sphera-green/30' : ''}`}
+              >
+                <div className="flex items-start gap-2 min-w-0">
+                  {level === 1 ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleMastered(subId);
+                      }}
+                      className="mt-0.5 shrink-0 cursor-pointer"
+                      title={isMastered ? 'Marquer à revoir' : 'Marquer comme maîtrisé'}
+                    >
+                      <CheckCircle2
+                        weight={isMastered ? 'fill' : 'regular'}
+                        className={`w-4 h-4 transition-colors ${isMastered ? 'text-sphera-green' : 'text-sphera-text-muted/60 hover:text-white'}`}
+                      />
+                    </button>
+                  ) : (
+                    <span className="text-sphera-text-muted mt-1 text-xs">•</span>
+                  )}
+                  <span className={`leading-snug ${isMastered ? 'text-emerald-300' : 'text-white/90'}`}>
+                    {formatText(label)}
+                  </span>
+                </div>
+                {level === 1 && sessionId && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const b = branches[branchIdx];
+                      const color = getBranchColor(b?.couleur, branchIdx);
+                      const concept = {
+                        id: subId,
+                        label,
+                        branchLabel: b?.label || '',
+                        branchSummary: getBranchSummary(b),
+                        colorHex: color.hex,
+                        isSubConcept: true,
+                      };
+                      setSelectedConcept(concept);
+                      triggerExplainConcept(concept);
+                    }}
+                    className="p-1 rounded-md text-sphera-text-muted hover:text-sphera-green hover:bg-sphera-surface-2 transition-colors shrink-0 cursor-pointer"
+                    title="Expliquer ce concept avec Sphera"
+                  >
+                    <Sparkles weight="fill" className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
-              {hasChildren && renderSubBranches(item.sous_branches, level + 1)}
+              {hasChildren && renderSubBranches(item.sous_branches, branchIdx, level + 1)}
             </li>
           );
         })}
@@ -2686,18 +3001,149 @@ export function MindmapView({
     );
   };
 
-  const totalSubBranches = branches.reduce((acc, b) => acc + (Array.isArray(b.sous_branches) ? b.sous_branches.length : 0), 0);
+  const progressBarPortal = workspaceSlots?.progressSlot && totalConcepts > 0
+    ? createPortal(
+        <div className="h-[3px] w-full bg-sphera-surface overflow-hidden">
+          <div
+            className="h-full bg-sphera-green transition-all duration-300 ease-out"
+            style={{ width: `${masteryPct}%` }}
+          />
+        </div>,
+        workspaceSlots.progressSlot
+      )
+    : null;
+
+  const selectedInlineKey = selectedConcept ? `mm-${selectedConcept.id}` : '';
+  const selectedInlineEntry = selectedInlineKey ? inlineAsk.entries[selectedInlineKey] : undefined;
+  const isSelectedMastered = selectedConcept ? masteredIds.has(selectedConcept.id) : false;
+
+  const inspectorPanel = selectedConcept ? (
+    <div className="max-w-3xl mx-auto space-y-2.5 animate-in fade-in slide-in-from-bottom-2 duration-150">
+      {/* Inline streaming explanation above the action bar */}
+      {selectedInlineEntry && (
+        <div className="max-h-[34vh] overflow-y-auto custom-scrollbar">
+          <InlineSpheraAnswerCard
+            entry={selectedInlineEntry}
+            onStop={() => inlineAsk.stop(selectedInlineKey)}
+            onClose={() => inlineAsk.close(selectedInlineKey)}
+            onRetry={() => triggerExplainConcept(selectedConcept)}
+            onSaveNote={onSaveNote}
+          />
+        </div>
+      )}
+
+      {/* Concept inspector action bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <span
+            className="w-2.5 h-2.5 rounded-full shrink-0"
+            style={{ backgroundColor: selectedConcept.colorHex }}
+          />
+          <div className="min-w-0">
+            <p className="text-xs sm:text-sm font-semibold text-white truncate">
+              {selectedConcept.label}
+            </p>
+            {selectedConcept.isSubConcept && (
+              <p className="text-[11px] text-sphera-text-muted truncate">
+                Branche : {selectedConcept.branchLabel}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+          <button
+            type="button"
+            onClick={() => toggleMastered(selectedConcept.id)}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
+              isSelectedMastered
+                ? 'bg-sphera-green/15 border-sphera-green/40 text-sphera-green'
+                : 'bg-sphera-surface border-sphera-border text-white/90 hover:border-sphera-green/40 hover:text-sphera-green'
+            }`}
+          >
+            <CheckCircle2 weight={isSelectedMastered ? 'fill' : 'regular'} className="w-3.5 h-3.5" />
+            <span>{isSelectedMastered ? 'Maîtrisé' : 'Marquer maîtrisé'}</span>
+          </button>
+
+          {sessionId && (
+            <button
+              type="button"
+              onClick={() => triggerExplainConcept(selectedConcept)}
+              disabled={selectedInlineEntry?.isStreaming}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-sphera-green text-black hover:bg-green-400 transition-colors cursor-pointer disabled:opacity-60"
+            >
+              <Sparkles weight="fill" className="w-3.5 h-3.5" />
+              <span>Expliquer</span>
+            </button>
+          )}
+
+          {onGenerateBranchQuiz && (
+            <button
+              type="button"
+              onClick={() =>
+                onGenerateBranchQuiz(selectedConcept.branchLabel, selectedConcept.branchSummary)
+              }
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/15 border border-rose-500/30 text-rose-300 hover:bg-rose-500/25 transition-colors cursor-pointer"
+              title="Générer un quiz ciblé sur cette branche (0.5 gén)"
+            >
+              <Zap weight="fill" className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Quiz branche</span>
+              <span className="sm:hidden">Quiz</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setSelectedConcept(null)}
+            className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors cursor-pointer"
+            title="Fermer l'inspecteur"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  const footerInspectorPortal =
+    workspaceSlots?.footerSlot && !isFullscreen && inspectorPanel
+      ? createPortal(inspectorPanel, workspaceSlots.footerSlot)
+      : null;
 
   const mindmapToolbar = (
     <div className="flex items-center justify-between gap-2 w-full min-w-0">
       <div className="flex items-center gap-2 min-w-0">
         <GitFork className="w-4 h-4 text-emerald-400 shrink-0 hidden sm:block" />
-        <span className="text-xs sm:text-sm font-semibold text-white truncate">
+        <span className="text-xs sm:text-sm font-semibold text-white truncate hidden md:inline">
           {mapData?.titre || 'Carte Mentale'}
         </span>
+        {totalConcepts > 0 && (
+          <span
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-sphera-green/15 text-sphera-green border border-sphera-green/30 shrink-0"
+            title="Concepts marqués comme maîtrisés"
+          >
+            <CheckCircle2 weight="fill" className="w-3 h-3" />
+            <span>{masteredCount}/{totalConcepts}</span>
+          </span>
+        )}
       </div>
 
       <div className="flex items-center gap-1.5 shrink-0">
+        {/* Visual Test (Active Recall) toggle */}
+        <button
+          type="button"
+          onClick={handleToggleTestMode}
+          className={`px-2 py-1 text-xs font-semibold rounded-lg border flex items-center gap-1 transition-all cursor-pointer ${
+            testMode
+              ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+              : 'bg-sphera-surface border-sphera-border text-sphera-text-muted hover:text-white'
+          }`}
+          title="Mode Test visuel : replie les sous-branches pour tester ta mémoire avant de cliquer"
+        >
+          <Eye className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">{testMode ? 'Mode Test' : 'Tester'}</span>
+        </button>
+
         {/* 1. Mode Switcher (Canvas / Arbre) */}
         <div className="inline-flex p-0.5 rounded-lg bg-sphera-surface border border-sphera-border">
           <button
@@ -2728,28 +3174,7 @@ export function MindmapView({
           </button>
         </div>
 
-        {/* 2. Expand / Collapse */}
-        <div className="hidden md:inline-flex p-0.5 rounded-lg bg-sphera-surface border border-sphera-border">
-          <button
-            type="button"
-            onClick={expandAll}
-            className="px-2 py-1 text-xs font-medium rounded-md text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 transition-colors cursor-pointer"
-            title="Déplier toutes les branches"
-          >
-            Déplier
-          </button>
-          <div className="w-px h-3.5 bg-sphera-border/60 self-center mx-0.5" />
-          <button
-            type="button"
-            onClick={collapseAll}
-            className="px-2 py-1 text-xs font-medium rounded-md text-sphera-text-muted hover:text-white hover:bg-sphera-surface-2 transition-colors cursor-pointer"
-            title="Replier toutes les branches"
-          >
-            Replier
-          </button>
-        </div>
-
-        {/* 3. Canvas utilities */}
+        {/* 2. Canvas utilities */}
         {viewMode === 'canvas' && (
           <div className="inline-flex p-0.5 rounded-lg bg-sphera-surface border border-sphera-border">
             <button
@@ -2772,28 +3197,45 @@ export function MindmapView({
         )}
       </div>
     </div>
-  )
+  );
 
   return (
-    <div className={`flex flex-col gap-4 h-full ${isFullscreen ? 'fixed inset-0 z-50 bg-[#070b14] p-4 sm:p-6 overflow-hidden' : ''}`}>
+    <div className={`flex flex-col gap-3 h-full ${isFullscreen ? 'fixed inset-0 z-50 bg-[#070b14] p-4 sm:p-6 overflow-hidden' : ''}`}>
+      {progressBarPortal}
+      {footerInspectorPortal}
+
       {workspaceSlots?.headerSlot && !isFullscreen ? (
         createPortal(mindmapToolbar, workspaceSlots.headerSlot)
       ) : (
         /* Standalone or Fullscreen Mindmap Header & Toolbar */
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-sphera-border/60">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-0.5">
-              <GitFork className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Carte Mentale</span>
-            </div>
-            {mapData?.titre && (
-              <h2 className="text-base sm:text-lg font-semibold text-white truncate">
-                {mapData.titre}
-              </h2>
+          <div className="min-w-0 flex items-center gap-2.5">
+            <GitFork className="w-4 h-4 text-emerald-400 shrink-0" />
+            <h2 className="text-base sm:text-lg font-semibold text-white truncate">
+              {mapData?.titre || 'Carte Mentale'}
+            </h2>
+            {totalConcepts > 0 && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-sphera-green/15 text-sphera-green border border-sphera-green/30 shrink-0">
+                <CheckCircle2 weight="fill" className="w-3 h-3" />
+                <span>{masteredCount}/{totalConcepts}</span>
+              </span>
             )}
           </div>
 
           <div className="flex items-center gap-2 flex-wrap shrink-0">
+            <button
+              type="button"
+              onClick={handleToggleTestMode}
+              className={`px-2.5 py-1.5 text-xs font-semibold rounded-xl border flex items-center gap-1.5 transition-all cursor-pointer ${
+                testMode
+                  ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                  : 'bg-sphera-surface-2 border-sphera-border text-sphera-text-muted hover:text-white'
+              }`}
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>{testMode ? 'Quitter Mode Test' : 'Mode Test'}</span>
+            </button>
+
             <div className="inline-flex p-0.5 rounded-xl bg-sphera-surface-2 border border-sphera-border shadow-xs">
               <button
                 type="button"
@@ -2821,26 +3263,6 @@ export function MindmapView({
               </button>
             </div>
 
-            <div className="inline-flex p-0.5 rounded-xl bg-sphera-surface-2 border border-sphera-border shadow-xs">
-              <button
-                type="button"
-                onClick={expandAll}
-                className="px-2.5 py-1.5 text-xs font-medium rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
-                title="Déplier toutes les branches"
-              >
-                Déplier tout
-              </button>
-              <div className="w-px h-3.5 bg-sphera-border/60 self-center mx-0.5" />
-              <button
-                type="button"
-                onClick={collapseAll}
-                className="px-2.5 py-1.5 text-xs font-medium rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors"
-                title="Replier toutes les branches"
-              >
-                Replier tout
-              </button>
-            </div>
-
             {viewMode === 'canvas' && (
               <div className="inline-flex p-0.5 rounded-xl bg-sphera-surface-2 border border-sphera-border shadow-xs">
                 <button
@@ -2865,6 +3287,23 @@ export function MindmapView({
         </div>
       )}
 
+      {/* Active Recall Test Mode subtle hint */}
+      {testMode && (
+        <div className="flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 shrink-0 animate-in fade-in">
+          <span className="flex items-center gap-2">
+            <Eye className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>Mode Test actif : récite mentalement les sous-concepts d'une branche, puis clique dessus pour vérifier.</span>
+          </span>
+          <button
+            type="button"
+            onClick={expandAll}
+            className="text-amber-300 hover:text-white font-semibold underline shrink-0 cursor-pointer"
+          >
+            Tout révéler
+          </button>
+        </div>
+      )}
+
       {/* Main View Area */}
       {branches.length === 0 ? (
         <div className="p-12 text-center bg-sphera-surface-2 rounded-2xl border border-sphera-border opacity-60">
@@ -2875,8 +3314,8 @@ export function MindmapView({
           </p>
         </div>
       ) : viewMode === 'canvas' ? (
-        /* Real Interactive Radial ReactFlow Mind Map Canvas with Collapsible Nodes */
-        <div className={`relative w-full rounded-2xl border border-sphera-border bg-[#070b14] overflow-hidden shadow-2xl ${isFullscreen ? 'flex-1 h-full' : workspaceSlots?.headerSlot ? 'flex-1 min-h-[520px]' : 'h-[650px]'}`}>
+        /* Real Interactive Radial ReactFlow Mind Map Canvas with Clickable Concept Inspector */
+        <div className={`relative w-full rounded-2xl border border-sphera-border bg-[#070b14] overflow-hidden shadow-2xl ${isFullscreen ? 'flex-1 h-full' : workspaceSlots?.headerSlot ? 'flex-1 min-h-[480px]' : 'h-[620px]'}`}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -2897,14 +3336,14 @@ export function MindmapView({
             <Controls showInteractive={false} className="bg-sphera-surface-2 border border-sphera-border rounded-xl text-white shadow-2xl" />
           </ReactFlow>
 
-          <div className="absolute bottom-4 left-4 z-10 pointer-events-none text-[11px] text-white/50 bg-black/70 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span>Cliquer sur un nœud pour le plier/déplier · Glisser pour explorer · Molette pour zoomer</span>
+          <div className="absolute bottom-3 left-3 z-10 pointer-events-none text-[11px] text-white/65 bg-black/75 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span>Clique sur un concept pour l'expliquer, le cocher maîtrisé ou lancer un quiz</span>
           </div>
         </div>
       ) : (
         /* Hierarchical Outline / Tree View */
-        <div className="space-y-3">
+        <div className="space-y-3 pb-4">
           <div className="p-4 rounded-2xl bg-sphera-surface-2 border border-sphera-border text-center">
             <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 mb-0.5 block">Sujet central</span>
             <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
@@ -2916,29 +3355,54 @@ export function MindmapView({
             const color = getBranchColor(b.couleur, i);
             const isExpanded = !collapsedBranches[i];
             const subCount = Array.isArray(b.sous_branches) ? b.sous_branches.length : 0;
+            const branchId = `branch-${i}`;
+            const isMastered = masteredIds.has(branchId);
+            const isSelected = selectedConcept?.id === branchId;
 
             return (
               <div
                 key={i}
-                className="rounded-2xl border border-sphera-border bg-sphera-surface-2/60 transition-all duration-200 overflow-hidden hover:border-sphera-border/90"
+                className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+                  isSelected
+                    ? 'border-sphera-green/60 bg-sphera-surface-2'
+                    : isMastered
+                      ? 'border-emerald-500/40 bg-emerald-950/20'
+                      : 'border-sphera-border bg-sphera-surface-2/60 hover:border-sphera-border/90'
+                }`}
               >
-                <button
-                  type="button"
-                  onClick={() => toggleBranch(i)}
-                  className="w-full p-4 sm:p-4.5 flex items-center justify-between text-left hover:bg-white/[0.02] transition-colors"
+                <div
+                  onClick={() => {
+                    selectBranchConcept(i);
+                    toggleBranch(i);
+                  }}
+                  className="w-full p-4 flex items-center justify-between text-left hover:bg-white/[0.02] transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleMastered(branchId);
+                      }}
+                      className="shrink-0 cursor-pointer"
+                      title={isMastered ? 'Marquer à revoir' : 'Marquer cette branche maîtrisée'}
+                    >
+                      <CheckCircle2
+                        weight={isMastered ? 'fill' : 'regular'}
+                        className={`w-4 h-4 transition-colors ${isMastered ? 'text-sphera-green' : 'text-sphera-text-muted/60 hover:text-white'}`}
+                      />
+                    </button>
                     <span
                       className="w-2.5 h-2.5 rounded-full shrink-0"
                       style={{ backgroundColor: color.hex }}
                     />
-                    <span className="font-semibold text-white text-sm sm:text-base truncate">
+                    <span className={`font-semibold text-sm sm:text-base truncate ${isMastered ? 'text-emerald-300' : 'text-white'}`}>
                       {b.label}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 shrink-0 ml-2">
+                  <div className="flex items-center gap-2.5 shrink-0 ml-2">
                     <span className="text-xs text-sphera-text-muted">
-                      {subCount} sous-point{subCount > 1 ? 's' : ''}
+                      {subCount} point{subCount > 1 ? 's' : ''}
                     </span>
                     {isExpanded ? (
                       <ChevronDown className="w-4 h-4 text-sphera-text-muted" />
@@ -2946,12 +3410,12 @@ export function MindmapView({
                       <ChevronRight className="w-4 h-4 text-sphera-text-muted" />
                     )}
                   </div>
-                </button>
+                </div>
 
                 {isExpanded && (
-                  <div className="px-5 pb-5 pt-1 border-t border-sphera-border/40">
+                  <div className="px-4 pb-4 pt-1 border-t border-sphera-border/40">
                     {subCount > 0 ? (
-                      renderSubBranches(b.sous_branches)
+                      renderSubBranches(b.sous_branches, i)
                     ) : (
                       <p className="text-xs text-sphera-text-muted italic">Aucun sous-concept détaillé</p>
                     )}
@@ -2960,6 +3424,13 @@ export function MindmapView({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Standalone / Fullscreen Inspector Fallback */}
+      {(isFullscreen || !workspaceSlots?.footerSlot) && inspectorPanel && (
+        <div className="shrink-0 p-3.5 rounded-2xl bg-sphera-surface-2 border border-sphera-border shadow-xl">
+          {inspectorPanel}
         </div>
       )}
     </div>
