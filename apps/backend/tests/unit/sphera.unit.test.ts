@@ -15,6 +15,7 @@ import { describe, it, expect } from "vitest";
 import { annalePrompt, qaPrompt, suggestionsPrompt, toolPrompt } from "../../src/services/ai/prompts.js";
 import { cleanJson, parseJsonWithFallback, UnparseableModelOutputError } from "../../src/services/ai/json.js";
 import { correctionsCount } from "../../src/serializers/sphera.js";
+import { generateFichePdfHtml } from "../../src/services/pdf/templates.js";
 import {
   escapeXml,
   buildSSML,
@@ -97,6 +98,52 @@ describe("prompt construction", () => {
 
   it("rejects an unknown tool type", () => {
     expect(() => toolPrompt("annale" as never, SOURCE)).toThrow();
+  });
+
+  it("calibrates fiche prompt depth to source length and includes rich pedagogical fields", () => {
+    const shortFiche = toolPrompt("fiche", SOURCE);
+    expect(shortFiche).toContain("Document length: SHORT");
+    expect(shortFiche).toContain('"questions_examen"');
+    expect(shortFiche).toContain('"pieges"');
+    expect(shortFiche).toContain('"exemples"');
+    expect(shortFiche).toContain("LaTeX");
+
+    const mediumFiche = toolPrompt("fiche", SOURCE.repeat(100));
+    expect(mediumFiche).toContain("Document length: MEDIUM");
+
+    const longFiche = toolPrompt("fiche", SOURCE.repeat(350));
+    expect(longFiche).toContain("Document length: LONG");
+  });
+});
+
+describe("editorial PDF template", () => {
+  it("renders structured fiche HTML with KaTeX math, tables, glossary, traps and exam questions", () => {
+    const { html, title } = generateFichePdfHtml({
+      titre: "Thermodynamique L2",
+      resume: "Synthèse du **premier principe** avec $\\Delta U = W + Q$.",
+      chapitres: [
+        {
+          id: "chap_1",
+          numero: 1,
+          titre: "Premier principe",
+          resume: "L'énergie se conserve.\n\n| Grandeur | Unité |\n| --- | --- |\n| Énergie | Joule |",
+          points_cles: ["$\\Delta U = W + Q$"],
+        },
+      ],
+      definitions: [{ terme: "Enthalpie", definition: "$H = U + PV$" }],
+      formules: [{ nom: "Premier principe", formule: "$$\\Delta U = W + Q$$", explication: "U énergie interne" }],
+      exemples: [{ titre: "Compression isotherme", description: "Travail reçu positif." }],
+      pieges: ["Ne pas confondre chaleur $Q$ et température $T$."],
+      a_retenir: ["Vérifier la convention de signe."],
+      questions_examen: [{ question: "Énoncer le premier principe.", reponse: "Conservation de l'énergie." }],
+    });
+
+    expect(title).toBe("Thermodynamique L2");
+    expect(html).toContain("katex");
+    expect(html).toContain("<table class=\"doc-table\">");
+    expect(html).toContain("Lexique & Définitions Clés");
+    expect(html).toContain("Pièges d'Examen");
+    expect(html).toContain("Questions Types d'Examen");
   });
 });
 

@@ -123,19 +123,19 @@ export function buildStyleInstructions(prefs: SpheraUserPreferences | null): str
   const parts: string[] = [];
 
   if (prefs.detailLevel === "court") {
-    parts.push("Sois concis, va directement à l'essentiel sans digression ni verbiage.");
+    parts.push("Be concise and high-yield: focus directly on essential concepts without digressions or filler.");
   } else if (prefs.detailLevel === "detaille") {
-    parts.push("Sois très détaillé, rigoureux et exhaustif dans tes explications, en définissant chaque concept et sous-concept.");
+    parts.push("Be thorough, rigorous, and comprehensive: explain each concept, mechanism, nuance, and sub-concept in depth.");
   }
 
   if (prefs.tone === "formel") {
-    parts.push("Adopte un ton académique, rigoureux et formel digne d'un professeur d'université.");
+    parts.push("Adopt a rigorous, formal academic tone appropriate for university-level study.");
   }
 
   if (prefs.defaultLanguage === "fr") {
-    parts.push("CRITICAL LANGUAGE OVERRIDE: Réponds impérativement et intégralement en Français.");
+    parts.push("CRITICAL LANGUAGE OVERRIDE: Respond strictly and entirely in French.");
   } else if (prefs.defaultLanguage === "en") {
-    parts.push("CRITICAL LANGUAGE OVERRIDE: You MUST formulate all content strictly and entirely in English.");
+    parts.push("CRITICAL LANGUAGE OVERRIDE: Formulate all content strictly and entirely in English.");
   }
 
   return parts.length ? `[STUDENT PREFERENCES: ${parts.join(" ")}]\n\n` : "";

@@ -2208,3 +2208,28 @@ spheraRouter.get("/sphere/:id/", async (req, res) => {
   });
   list(res, sessions.map((s) => serializeStudySessionListItem(s as SerializableStudySession)));
 });
+
+// ── Direct Server-Side PDF Export (Puppeteer) ───────────────────────────────
+
+const exportPdfSchema = z.object({
+  type: z.enum(["fiche", "annale"]),
+  data: z.unknown(),
+  sourceName: z.string().max(200).optional(),
+});
+
+spheraRouter.post("/export-pdf/", async (req, res) => {
+  currentUser(req);
+  const parsed = exportPdfSchema.parse(req.body ?? {});
+  if (!parsed.data || typeof parsed.data !== "object") {
+    throw badRequest("Données de document invalides pour l'export PDF.");
+  }
+
+  const { generateSpheraPdf } = await import("../services/pdf/pdfGenerator.js");
+  const { buffer, filename } = await generateSpheraPdf(parsed.type, parsed.data, parsed.sourceName);
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.setHeader("Content-Length", String(buffer.length));
+  res.setHeader("Cache-Control", "no-store");
+  res.status(200).send(buffer);
+});

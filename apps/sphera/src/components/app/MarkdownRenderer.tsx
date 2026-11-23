@@ -1,5 +1,18 @@
 import React, { useState } from 'react'
 import { Check, Copy } from "@phosphor-icons/react";
+import katex from 'katex'
+
+function renderKatexHtml(expr: string, displayMode: boolean): string {
+  try {
+    return katex.renderToString(expr.trim(), {
+      displayMode,
+      throwOnError: false,
+      strict: false,
+    })
+  } catch {
+    return expr
+  }
+}
 
 interface MarkdownRendererProps {
   content: string
@@ -63,11 +76,33 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
   }
 
   const renderInline = (text: string): React.ReactNode[] => {
-    const regex = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|\[[^\]]+\]\([^)]+\))/g
+    const regex = /(\$\$[^$]+\$\$|\\\[[\s\S]+?\\\]|\\\([\s\S]+?\\\)|(?<!\$)\$(?!\$)[^\n$]+?(?<!\$)\$(?!\$)|`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|\[[^\]]+\]\([^)]+\))/g
     const parts = text.split(regex)
 
     return parts.map((part, i) => {
       if (!part) return null
+
+      if ((part.startsWith('$$') && part.endsWith('$$') && part.length > 4) || (part.startsWith('\\[') && part.endsWith('\\]'))) {
+        const inner = part.startsWith('$$') ? part.slice(2, -2) : part.slice(2, -2)
+        return (
+          <span
+            key={i}
+            className="block my-2 overflow-x-auto text-center text-white"
+            dangerouslySetInnerHTML={{ __html: renderKatexHtml(inner, true) }}
+          />
+        )
+      }
+
+      if ((part.startsWith('$') && part.endsWith('$') && part.length > 2) || (part.startsWith('\\(') && part.endsWith('\\)'))) {
+        const inner = part.startsWith('$') ? part.slice(1, -1) : part.slice(2, -2)
+        return (
+          <span
+            key={i}
+            className="inline-block align-middle mx-0.5 text-white"
+            dangerouslySetInnerHTML={{ __html: renderKatexHtml(inner, false) }}
+          />
+        )
+      }
 
       if (part.startsWith('`') && part.endsWith('`')) {
         return (
@@ -143,6 +178,38 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
 
     if (inCodeBlock) {
       codeBlockLines.push(line)
+      continue
+    }
+
+    // Standalone display LaTeX block: $$...$$ on a single line or multi-line
+    if (trimmed.startsWith('$$') && trimmed.endsWith('$$') && trimmed.length > 4) {
+      flushList(`math-block-${idx}`)
+      elements.push(
+        <div
+          key={`math-${idx}`}
+          className="my-2.5 px-3 py-2 rounded-xl bg-sphera-surface/60 border border-sphera-border/50 overflow-x-auto text-center text-white"
+          dangerouslySetInnerHTML={{ __html: renderKatexHtml(trimmed.slice(2, -2), true) }}
+        />
+      )
+      continue
+    }
+
+    if (trimmed === '$$') {
+      flushList(`math-multi-${idx}`)
+      const mathLines: string[] = []
+      let mIdx = idx + 1
+      while (mIdx < lines.length && lines[mIdx].trim() !== '$$') {
+        mathLines.push(lines[mIdx])
+        mIdx++
+      }
+      elements.push(
+        <div
+          key={`math-${idx}`}
+          className="my-2.5 px-3 py-2 rounded-xl bg-sphera-surface/60 border border-sphera-border/50 overflow-x-auto text-center text-white"
+          dangerouslySetInnerHTML={{ __html: renderKatexHtml(mathLines.join('\n'), true) }}
+        />
+      )
+      idx = mIdx
       continue
     }
 

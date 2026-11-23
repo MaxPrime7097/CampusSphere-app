@@ -1051,4 +1051,36 @@ export async function getSpheraStats(): Promise<{ success: boolean; data: Sphera
   });
 }
 
+// ─── Direct Server-Side PDF Export (Puppeteer) ──────────────────
+export async function exportPdfFromBackend(
+  type: 'fiche' | 'annale',
+  data: unknown,
+  sourceName?: string,
+): Promise<{ blob: Blob; filename: string }> {
+  const url = `${API_BASE.replace(/\/$/, '')}/api/sphera/export-pdf/`;
+  const token = getToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ type, data, sourceName }),
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    throw new Error(`PDF export failed (HTTP ${res.status})`);
+  }
+
+  const blob = await res.blob();
+  const disposition = res.headers.get('Content-Disposition') || '';
+  const match = disposition.match(/filename="?([^"]+)"?/i);
+  const filename = match?.[1] || `Sphera_${type === 'fiche' ? 'Fiche' : 'Annale'}.pdf`;
+
+  return { blob, filename };
+}
+
 
