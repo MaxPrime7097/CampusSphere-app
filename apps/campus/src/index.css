@@ -31,6 +31,23 @@
   font-display: swap;
 }
 
+/* Polices dédiées uniquement aux pages publiques & auth (n'affecte jamais l'app connectée) */
+.cs-pub-font,
+.cs-pub-font .font-poppins,
+.cs-pub-font .font-nunito,
+.cs-pub-font .font-raleway,
+.cs-pub-font .font-sans {
+  font-family: 'Manrope', system-ui, sans-serif;
+}
+.cs-pub-font h1,
+.cs-pub-font h2,
+.cs-pub-font h1.font-poppins,
+.cs-pub-font h2.font-poppins {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
 @layer base {
   :root {
     /* ── Brand ─────────────────────────────── */

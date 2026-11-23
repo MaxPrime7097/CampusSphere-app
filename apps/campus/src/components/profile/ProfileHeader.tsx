@@ -385,7 +385,7 @@ export function ProfileHeader({
                             <Button
                               variant="link"
                               size="sm"
-                              onClick={() => navigate("/cs-inc/impact-score")}
+                              onClick={() => navigate("/cs/impact-score")}
                               className="p-0 h-auto text-primary font-semibold text-xs inline-flex items-center gap-1 hover:gap-1.5 transition-all"
                             >
                               <span>{t("header.learnMore")}</span>

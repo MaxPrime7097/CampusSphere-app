@@ -43,7 +43,7 @@ export function CookieBanner() {
         <p className="text-xs text-muted-foreground leading-relaxed">
           {t("cookieBanner.description")}{" "}
           <button
-            onClick={() => navigate("/cs-inc/policies/cookiepolicy")}
+            onClick={() => navigate("/cs/policies/cookiepolicy")}
             className="text-primary underline underline-offset-2 hover:opacity-80"
           >
             {t("cookieBanner.learnMore")}

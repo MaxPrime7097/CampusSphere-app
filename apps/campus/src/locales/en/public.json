@@ -1,0 +1,978 @@
+{
+  "landing": {
+    "meta": {
+      "title": "CampusSphere — Student life, connected",
+      "description": "Discover CampusSphere: connect with fellow students, share study resources, collaborate on group projects, and bring your campus community to life.",
+      "ogDescription": "Everything that brings your campus to life, in one place.",
+      "schemaDescription": "The student social network connecting the university community."
+    },
+    "hero": {
+      "titleLine1": "Your campus.",
+      "titleLine2": "Your connections.",
+      "titleLine3": "Your possibilities.",
+      "lede": "Meet the right people, discover useful study resources, and move your projects forward with other students. Everything that brings your campus to life, in one place.",
+      "ctaPrimary": "Join CampusSphere",
+      "ctaSecondary": "Explore the platform",
+      "note": "Built for students. Designed around real campus life.",
+      "artifacts": {
+        "postMeta": "12:30 · Computer Science",
+        "postText": "“Anyone got graph theory notes before Friday? Happy to share my solved tutorials!”",
+        "postImpact": "12 impact",
+        "postReplies": "4 replies",
+        "fileTitle": "Study Sheet — Databases",
+        "fileMeta": "Year 3 CS · 2.4 MB",
+        "sphereBadge": "SPHERE · ACTIVE",
+        "sphereTitle": "Presentation — Semester Project",
+        "sphereTasks": "4 tasks this week",
+        "eventDay": "SAT.",
+        "eventTitle": "Campus Clubs Day",
+        "eventMeta": "Main Hall · 2:00 PM",
+        "eventPill": "QR Pass · 42 going"
+      }
+    },
+    "manifesto": {
+      "ariaLabel": "Starting point",
+      "leadStart": "University isn’t just about",
+      "leadHighlight": "lectures.",
+      "statementStart": "It’s also",
+      "statementAnd": "and",
+      "statementEnd": "we discover together.",
+      "choosePillar": "Choose a pillar",
+      "pillars": {
+        "rencontres": {
+          "pill": "the people you meet",
+          "tag": "Connections",
+          "caption": "A quick chat after a tutorial that turns into your project team for the whole semester."
+        },
+        "ressources": {
+          "pill": "the resources we share",
+          "tag": "Shared resources",
+          "caption": "That revision sheet or past exam paper from a senior that saves your grade the night before."
+        },
+        "projets": {
+          "pill": "the projects we build",
+          "tag": "Group projects",
+          "caption": "Preparing a presentation, thesis, or group assignment together without losing track."
+        },
+        "opportunites": {
+          "pill": "the opportunities",
+          "tag": "Opportunities",
+          "caption": "An internship, conference, or campus club you would never have heard about sitting alone in class."
+        }
+      },
+      "marquee": [
+        "Connections",
+        "Revision sheets",
+        "Past exam papers",
+        "Group projects",
+        "Clubs & associations",
+        "Conferences",
+        "Tutorials & talks",
+        "Cultural days",
+        "Peer support",
+        "Internships"
+      ]
+    },
+    "constat": {
+      "ariaLabel": "CampusSphere Constellation",
+      "titleLine1": "Everything is everywhere.",
+      "titleLine2": "Except in one place.",
+      "body": "A chat here. A file there. An opportunity missed somewhere else. Student life moves in fragments — CampusSphere brings them together without locking your campus into a rigid tool.",
+      "centerSubtitle": "What matters, brought closer.",
+      "bottomTag": "CampusSphere brings together everything that matters in student life.",
+      "cards": {
+        "c1": { "title": "Study Spheres", "desc": "Projects, tutorials & clubs" },
+        "c2": { "title": "Shared Library", "desc": "Notes, sheets & past exam papers" },
+        "c3": { "title": "Campus Feed & Impact Score", "desc": "Peer help & useful updates" },
+        "c4": { "title": "Campus Events", "desc": "Sign-ups, QR passes & clubs" },
+        "c5": { "title": "Sphera AI", "desc": "Revision, summaries & quizzes" },
+        "c6": { "title": "Direct Messaging", "desc": "Instant student chats" }
+      }
+    },
+    "features": {
+      "ariaLabel": "Features",
+      "titleLine1": "One space to",
+      "titleLine2": "bring your campus to life.",
+      "lede": "Four experiences with one shared goal: making student connections easier to find, share, and build on.",
+      "stories": {
+        "community": {
+          "ariaLabel": "Community",
+          "index": "01 / Community",
+          "titleLine1": "The right people,",
+          "titleLine2": "in the right place.",
+          "desc": "Discover conversations, share ideas, and build real connections with students in your field and across your campus.",
+          "points": [
+            "Useful discussions centered on your courses and campus life",
+            "Direct, spontaneous exchanges with fellow students",
+            "Questions and posts that actually get helpful answers"
+          ],
+          "cta": "Join the community"
+        },
+        "resources": {
+          "ariaLabel": "Resources",
+          "index": "02 / Resources",
+          "titleLine1": "Sharing that helps",
+          "titleLine2": "everyone move forward.",
+          "desc": "Find and share lecture notes, study guides, and helpful documents to learn better together.",
+          "points": [
+            "Revision sheets, lecture summaries, and solved exercises",
+            "Simple search by subject, major, and study level",
+            "Instant preview and direct download in just a few clicks"
+          ],
+          "cta": "Explore resources"
+        },
+        "spheres": {
+          "ariaLabel": "Spheres",
+          "index": "03 / Spheres",
+          "titleLine1": "Projects move",
+          "titleLine2": "faster together.",
+          "desc": "Organize group work in one shared space to track tasks, deadlines, files, and team discussions.",
+          "points": [
+            "A dedicated workspace for every study group or project",
+            "Real-time task tracking, schedule, and deadlines",
+            "Shared files and group chat gathered in one place"
+          ],
+          "cta": "Create a project space"
+        },
+        "events": {
+          "ariaLabel": "Events",
+          "index": "04 / Events",
+          "titleLine1": "Things are happening",
+          "titleLine2": "on your campus.",
+          "desc": "Meet up, explore, take part. Stay on top of campus events and opportunities beyond the lecture hall.",
+          "points": [
+            "Calendar of conferences, cultural days, hackathons, and club activities",
+            "Simple sign-up and quick QR pass access",
+            "Opportunities to connect beyond your daily classes"
+          ],
+          "cta": "Discover events"
+        }
+      }
+    },
+    "sphera": {
+      "by": "by CampusSphere",
+      "titleLine1": "Revise",
+      "titleLine2": "differently.",
+      "desc": "Turn your study materials into opportunities to learn, understand, and test yourself. An AI study workspace linked directly to your student account.",
+      "checks": [
+        "Structured study sheets generated from your own documents",
+        "Quizzes and revision cards (flashcards) to test your understanding",
+        "Targeted guidance and clear explanations tailored to your exams"
+      ],
+      "ctaDiscover": "Discover Sphera",
+      "ctaOpen": "Open the app",
+      "previewAlt": "Preview of the Sphera AI study workspace by CampusSphere"
+    },
+    "community": {
+      "ariaLabel": "The community",
+      "photoAlt": "Students chatting together during a campus event",
+      "captionTitle": "A campus in motion",
+      "captionSub": "Ideas · Resources · Connections",
+      "titleLine1": "Campus is also",
+      "titleLine2": "the people who bring it to life.",
+      "lede": "A shared idea, a passed-down note, a timely introduction: small connections can unlock big possibilities.",
+      "traces": [
+        {
+          "title": "Share what you know",
+          "desc": "One resource can unblock an entire project."
+        },
+        {
+          "title": "Find your next conversation",
+          "desc": "Great collaborations start simply."
+        },
+        {
+          "title": "Pass opportunities along",
+          "desc": "What deserves to be seen travels further together."
+        }
+      ]
+    },
+    "steps": {
+      "ariaLabel": "How to get started",
+      "titleLine1": "Start",
+      "titleLine2": "simply.",
+      "lede": "You don’t need to figure everything out upfront. Your space grows naturally with what you explore, share, and build.",
+      "items": [
+        {
+          "num": "01",
+          "kicker": "First",
+          "title": "Join your student space.",
+          "desc": "Discover CampusSphere and set up your campus profile in minutes."
+        },
+        {
+          "num": "02",
+          "kicker": "Next",
+          "title": "Find what matters to you.",
+          "desc": "Explore study resources, discussions, and collaborative workspaces."
+        },
+        {
+          "num": "03",
+          "kicker": "Then",
+          "title": "Contribute and grow your projects.",
+          "desc": "Share what you know, work with peers, and unlock new opportunities."
+        }
+      ]
+    },
+    "cta": {
+      "ariaLabel": "Join CampusSphere",
+      "titleLine1": "Your voice",
+      "titleLine2": "matters.",
+      "body": "A community becomes valuable when everyone can contribute something — a question, an answer, a document, an idea, or a bit of time.",
+      "ctaPrimary": "Join CampusSphere",
+      "ctaSecondary": "Log in",
+      "postitKicker": "Note left on the campus board:",
+      "postitText": "“We built CampusSphere so students stop juggling ten WhatsApp groups and expired links. Here, we help each other prep for CAs and final exams, share notes, and move forward together. Everyone wins.”",
+      "postitAuthor": "— A student on your campus",
+      "postitStamp": "YOUR VOICE MATTERS"
+    }
+  },
+  "about": {
+    "meta": {
+      "title": "About — Our Story & Team | CampusSphere",
+      "description": "Discover the story behind CampusSphere, the student team building the platform, and our mission to make university life more connected and collaborative.",
+      "ogTitle": "About CampusSphere — Our Team & Vision",
+      "ogDescription": "Go behind the scenes of CampusSphere, the platform built by students to connect and energize campus life.",
+      "schemaDescription": "The academic and collaborative social network built for students."
+    },
+    "hero": {
+      "titleLine1": "A space built",
+      "titleLine2": "for real campus life.",
+      "lede": "CampusSphere started with a simple belief: succeeding at university should never depend on being lucky enough to sit in the right WhatsApp group. We bring notes, peer help, and projects together to carry your semester forward.",
+      "ctaPrimary": "Join CampusSphere",
+      "ctaSecondary": "Read our story",
+      "pillars": [
+        {
+          "num": "01",
+          "title": "Born between lectures",
+          "desc": "An idea sparked in 2025 from real student experience, built to organize and help each other all year."
+        },
+        {
+          "num": "02",
+          "title": "Everything in one place",
+          "desc": "Lecture notes, solved tutorials, past exam papers, project spheres, clubs, and AI-assisted revision."
+        },
+        {
+          "num": "03",
+          "title": "Built with students",
+          "desc": "Every tool evolves from direct feedback on campus to match the real rhythm of your semesters."
+        }
+      ]
+    },
+    "story": {
+      "ariaLabel": "Our story",
+      "titleLine1": "From campus reality",
+      "titleLine2": "to a real platform.",
+      "lede": "Not an idea born in a boardroom, but a practical answer to the hurdles students face every semester across lectures, exams, and group assignments.",
+      "steps": [
+        {
+          "num": "01",
+          "tag": "2025 · The spark",
+          "title": "An idea born between classes",
+          "desc": "The idea for CampusSphere began in 2025 from a simple reality: as students in Cameroon, we wanted a tool built for our real campus life, not just another distracting social feed."
+        },
+        {
+          "num": "02",
+          "tag": "The problem",
+          "title": "Everything was scattered",
+          "desc": "Notes buried across ten WhatsApp groups, missing past CA and exam papers, messy group work, and missed club announcements: we lacked one reliable shared hub."
+        },
+        {
+          "num": "03",
+          "tag": "The answer",
+          "title": "Bringing it all together",
+          "desc": "We built CampusSphere to unite peer support, study resources, project spheres, campus events, and AI revision — so every student can progress with confidence."
+        }
+      ]
+    },
+    "mission": {
+      "ariaLabel": "Mission and vision",
+      "card1TitleStart": "Our",
+      "card1TitleHighlight": "mission.",
+      "card1Body": "Make academic resources and peer support simple, open, and natural for every student — regardless of major or study level.",
+      "card1Points": [
+        "Keep lecture notes, solved tutorials/practicals, and past exam papers circulating",
+        "Make it easy to connect across batches, majors, and academic seniors"
+      ],
+      "card2TitleStart": "Our vision, from Cameroon",
+      "card2TitleHighlight": "to the continent.",
+      "card2Body": "Establish CampusSphere across Cameroonian campuses before expanding across Africa: a living ecosystem supporting you from Year 1 all the way to your first career opportunities.",
+      "card2Points": [
+        "Connect universities, higher institutes, student clubs, and associations",
+        "Open doors to academic internships, conferences, and concrete projects"
+      ]
+    },
+    "values": {
+      "ariaLabel": "Our values",
+      "titleLine1": "What guides",
+      "titleLine2": "our choices.",
+      "lede": "Six straightforward principles shaping every feature we design and every interaction on CampusSphere.",
+      "items": [
+        {
+          "title": "Peer help & collaboration",
+          "desc": "One shared study sheet, a quick answer, or a solid study group can turn an entire semester around."
+        },
+        {
+          "title": "Quality resources",
+          "desc": "Lecture notes, solved tutorials/practicals, and past CA & exam papers that are clear and genuinely helpful."
+        },
+        {
+          "title": "Inclusion",
+          "desc": "Open to all majors and levels — from undergraduate and HND/BTS to Master’s, in faculties and institutes alike."
+        },
+        {
+          "title": "Simplicity & innovation",
+          "desc": "Modern tools that solve real campus problems without unnecessary complexity."
+        },
+        {
+          "title": "Respect",
+          "desc": "A healthy, welcoming space where every student can ask questions and share their voice."
+        },
+        {
+          "title": "Shared ambition",
+          "desc": "Encouraging everyone to aim high, learn from peers, and start building their path right from university."
+        }
+      ]
+    },
+    "team": {
+      "ariaLabel": "Our team",
+      "title": "The faces behind",
+      "highlight": "CampusSphere.",
+      "subtitle": "Six passionate students designing the platform, listening to campus feedback, and growing the community every week.",
+      "ambassadorBadge": "Campus Ambassadors Program",
+      "ambassadorTitle": "Want to represent CampusSphere on your campus?",
+      "ambassadorDesc": "Join our student ambassador network, lead your institution’s spheres, share feedback from the ground, and introduce the platform around you.",
+      "ambassadorCta": "Become an Ambassador"
+    },
+    "cta": {
+      "ariaLabel": "Join CampusSphere",
+      "titleLine1": "Move your campus",
+      "titleLine2": "forward with us.",
+      "body": "Whether you want to share your revision sheets, start a project, or launch a club on the platform, your student space is ready.",
+      "ctaPrimary": "Join CampusSphere",
+      "ctaSecondary": "Contact us"
+    }
+  },
+  "contact": {
+    "meta": {
+      "title": "Contact — Support, Feedback & Partnerships | CampusSphere",
+      "description": "Have a question, technical issue, feature idea, or campus partnership in mind? Write directly to the CampusSphere team.",
+      "ogTitle": "Contact — CampusSphere",
+      "ogDescription": "Reach out to the CampusSphere team for any question, product feedback, or campus partnership."
+    },
+    "hero": {
+      "titleLine1": "Have a question or an idea?",
+      "titleLine2": "Let’s talk.",
+      "lede": "Need help with the platform, have an idea to improve CampusSphere, or want to partner with your club or school? Write to us directly — our team reads every message.",
+      "ctaPrimary": "Send a message",
+      "ctaSecondary": "Browse the FAQ",
+      "pillars": {
+        "emailTitle": "Direct email",
+        "emailPrefix": "Write to us anytime at",
+        "responseTitle": "Fast reply",
+        "responseDesc": "Our team typically replies within 24 business hours — real answers, not generic templates.",
+        "listenTitle": "Listening to campuses",
+        "listenDesc": "Students, clubs, associations, and schools: every piece of feedback helps improve the platform."
+      }
+    },
+    "aside": {
+      "emailTitle": "Write by email",
+      "emailDesc": "Prefer using your email client directly or attaching files?",
+      "copy": "Copy",
+      "copied": "Copied",
+      "copyAria": "Copy email address",
+      "shortcutsTitle": "Most common topics",
+      "shortcutsDesc": "Click a topic to pre-select it directly in the form:",
+      "socialsTitle": "WhatsApp Channel & socials",
+      "socialsDesc": "Follow updates, campus announcements, and upcoming releases live."
+    },
+    "shortcuts": {
+      "partnership": "Club or school partnership",
+      "bug": "Report a technical issue",
+      "suggestion": "Suggest an improvement"
+    },
+    "subjects": {
+      "general": "General question",
+      "partnership": "Club / institution partnership",
+      "bug": "Technical issue / Bug",
+      "suggestion": "Feature suggestion",
+      "account": "Account support",
+      "other": "Other"
+    },
+    "form": {
+      "ariaLabel": "Contact form",
+      "titleStart": "Send us",
+      "titleHighlight": "a message.",
+      "subtitle": "Share as much context as possible (school, major, or helpful link if relevant) so we can answer quickly and accurately.",
+      "nameLabel": "Full name *",
+      "namePlaceholder": "E.g. Franck Ndi",
+      "emailLabel": "Email address *",
+      "emailPlaceholder": "you@example.com",
+      "subjectLabel": "Subject *",
+      "subjectPlaceholder": "Choose a subject",
+      "messageLabel": "Your message *",
+      "messagePlaceholder": "Tell us about your request, project, or issue...",
+      "newsletterLabel": "I’d also like to receive CampusSphere news and updates.",
+      "submit": "Send message",
+      "submitting": "Sending...",
+      "sentTitle": "Message sent!",
+      "sentDesc": "Thanks for reaching out. Our team received your message and will reply by email within 24 business hours.",
+      "sendAnother": "Send another message"
+    },
+    "toasts": {
+      "requiredTitle": "Required fields",
+      "requiredDesc": "Please fill in all required fields before sending.",
+      "sentTitle": "Message sent!",
+      "sentDesc": "We received your message and will get back to you within 24 business hours.",
+      "errorTitle": "Sending failed",
+      "errorDesc": "Unable to send your message right now. Please try again shortly or write to us by email."
+    },
+    "cta": {
+      "ariaLabel": "Frequently asked questions",
+      "titleLine1": "Your answer might",
+      "titleLine2": "already be ready.",
+      "body": "Browse our FAQ to find quick answers about accounts, sharing notes, Sphera AI, or the Impact Score.",
+      "ctaPrimary": "Browse the FAQ",
+      "ctaSecondary": "Join CampusSphere"
+    }
+  },
+  "faq": {
+    "meta": {
+      "title": "Frequently Asked Questions (FAQ) | CampusSphere",
+      "description": "All the answers to your questions about CampusSphere and Sphera: sign-up, Spheres, Impact Score, AI revision, Mobile Money payments, and data security.",
+      "ogTitle": "Frequently Asked Questions (FAQ) — CampusSphere",
+      "ogDescription": "Quickly find clear answers about CampusSphere, Sphera, and how the platform works."
+    },
+    "hero": {
+      "titleLine1": "Have a question about CampusSphere?",
+      "titleLine2": "Here are clear answers.",
+      "lede": "Account, Spheres, revising with Sphera, shared study resources, Mobile Money payments, or privacy: find your answer in seconds.",
+      "searchPlaceholder": "Search: Sphera, Mobile Money, account, Impact Score...",
+      "searchAria": "Search the FAQ",
+      "clearSearchAria": "Clear search",
+      "quickTagsAria": "Quick searches",
+      "quickTags": {
+        "t1": "Sphera",
+        "t2": "Mobile Money",
+        "t3": "Impact Score",
+        "t4": "Spheres",
+        "t5": "Privacy"
+      }
+    },
+    "nav": {
+      "sectionAria": "Frequently asked questions",
+      "categoriesAria": "FAQ categories",
+      "allShort": "All ({{count}})",
+      "categoriesTitle": "Categories",
+      "allQuestions": "All questions",
+      "resultsOne": "answer found",
+      "resultsOther": "answers found",
+      "resultsFor": "for",
+      "reset": "Reset",
+      "emptyTitle": "No results for “{{query}}”",
+      "emptyDesc": "Try another keyword or write directly to our team — we’ll be happy to help.",
+      "seeAll": "View all questions",
+      "writeUs": "Write to us"
+    },
+    "cta": {
+      "ariaLabel": "Contact the team",
+      "titleLine1": "Didn’t find",
+      "titleLine2": "your answer?",
+      "body": "Our team is here to help with your account, a document, or a campus project. Write to us and we typically reply within 24 business hours.",
+      "ctaPrimary": "Contact us"
+    },
+    "categories": {
+      "compte": {
+        "shortLabel": "Account",
+        "title": "Account & Registration",
+        "items": {
+          "q1": {
+            "q": "How do I create an account on CampusSphere?",
+            "aText": "Click Sign up at the top of the page and follow the 3 quick steps: your basic details, your academic profile (school, major, study level), and your interests or skills.",
+            "a": "Click <link>Sign up</link> at the top of the page and follow the 3 quick steps: your basic details, your academic profile (school, major, study level), and your interests or skills."
+          },
+          "q2": {
+            "q": "What is the minimum age required to sign up?",
+            "aText": "Access to CampusSphere and Sphera is reserved for users aged at least 16. Between 16 and 18, registration requires prior consent from a parent or legal guardian, in accordance with our Terms of Use.",
+            "a": "Access to CampusSphere and Sphera is reserved for users aged at least <bold>16 years old</bold>. Between 16 and 18, registration requires prior consent from a parent or legal guardian, in accordance with our <link>Terms of Use</link>."
+          },
+          "q3": {
+            "q": "Can I edit my details after signing up?",
+            "aText": "Yes, you can update your personal details, major, study level, profile photo, and bio anytime directly from your profile by clicking Edit Profile.",
+            "a": "Yes, you can update your personal details, major, study level, profile photo, and bio anytime directly from your profile by clicking “Edit Profile”."
+          },
+          "q4": {
+            "q": "How do I verify my student account?",
+            "aText": "Verification can be completed either using your valid institutional email address or by submitting proof of enrollment (student ID card or registration certificate) reviewed by our team.",
+            "a": "Verification can be completed either using your valid institutional email address or by submitting proof of enrollment (student ID card or registration certificate) verified by our team."
+          }
+        }
+      },
+      "spheres": {
+        "shortLabel": "Spheres & Impact",
+        "title": "Spheres, Communities & Impact Score",
+        "items": {
+          "q1": {
+            "q": "What is a Sphere on CampusSphere?",
+            "aText": "A Sphere is a community workspace dedicated to a course, major, batch, group project, or student club. You can ask questions, share study materials, and follow discussions without losing information across ten different chats.",
+            "a": "A Sphere is a community workspace dedicated to a course, major, batch, group project, or student club. You can ask questions, share lecture notes, and follow discussions without losing key information in endless chat threads."
+          },
+          "q2": {
+            "q": "How do I join an existing Sphere?",
+            "aText": "Go to the Spheres tab, search for your school, subject, or club, then click Join. Public spheres open immediately, while private spheres require approval from a moderator.",
+            "a": "Go to the “Spheres” tab, search for your school, subject, or club, then click “Join”. Public spheres open immediately, while private spheres require approval from a moderator."
+          },
+          "q3": {
+            "q": "Can I create my own Sphere?",
+            "aText": "Yes, every registered student can create a Sphere for their class, project group, or student club. You choose its visibility (public or private), description, and internal rules.",
+            "a": "Yes, every registered student can create a Sphere for their batch, study group, or student club. You choose its visibility (public or private), description, and internal rules."
+          },
+          "q4": {
+            "q": "How does moderation work inside a Sphere?",
+            "aText": "The Sphere creator and the moderators they appoint manage members, approve or remove posts, and ensure everyone follows our Community Guidelines.",
+            "a": "The Sphere creator and the moderators they appoint manage members, approve or remove posts, and ensure everyone follows our <link>Community Guidelines</link>."
+          },
+          "q5": {
+            "q": "How does the Impact Score work?",
+            "aText": "The Impact Score rewards genuine peer help on the platform: sharing useful study notes, helping a classmate, contributing in spheres, or supporting campus life increases your score. See all details on the dedicated Impact Score page.",
+            "a": "The Impact Score rewards genuine peer support on CampusSphere: sharing useful study notes, helping a classmate, or keeping spheres active grows your score. Explore the full breakdown on the <link>Impact Score</link> page."
+          }
+        }
+      },
+      "sphera": {
+        "shortLabel": "Sphera AI",
+        "title": "Sphera & AI-Assisted Revision",
+        "items": {
+          "q1": {
+            "q": "What is Sphera and how does it help me study?",
+            "aText": "Sphera is the AI-assisted revision workspace built into CampusSphere. From your study materials (PDFs, notes, past exam papers), it generates clear summary sheets, interactive quizzes, revision cards, and targeted practice for your CAs and final exams.",
+            "a": "Sphera is your AI-assisted revision workspace built into CampusSphere. From your study materials, it generates <b1>clear summary sheets</b1>, <b2>interactive quizzes</b2>, <b3>revision cards (flashcards)</b3>, and targeted practice based on your past exam papers."
+          },
+          "q2": {
+            "q": "Do I need a second account to use Sphera?",
+            "aText": "No! CampusSphere and Sphera share one unified account. Once you are signed in to CampusSphere, you can access Sphera directly without registering again.",
+            "a": "No! CampusSphere and Sphera run on a single unified account. Once you are signed in to CampusSphere, you can access Sphera directly without creating a second account."
+          },
+          "q3": {
+            "q": "Are my uploaded notes used to train public AI models?",
+            "aText": "No. Your documents and prompts are processed in isolated, secure AI environments (AWS Bedrock and Google Cloud). They are never used to train public models and remain strictly confidential.",
+            "a": "No. Your documents and prompts are processed inside secure, isolated AI environments (including AWS Bedrock and Google Cloud). They are never used to train public models and remain strictly confidential."
+          },
+          "q4": {
+            "q": "Does Sphera work for all academic fields?",
+            "aText": "Yes, Sphera automatically adapts to the content of your document whether you study sciences, engineering, computer science, law, economics, management, medicine, or humanities.",
+            "a": "Yes, Sphera automatically adapts to your document’s subject matter — whether you study sciences, computer science, engineering, law, economics, management, medicine, or humanities."
+          }
+        }
+      },
+      "ressources": {
+        "shortLabel": "Resources",
+        "title": "Resources & Library",
+        "items": {
+          "q1": {
+            "q": "What is the difference between the Library and Shared Resources?",
+            "aText": "The Library gathers structured past exam papers, reference textbooks, and curated materials. Resources brings together revision sheets, summaries, solved tutorials, and lecture notes freely shared among students.",
+            "a": "The Library gathers organized past exam papers, reference textbooks, and verified materials. The Resources space brings together revision sheets, summaries, solved tutorials, and lecture notes freely shared among students."
+          },
+          "q2": {
+            "q": "Which file formats can I upload and where are they hosted?",
+            "aText": "You can upload standard formats (PDF, DOCX, TXT, and images). Files are stored encrypted and securely on Amazon Web Services (AWS S3) with strict access controls.",
+            "a": "You can upload standard formats (PDF, DOCX, TXT, images). All files are stored encrypted and securely on Amazon Web Services (AWS S3) with strict access control."
+          },
+          "q3": {
+            "q": "What should I do if a document infringes copyright?",
+            "aText": "We strictly respect intellectual property. If a document infringes your rights or a lecturer's rights, report it from the document menu or write to policies@campussphere.app for swift removal.",
+            "a": "We strictly respect intellectual property. If a document infringes your rights or those of a lecturer, report it from its menu or email <mail>policies@campussphere.app</mail> for prompt removal under our <link>Copyright Policy</link>."
+          }
+        }
+      },
+      "paiements": {
+        "shortLabel": "Payments",
+        "title": "Free Access, Credits & Payments",
+        "items": {
+          "q1": {
+            "q": "Is CampusSphere free to use?",
+            "aText": "Yes, CampusSphere's core features are free: profile, campus feed, study spheres, messaging, events, and resource sharing. For heavier AI usage on Sphera (large generations or advanced models), optional AI passes and credit packs are available.",
+            "a": "Yes, CampusSphere’s core features are free: profile, campus feed, spheres, messaging, events, and resource sharing. For intensive AI usage on Sphera, optional passes and AI credit packs are available."
+          },
+          "q2": {
+            "q": "Which payment methods are accepted?",
+            "aText": "To stay simple and accessible for students, payments are processed via Mobile Money (MTN Mobile Money, Orange Money) through the secure Campay gateway.",
+            "a": "To stay simple and accessible for every student, payments work via <b1>Mobile Money (MTN MoMo, Orange Money)</b1> through the secure <b2>Campay</b2> payment gateway. Check our <link>Terms of Sale</link> for full details."
+          },
+          "q3": {
+            "q": "Can I get a refund after buying credits or a pass?",
+            "aText": "Access to digital credits or passes starts immediately after Mobile Money confirmation; therefore, consumed credits or started passes are non-refundable. In case of a verified technical payment issue, contact support@campussphere.app.",
+            "a": "In accordance with our <link>Terms of Sale</link>, digital service activation is immediate upon Mobile Money confirmation: consumed AI credits or started passes are non-refundable. If a verified technical error occurs on a Campay transaction, contact our support team at <mail>support@campussphere.app</mail>."
+          }
+        }
+      },
+      "securite": {
+        "shortLabel": "Privacy",
+        "title": "Privacy & Security",
+        "items": {
+          "q1": {
+            "q": "How are my data and study notes protected?",
+            "aText": "Your traffic is encrypted in transit over HTTPS (TLS 1.3) and your data is encrypted at rest (AES-256) on our cloud infrastructure powered by Supabase and Amazon Web Services (AWS EC2 and AWS S3).",
+            "a": "Your traffic is encrypted in transit via HTTPS (TLS 1.3) and your data is encrypted at rest (AES-256) on our cloud infrastructure powered by Supabase and Amazon Web Services (AWS EC2 and AWS S3)."
+          },
+          "q2": {
+            "q": "Is my personal data sold to third parties?",
+            "aText": "No. Your data is never sold, rented, or handed over to ad networks. It is only processed by our essential technical providers (Supabase, AWS, secure AI models, Campay).",
+            "a": "No. Your data is <bold>never sold, rented, or shared with advertisers</bold>. It is only processed by our essential technical providers (Supabase, AWS, Campay), in full compliance with our <link>Privacy Policy</link>."
+          },
+          "q3": {
+            "q": "How do I permanently delete my account and data?",
+            "aText": "You can permanently delete your account anytime from your profile settings or by following the steps on our Data Deletion page. Your personal details, private files, and histories are permanently purged.",
+            "a": "You can permanently delete your account anytime from your profile settings or by following the instructions on our <link>Data Deletion</link> page. Your personal information, private documents, and histories are then purged from our systems."
+          }
+        }
+      },
+      "assistance": {
+        "shortLabel": "Support",
+        "title": "Roadmap & Support",
+        "items": {
+          "q1": {
+            "q": "What new features are coming soon to CampusSphere?",
+            "aText": "We are progressively preparing the Student Marketplace (academic gear exchange), the native mobile app, and a mentorship & opportunities hub to support your journey even further.",
+            "a": "We are progressively preparing the Student Marketplace (exchanging academic equipment), the native mobile app, and a mentorship & opportunities space to support your student journey even further."
+          },
+          "q2": {
+            "q": "Which email address should I contact?",
+            "aText": "For technical support, bugs, or Mobile Money payment issues: support@campussphere.app. For legal, privacy, or copyright matters: policies@campussphere.app. For campus partnerships, press, or general inquiries: contact@campussphere.app.",
+            "intro": "Depending on your request, you can write directly to the right team:",
+            "supportLabel": "Technical support & payments",
+            "policiesLabel": "Privacy, data & copyright",
+            "contactLabel": "Partnerships, clubs & general inquiries"
+          }
+        }
+      }
+    }
+  },
+  "impactScore": {
+    "meta": {
+      "title": "Impact Score: Scoring & Tiers | CampusSphere",
+      "description": "Discover how the CampusSphere Impact Score works: sharing resources (+5 pts), peer impact ratings (+1 to +5 pts), and 5 progression tiers.",
+      "ogTitle": "Impact Score — Scoring & Tiers | CampusSphere",
+      "ogDescription": "On CampusSphere, the Impact Score rewards the real usefulness of your shared materials and peer support on campus.",
+      "twitterTitle": "Impact Score — CampusSphere",
+      "twitterDescription": "Official scoring system, anti-spam rules, and 5 progression tiers for the CampusSphere Impact Score."
+    },
+    "hero": {
+      "titleLine1": "The Impact Score,",
+      "titleLine2": "the true measure of your peer support.",
+      "lede": "On CampusSphere, value isn’t measured by vanity likes or post volume. The Impact Score rewards what genuinely helps your classmates succeed.",
+      "ctaAuth": "Open my workspace",
+      "ctaGuest": "Join CampusSphere",
+      "ctaSecondary": "See the scoring",
+      "pillars": {
+        "p1": {
+          "num": "+5 POINTS",
+          "title": "Per shared resource",
+          "desc": "Every lecture note, solved tutorial, or past exam paper you share moves your score forward."
+        },
+        "p2": {
+          "num": "+1 TO +5 POINTS",
+          "title": "Peer impact rating",
+          "desc": "Classmates rate your post from 1 to 5 based on how much it actually helped them."
+        },
+        "p3": {
+          "num": "5 TIERS",
+          "title": "From Newcomer to Legend",
+          "desc": "Your profile tier evolves automatically as you contribute across the platform."
+        }
+      }
+    },
+    "rules": {
+      "ariaLabel": "Points breakdown",
+      "titleLine1": "How points",
+      "titleLine2": "are earned.",
+      "lede": "A simple, transparent, cheat-proof scoring model: only genuinely helpful contributions raise your score.",
+      "items": {
+        "r1": {
+          "title": "Sharing a study resource",
+          "points": "+5 pts",
+          "tag": "Automatic",
+          "desc": "Credited directly to your profile as soon as you share a useful document (revision sheet, lecture notes, solved tutorial, or past exam paper) in Resources or a Sphere."
+        },
+        "r2": {
+          "title": "Peer impact rating",
+          "points": "+1 to +5 pts",
+          "tag": "Peer vote",
+          "desc": "On every feed post, students can tap for +1 or press and hold to choose a rating from 1 to 5 depending on the real help provided."
+        },
+        "r3": {
+          "title": "Real-time recalculation",
+          "points": "Dynamic sync",
+          "tag": "Integrity",
+          "desc": "If a student adjusts their rating (for example from 5 to 2) or removes it, the difference updates immediately. Your total always reflects active votes."
+        }
+      }
+    },
+    "zeroRules": {
+      "title": "What intentionally earns 0 points",
+      "desc": "These actions are excluded from scoring to prioritize quality and prevent spam.",
+      "badge": "0 pt",
+      "items": {
+        "z1": {
+          "title": "Publishing a regular post",
+          "reason": "Rewards usefulness rather than posting volume to keep campus feeds free of spam."
+        },
+        "z2": {
+          "title": "Posting a comment",
+          "reason": "Prevents low-effort replies posted solely to inflate a score counter."
+        },
+        "z3": {
+          "title": "Downloading a file",
+          "reason": "Only an explicit rating after reading confirms genuine academic quality."
+        },
+        "z4": {
+          "title": "Rating your own posts",
+          "reason": "Strictly disabled: only fellow students can raise your Impact Score."
+        }
+      }
+    },
+    "levels": {
+      "ariaLabel": "Progression tiers",
+      "titleLine1": "The 5 progression",
+      "titleLine2": "tiers.",
+      "lede": "Each milestone you cross automatically upgrades your status on your profile and highlights your contribution to fellow students.",
+      "step": "Tier 0{{num}}",
+      "fromPts": "From {{min}} pts",
+      "names": {
+        "l0": "Newcomer",
+        "l1": "Contributor",
+        "l2": "Campus Pillar",
+        "l3": "Campus Master",
+        "l4": "Campus Legend"
+      }
+    },
+    "future": {
+      "ariaLabel": "Upcoming point benefits",
+      "titleLine1": "Why build your score",
+      "titleLine2": "starting today?",
+      "lede": "The Impact Score won’t just stay a badge on your profile: practical utilities and exclusive perks are rolling out progressively on CampusSphere.",
+      "items": {
+        "f1": {
+          "title": "Perks & privileges",
+          "desc": "Unlock reserved opportunities, highlighted contributor badges, and exclusive access within your campus community."
+        },
+        "f2": {
+          "title": "Direct utility",
+          "desc": "Your accumulated points will become actively usable to boost your study tools, revision sessions, and interactions."
+        },
+        "f3": {
+          "title": "Get a head start",
+          "desc": "Every revision sheet shared and every impact rating earned today puts you ahead as soon as new rewards launch."
+        }
+      }
+    },
+    "faq": {
+      "ariaLabel": "Impact Score FAQ",
+      "titleLine1": "Frequently asked",
+      "titleLine2": "questions.",
+      "ledePrefix": "Everything you need to know about using the Impact Score day to day. Looking for more answers? Explore the",
+      "ledeLink": "full FAQ",
+      "items": {
+        "q1": {
+          "q": "How do I rate a post’s impact on the campus feed?",
+          "a": "Every post has a lightning button. A quick tap awards +1 impact point. Pressing and holding (or hovering on desktop) reveals a bar to pick an exact rating from 1 to 5."
+        },
+        "q2": {
+          "q": "Can my Impact Score go down?",
+          "a": "Your score never decays over time. It grows with every shared resource and every peer rating received. It can only decrease if a student lowers or removes their vote, or if a non-compliant document is removed."
+        },
+        "q3": {
+          "q": "How does the Impact Score affect the campus feed?",
+          "a": "CampusSphere naturally highlights posts that help the community most. Quality notes, summary sheets, and useful advice stay visible longer."
+        },
+        "q4": {
+          "q": "Will I be able to use my Impact Score points in concrete ways?",
+          "a": "Yes! Practical utilities and exclusive privileges for active contributors are in the works. Building your score now means enjoying them as soon as they launch."
+        },
+        "q5": {
+          "q": "Where can I see my tier and progress?",
+          "a": "Your Impact Score and progress bar toward the next tier appear right on your profile."
+        }
+      }
+    },
+    "cta": {
+      "ariaLabel": "Boost your Impact Score",
+      "titleLine1": "Grow your score",
+      "titleLine2": "this semester.",
+      "body": "Share your best study sheets, help your classmates, and build your student reputation on CampusSphere.",
+      "ctaAuth": "Share a resource",
+      "ctaGuest": "Create my account",
+      "ctaSecondary": "View FAQ"
+    }
+  },
+  "becomePartner": {
+    "meta": {
+      "title": "Become an Impact Partner | CampusSphere",
+      "description": "Join CampusSphere Impact Partners: publish opportunities, host campus events, and engage the student community.",
+      "ogTitle": "Become an Impact Partner — CampusSphere",
+      "ogDescription": "Companies, university clubs, associations, and institutions: become an official partner on CampusSphere."
+    },
+    "hero": {
+      "titleLine1": "Become an Impact Partner",
+      "titleLine2": "at the heart of campuses.",
+      "lede": "Companies, student clubs, associations, and institutions: bring visibility to your opportunities, conferences, and initiatives directly within the CampusSphere community.",
+      "ctaPrimary": "Submit an application",
+      "ctaSecondary": "Discover CampusSphere",
+      "pillars": {
+        "p1": {
+          "num": "01",
+          "title": "Targeted student audience",
+          "desc": "Reach the exact majors and cohorts that match your initiatives."
+        },
+        "p2": {
+          "num": "02",
+          "title": "Events, talks & internships",
+          "desc": "Promote your meetups, workshops, campus days, and recruitment offers."
+        },
+        "p3": {
+          "num": "03",
+          "title": "Fast 48h review",
+          "desc": "Every Impact Partner account is manually verified by our team."
+        }
+      }
+    },
+    "benefits": {
+      "b1": {
+        "title": "Targeted student audience",
+        "desc": "Students can follow your official page. Your announcements, internship offers, and news appear directly in their campus feed."
+      },
+      "b2": {
+        "title": "Events, talks & internships",
+        "desc": "Highlight your conferences, open days, workshops, recruitment sessions, or campus highlights to the right faculties."
+      },
+      "b3": {
+        "title": "Verified badge & dedicated Spheres",
+        "desc": "Receive a verified Impact Partner account and run official Spheres to build a lasting student community."
+      }
+    },
+    "form": {
+      "sectionAria": "Impact Partner application",
+      "titleStart": "Application",
+      "titleHighlight": "form.",
+      "subtitle": "Manual review by the CampusSphere team within 48 business hours before activating your partner space.",
+      "orgNameLabel": "Organization name *",
+      "orgNamePlaceholder": "E.g. Tech Solutions, Computer Science Club, Association...",
+      "orgTypeLabel": "Organization type *",
+      "orgTypePlaceholder": "Select a type",
+      "orgTypes": {
+        "entreprise": "Company",
+        "club": "University / student club",
+        "association": "Association",
+        "institution": "Institution / School"
+      },
+      "emailLabel": "Official email *",
+      "emailPlaceholder": "contact@organization.com",
+      "descLabel": "Overview & goals",
+      "descPlaceholder": "Briefly describe your activities and what you would like to offer students (internships, conferences, workshops, competitions...)",
+      "submit": "Submit my application",
+      "submitting": "Submitting...",
+      "sentTitle": "Application submitted!",
+      "sentDescPrefix": "Thank you for your interest. The CampusSphere team is reviewing your request and will get back to you within 48 hours at",
+      "sentDescSuffix": "to activate your access.",
+      "backHome": "Back to home",
+      "newApplication": "New application"
+    },
+    "toasts": {
+      "requiredTitle": "Required fields",
+      "requiredDesc": "Please provide at least your organization name and contact email.",
+      "sentTitle": "Application submitted!",
+      "sentDesc": "Our team received your application and will reach out within 48 hours.",
+      "errorTitle": "Error",
+      "errorDesc": "An error occurred while sending your application."
+    },
+    "cta": {
+      "ariaLabel": "Contact partnerships team",
+      "titleLine1": "A custom project",
+      "titleLine2": "with our campuses?",
+      "body": "Want to discuss an academic partnership, sponsorship, or dedicated event before submitting your form? Let’s talk directly.",
+      "ctaPrimary": "Contact us"
+    }
+  },
+  "campusUnlock": {
+    "meta": {
+      "title": "Unlock {{campus}} — CampusSphere",
+      "description": "Only {{remaining}} more sign-ups to unlock CampusSphere at {{campus}}. Share on WhatsApp and unlock your batch!"
+    },
+    "defaultCampusName": "Your institution",
+    "header": {
+      "statusOpen": "Campus open",
+      "statusPending": "Waiting to unlock",
+      "logout": "Log out",
+      "login": "Log in"
+    },
+    "switcher": {
+      "cancel": "Cancel",
+      "change": "Not your school? Switch campus",
+      "otherPlaceholder": "Full name of your institution *",
+      "confirm": "Confirm my institution"
+    },
+    "open": {
+      "title": "Your campus is officially open!",
+      "desc": "Your school passed the {{target}}-student milestone. You can now access the network, past exam papers, and Sphera AI.",
+      "cta": "Open my workspace"
+    },
+    "locked": {
+      "introPrefix": "To ensure lively exchanges and plenty of solved past exam papers in your major, we open CampusSphere as soon as",
+      "introBold": "{{target}} students",
+      "introSuffix": "from your school sign up.",
+      "registeredOf": "/ {{target}} signed up",
+      "remainingPrefix": "Only",
+      "remainingOne": "more sign-up to unlock your campus.",
+      "remainingOther": "more sign-ups to unlock your campus.",
+      "whatsappBtn": "Share on WhatsApp to unlock",
+      "whatsappHint": "Send this link to your class or department WhatsApp group.",
+      "inviteLinkAria": "Campus invite link",
+      "copied": "Copied",
+      "copy": "Copy",
+      "shareMessage": "🚨 Hey everyone, CampusSphere is coming to our campus ({{campus}})!\n\nWe need {{target}} sign-ups to unlock official access (solved past exam papers, Sphera AI for revision, and our batch spheres).\n\nSign up here so we can open our campus:\n{{url}}"
+    },
+    "alert": {
+      "title": "Get notified on WhatsApp as soon as it opens",
+      "desc": "Leave your WhatsApp number to get alerted the moment your campus hits {{target}} sign-ups.",
+      "phonePlaceholder": "E.g. 699404759",
+      "saving": "Saving...",
+      "saved": "Number saved",
+      "notifyMe": "Notify me",
+      "savedConfirm": "Number saved — you’ll receive a priority alert."
+    },
+    "perks": {
+      "heading": "What your campus unlocks at {{target}} sign-ups",
+      "p1Title": "Past exam papers & solutions",
+      "p1Desc": "Solved CA and final exam papers shared by fellow students and seniors.",
+      "p2Title": "Sphera AI",
+      "p2Desc": "Turn your notes into clear study sheets, quizzes, and flashcards before exams.",
+      "p3Title": "Batch Spheres",
+      "p3Desc": "Dedicated peer-help spaces for your major, group projects, and campus clubs."
+    },
+    "race": {
+      "title": "Campus unlock race",
+      "goal": "Goal: {{target}}",
+      "myCampus": "My campus",
+      "open": "Open"
+    },
+    "toasts": {
+      "copiedTitle": "Link copied!",
+      "copiedDesc": "Paste it directly in your class WhatsApp groups.",
+      "errorTitle": "Error",
+      "copyError": "Could not copy the link.",
+      "phoneRequiredTitle": "Number required",
+      "phoneRequiredDesc": "Please enter a valid WhatsApp number.",
+      "phoneSavedTitle": "Number saved",
+      "phoneSavedDesc": "You’ll receive a WhatsApp alert as soon as your campus reaches {{target}} sign-ups.",
+      "phoneError": "Could not save your number. Please try again shortly.",
+      "nameRequiredTitle": "Name required",
+      "nameRequiredDesc": "Please enter the full name of your institution.",
+      "updatedTitle": "Institution updated",
+      "updatedDesc": "Your campus has been updated.",
+      "updateError": "Update failed."
+    },
+    "footer": {
+      "rights": "© {{year}} CampusSphere. All rights reserved.",
+      "needHelp": "Need help? WhatsApp:"
+    }
+  }
+}

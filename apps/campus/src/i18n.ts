@@ -38,6 +38,12 @@ import connectionsEn from './locales/en/connections.json';
 import profileFr from './locales/fr/profile.json';
 import profileEn from './locales/en/profile.json';
 
+import publicFr from './locales/fr/public.json';
+import publicEn from './locales/en/public.json';
+
+import policiesFr from './locales/fr/policies.json';
+import policiesEn from './locales/en/policies.json';
+
 import { DEFAULT_LANGUAGE, STORAGE_KEY_LANGUAGE } from '@cs/i18n';
 
 export const resources = {
@@ -54,6 +60,8 @@ export const resources = {
     notifications: notificationsFr,
     connections: connectionsFr,
     profile: profileFr,
+    public: publicFr,
+    policies: policiesFr,
   },
   en: {
     common: commonEn,
@@ -68,6 +76,8 @@ export const resources = {
     notifications: notificationsEn,
     connections: connectionsEn,
     profile: profileEn,
+    public: publicEn,
+    policies: policiesEn,
   },
 } as const;
 
@@ -94,6 +104,8 @@ i18n
       'notifications',
       'connections',
       'profile',
+      'public',
+      'policies',
     ],
     ns: [
       'common',
@@ -108,6 +120,8 @@ i18n
       'notifications',
       'connections',
       'profile',
+      'public',
+      'policies',
     ],
     resources,
     detection: {

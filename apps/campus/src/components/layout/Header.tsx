@@ -1,39 +1,89 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ArrowUpRight } from '@phosphor-icons/react';
 import { PublicMenu } from './PublicMenu';
 import { LanguageSwitcher } from '@cs/i18n';
 import { useTranslation } from 'react-i18next';
 
 export function Header(): JSX.Element {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation('navigation');
 
+  const isLanding = location.pathname === '/' || location.pathname === '/cs';
+
+  const handleSectionLink = (sectionId: string, fallbackPath: string) => {
+    if (isLanding) {
+      const el = document.getElementById(sectionId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+    }
+    navigate(fallbackPath);
+  };
+
   return (
-    <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/60 transition-colors duration-200">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/cs-inc')}>
-          <img src="/CS.svg" alt="CampusSphere Logo" className="w-8 h-8 sm:w-10 sm:h-10" />
-          <span className="text-xl sm:text-2xl font-bold font-automata campus-gradient bg-clip-text text-transparent">
+    <header className="cs-pub-font sticky top-0 z-50 bg-[#09090b]/90 backdrop-blur-md border-b border-white/10 text-zinc-100">
+      <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+        <button
+          type="button"
+          onClick={() => navigate('/cs')}
+          className="flex items-center gap-2.5 cursor-pointer bg-transparent border-0 p-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ff9800]/60 rounded-lg"
+        >
+          <img src="/CS.svg" alt="CampusSphere Logo" className="w-8 h-8 sm:w-9 sm:h-9" />
+          <span className="text-lg sm:text-xl font-bold font-automata campus-gradient bg-clip-text text-transparent">
             CampusSphere
           </span>
-        </div>
+        </button>
 
-        <div className="hidden lg:flex items-center gap-5 font-nunito font-semibold">
-          <a href="/cs-inc/about" className="text-muted-foreground hover:text-foreground transition-colors">{t('about')}</a>
-          <a href="/cs-inc/contact" className="text-muted-foreground hover:text-foreground transition-colors">{t('contact')}</a>
-          <a href="/cs-inc/faq" className="text-muted-foreground hover:text-foreground transition-colors">{t('faq')}</a>
-          <a href="/cs-inc/policies" className="text-muted-foreground hover:text-foreground transition-colors">{t('policies')}</a>
-          
-          <div className="h-4 w-px bg-border/80" />
+        <nav
+          aria-label="Navigation principale"
+          className="hidden lg:flex items-center gap-7 font-nunito font-semibold text-sm"
+        >
+          <button
+            type="button"
+            onClick={() => handleSectionLink('produit', '/cs#produit')}
+            className="text-zinc-300 hover:text-white transition-colors bg-transparent border-0 p-0 cursor-pointer"
+          >
+            {t('features', { defaultValue: 'Fonctionnalités' })}
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSectionLink('sphera', '/sphera')}
+            className="text-zinc-300 hover:text-white transition-colors bg-transparent border-0 p-0 cursor-pointer"
+          >
+            Sphera
+          </button>
+          <a href="/cs/about" className="text-zinc-300 hover:text-white transition-colors">
+            {t('about', { defaultValue: 'À propos' })}
+          </a>
+          <a href="/cs/contact" className="text-zinc-300 hover:text-white transition-colors">
+            {t('contact', { defaultValue: 'Contact' })}
+          </a>
+          <a href="/cs/faq" className="text-zinc-300 hover:text-white transition-colors">
+            {t('faq', { defaultValue: 'FAQ' })}
+          </a>
+        </nav>
 
+        <div className="hidden lg:flex items-center gap-3">
           <LanguageSwitcher variant="minimal" />
 
-          <a href="/login" className="text-primary hover:text-foreground transition-colors">{t('login')}</a>
-          <button
-            onClick={() => navigate('/register')}
-            className="campus-gradient text-white hover:opacity-90 px-4 py-2 rounded-lg transition-all duration-300 font-poppins text-sm font-semibold"
+          <div className="h-4 w-px bg-white/15" />
+
+          <a
+            href="/login"
+            className="text-sm font-poppins font-semibold text-zinc-200 hover:text-white px-3 py-2 transition-colors"
           >
-            {t('joinCommunity')}
+            {t('login', { defaultValue: 'Connexion' })}
+          </a>
+          <button
+            type="button"
+            onClick={() => navigate('/register')}
+            className="inline-flex items-center gap-1.5 rounded-full bg-[#ff9800] hover:bg-[#f57c00] text-white px-5 py-2 font-poppins text-sm font-semibold shadow-[0_6px_18px_rgba(255,152,0,0.28)] transition-all duration-200 hover:-translate-y-0.5 cursor-pointer"
+          >
+            <span>{t('joinCommunity', { defaultValue: 'Rejoindre' })}</span>
+            <ArrowUpRight size={15} weight="duotone" aria-hidden="true" />
           </button>
         </div>
 
@@ -43,6 +93,6 @@ export function Header(): JSX.Element {
           <PublicMenu />
         </div>
       </div>
-    </nav>
+    </header>
   );
 }
