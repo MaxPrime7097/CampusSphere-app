@@ -38,12 +38,16 @@ export async function notifySphereMembersNewEvent(
       minute: "2-digit",
     });
 
+    const isExternal = event.eventMode === "EXTERNAL";
+
     await Promise.all(
       members.map((m) =>
         createNotification({
           type: NotificationType.NEW_EVENT,
           title: `Nouvel événement : ${event.title}`,
-          message: `${organizer.firstName || organizer.username} a publié un événement pour la sphère ${sphere?.name || ""}. Date : ${formattedDate}`,
+          message: isExternal
+            ? `${organizer.firstName || organizer.username} a partagé un événement dans la sphère ${sphere?.name || ""}. Date : ${formattedDate}`
+            : `${organizer.firstName || organizer.username} a publié un événement pour la sphère ${sphere?.name || ""}. Date : ${formattedDate}`,
           recipientId: m.userId,
           sender: organizer,
           data: {
@@ -71,6 +75,7 @@ export async function sendEventReminders(): Promise<number> {
   try {
     const upcomingEvents = await prisma.event.findMany({
       where: {
+        eventMode: "CAMPUS",
         startDate: {
           gte: startWindow,
           lte: endWindow,

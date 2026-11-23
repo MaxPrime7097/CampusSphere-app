@@ -222,6 +222,11 @@ enum EventCategory {
   OTHER
 }
 
+enum EventMode {
+  CAMPUS
+  EXTERNAL
+}
+
 enum EventAttendeeStatus {
   INTERESTED
   GOING
@@ -1178,10 +1183,12 @@ model Event {
 
   coverImage   String?       @map("cover_image")
   maxAttendees Int?          @map("max_attendees")
-  isPublic     Boolean       @default(true) @map("is_public")
-  isFeatured   Boolean       @default(false) @map("is_featured")
-  hasTicketing Boolean       @default(false) @map("has_ticketing")
-  registrationUrl String?    @map("registration_url")
+  isPublic        Boolean       @default(true) @map("is_public")
+  isFeatured      Boolean       @default(false) @map("is_featured")
+  eventMode       EventMode     @default(CAMPUS) @map("event_mode")
+  organizerName   String?       @map("organizer_name")
+  hasTicketing    Boolean       @default(false) @map("has_ticketing")
+  registrationUrl String?       @map("registration_url")
 
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
@@ -1192,6 +1199,7 @@ model Event {
 
   @@index([startDate])
   @@index([category])
+  @@index([eventMode])
   @@index([sphereId])
   @@index([organizerId])
   @@map("events")
