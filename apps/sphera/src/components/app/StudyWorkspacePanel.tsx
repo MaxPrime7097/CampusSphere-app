@@ -58,6 +58,7 @@ import { usePodcastPlayer, podcastStore } from '../../utils/podcastPlayerStore'
 import { GenerateScopeModal } from './GenerateScopeModal'
 import { detectChaptersFromText, type DetectedChapter } from '../../utils/extractChapters'
 import type { WorkspaceSlots } from './workspaceSlots'
+import { SpheraDrawerHandle } from '../shared/SpheraDrawerModal'
 
 export interface ActiveWorkspaceView {
   type: 'fiche' | 'quiz' | 'flashcards' | 'mindmap' | 'audio' | 'note' | 'annale' | 'chapitres' | 'chat'
@@ -600,6 +601,39 @@ export function StudyWorkspacePanel({
 
   const isToolView = activeView !== null && activeView.type !== 'chat'
 
+  const readToolProgress = (
+    toolType: 'quiz' | 'flashcards',
+    artefactId?: number | string,
+    fallbackTotal?: number
+  ): { current: number; total: number } | null => {
+    try {
+      const prefix = toolType === 'quiz' ? 'sphera_quiz_prog' : 'sphera_fc_prog'
+      const raw = localStorage.getItem(`${prefix}_${sessionId || 'local'}_${artefactId || 'main'}`)
+      if (!raw) return null
+      const parsed = JSON.parse(raw)
+      if (typeof parsed.currentIndex === 'number' && parsed.currentIndex > 0) {
+        const total = typeof parsed.total === 'number' && parsed.total > 0 ? parsed.total : (fallbackTotal || 0)
+        if (total > 0 && parsed.currentIndex >= total) return null
+        return { current: parsed.currentIndex, total }
+      }
+    } catch {}
+    return null
+  }
+
+  const handleReturnToDashboard = () => {
+    if (activeView && (activeView.type === 'quiz' || activeView.type === 'flashcards')) {
+      const prog = readToolProgress(activeView.type, activeView.artefactId)
+      if (prog) {
+        const label =
+          activeView.type === 'quiz'
+            ? `Progression sauvegardée (Q${prog.current + 1}${prog.total ? `/${prog.total}` : ''})`
+            : `Progression sauvegardée (Carte ${prog.current + 1}${prog.total ? `/${prog.total}` : ''})`
+        showPanelFeedback(label, 'info', 2400)
+      }
+    }
+    setActiveView(null)
+  }
+
   const handleSaveInlineNote = async (title: string, text: string) => {
     if (onCreateNoteWithContent) {
       await onCreateNoteWithContent(title, text)
@@ -659,7 +693,7 @@ export function StudyWorkspacePanel({
           ) : (
             <button
               type="button"
-              onClick={() => setActiveView(null)}
+              onClick={handleReturnToDashboard}
               className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-medium text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors cursor-pointer shrink-0"
               title="Retour au tableau de bord"
             >
@@ -1251,12 +1285,27 @@ export function StudyWorkspacePanel({
                     default: return null
                   }
                 }
+                const fallbackTotal =
+                  tool === 'quiz'
+                    ? (Array.isArray(sessionContent?.quiz?.questions) ? sessionContent.quiz.questions.length : 0)
+                    : tool === 'flashcards'
+                      ? (Array.isArray(sessionContent?.flashcards?.cartes) ? sessionContent.flashcards.cartes.length : 0)
+                      : 0
+                const toolProg =
+                  tool === 'quiz' || tool === 'flashcards'
+                    ? readToolProgress(tool, undefined, fallbackTotal)
+                    : null
+                const progPct =
+                  toolProg && toolProg.total > 0
+                    ? Math.min(100, Math.round((toolProg.current / toolProg.total) * 100))
+                    : 0
+
                 return (
                   <button
                     key={tool}
                     type="button"
                     onClick={() => setActiveView({ type: tool, title: TOOL_META[tool].label })}
-                    className="flex items-center gap-3 p-3 rounded-xl border border-sphera-border bg-sphera-surface-2/60 hover:bg-sphera-surface-2 transition-all text-left w-full group mb-2"
+                    className="flex items-center gap-3 p-3 rounded-xl border border-sphera-border bg-sphera-surface-2/60 hover:bg-sphera-surface-2 transition-all text-left w-full group mb-2 cursor-pointer"
                   >
                     <div 
                       className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border"
@@ -1265,9 +1314,21 @@ export function StudyWorkspacePanel({
                       {getToolIcon()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className="text-sm font-semibold text-white">{TOOL_META[tool].label}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-white truncate">{TOOL_META[tool].label}</span>
+                        {toolProg && (
+                          <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-sphera-green/15 text-sphera-green border border-sphera-green/30 shrink-0">
+                            En cours • {toolProg.current}{toolProg.total ? `/${toolProg.total}` : ''}
+                          </span>
+                        )}
+                      </div>
+                      {toolProg && toolProg.total > 0 && (
+                        <div className="mt-1.5 h-1 w-full max-w-[160px] bg-sphera-bg rounded-full overflow-hidden">
+                          <div className="h-full bg-sphera-green rounded-full transition-all" style={{ width: `${progPct}%` }} />
+                        </div>
+                      )}
                     </div>
-                    <CaretRight className="w-4 h-4 text-sphera-text-muted group-hover:text-white transition-colors" />
+                    <CaretRight className="w-4 h-4 text-sphera-text-muted group-hover:text-white transition-colors shrink-0" />
                   </button>
                 )
               })}
@@ -1405,14 +1466,44 @@ export function StudyWorkspacePanel({
                                 className="w-full text-xs bg-sphera-surface border border-sphera-green rounded px-2 py-1 text-white focus:outline-none"
                               />
                             ) : (
-                              <>
-                                <p className="text-xs sm:text-sm font-semibold text-white truncate">
-                                  {art.title}
-                                </p>
-                                <p className="text-[11px] text-sphera-text-muted truncate mt-0.5">
-                                  {art.subtitle || (art.targetChapter ? `Chapitre: ${art.targetChapter}` : 'Généré par Sphera')}
-                                </p>
-                              </>
+                              (() => {
+                                const artFallbackTotal =
+                                  art.type === 'quiz'
+                                    ? (Array.isArray(art.content?.questions) ? art.content.questions.length : 0)
+                                    : art.type === 'flashcards'
+                                      ? (Array.isArray(art.content?.cartes) ? art.content.cartes.length : 0)
+                                      : 0
+                                const artProg =
+                                  art.type === 'quiz' || art.type === 'flashcards'
+                                    ? readToolProgress(art.type, art.id, artFallbackTotal)
+                                    : null
+                                const artProgPct =
+                                  artProg && artProg.total > 0
+                                    ? Math.min(100, Math.round((artProg.current / artProg.total) * 100))
+                                    : 0
+                                return (
+                                  <>
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <p className="text-xs sm:text-sm font-semibold text-white truncate">
+                                        {art.title}
+                                      </p>
+                                      {artProg && (
+                                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-sphera-green/15 text-sphera-green border border-sphera-green/30 shrink-0">
+                                          En cours • {artProg.current}{artProg.total ? `/${artProg.total}` : ''}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[11px] text-sphera-text-muted truncate mt-0.5">
+                                      {art.subtitle || (art.targetChapter ? `Chapitre: ${art.targetChapter}` : 'Généré par Sphera')}
+                                    </p>
+                                    {artProg && artProg.total > 0 && (
+                                      <div className="mt-1.5 h-1 w-full max-w-[160px] bg-sphera-bg rounded-full overflow-hidden">
+                                        <div className="h-full bg-sphera-green rounded-full transition-all" style={{ width: `${artProgPct}%` }} />
+                                      </div>
+                                    )}
+                                  </>
+                                )
+                              })()
                             )}
                           </div>
                         </div>
@@ -1930,50 +2021,59 @@ export function StudyWorkspacePanel({
       </div>
       )}
 
-      {/* New thread modal */}
+      {/* New thread modal (Bottom-sheet drawer on mobile, centered on desktop) */}
       {showNewThreadModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-sphera-border bg-sphera-surface-2 p-5 shadow-2xl space-y-4">
-            <div className="flex items-center gap-2">
-              <ChatCircle weight="duotone" className="w-5 h-5 text-sphera-green" />
-              <h3 className="text-sm font-semibold text-white">Nouveau sujet de discussion</h3>
-            </div>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                if (newThreadTitle.trim()) {
-                  onCreateThread(newThreadTitle.trim())
-                  setNewThreadTitle('')
-                  setShowNewThreadModal(false)
-                }
-              }}
-              className="space-y-3"
-            >
-              <input
-                type="text"
-                value={newThreadTitle}
-                onChange={(e) => setNewThreadTitle(e.target.value)}
-                placeholder="Ex: Questions Chapitre 1, Formules..."
-                autoFocus
-                className="w-full px-3 py-2 text-xs rounded-xl border border-sphera-border bg-sphera-surface text-white placeholder:text-sphera-text-muted focus:outline-none focus:border-sphera-green"
-              />
-              <div className="flex items-center justify-end gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setShowNewThreadModal(false)}
-                  className="px-3 py-1.5 rounded-lg text-sphera-text-muted hover:text-white transition-colors"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  disabled={!newThreadTitle.trim()}
-                  className="px-3 py-1.5 rounded-lg bg-sphera-green text-black font-semibold hover:bg-green-400 disabled:opacity-50 transition-colors"
-                >
-                  Créer
-                </button>
+        <div
+          onClick={() => setShowNewThreadModal(false)}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center sm:p-4 animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl border border-sphera-border max-sm:border-x-0 max-sm:border-b-0 bg-sphera-surface-2 shadow-2xl overflow-hidden max-sm:pb-[env(safe-area-inset-bottom,0px)] max-sm:animate-in max-sm:slide-in-from-bottom sm:animate-in sm:zoom-in-95 duration-200"
+          >
+            <SpheraDrawerHandle />
+            <div className="p-5 pt-2 sm:pt-5 space-y-4">
+              <div className="flex items-center gap-2">
+                <ChatCircle weight="duotone" className="w-5 h-5 text-sphera-green" />
+                <h3 className="text-sm font-semibold text-white">Nouveau sujet de discussion</h3>
               </div>
-            </form>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (newThreadTitle.trim()) {
+                    onCreateThread(newThreadTitle.trim())
+                    setNewThreadTitle('')
+                    setShowNewThreadModal(false)
+                  }
+                }}
+                className="space-y-3"
+              >
+                <input
+                  type="text"
+                  value={newThreadTitle}
+                  onChange={(e) => setNewThreadTitle(e.target.value)}
+                  placeholder="Ex: Questions Chapitre 1, Formules..."
+                  autoFocus
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-sphera-border bg-sphera-surface text-white placeholder:text-sphera-text-muted focus:outline-none focus:border-sphera-green"
+                />
+                <div className="flex items-center justify-end gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setShowNewThreadModal(false)}
+                    className="px-3 py-1.5 rounded-lg text-sphera-text-muted hover:text-white transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!newThreadTitle.trim()}
+                    className="px-3 py-1.5 rounded-lg bg-sphera-green text-black font-semibold hover:bg-green-400 disabled:opacity-50 transition-colors"
+                  >
+                    Créer
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

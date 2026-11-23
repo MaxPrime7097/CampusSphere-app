@@ -17,6 +17,7 @@ import {
 import { applyTheme, getSavedTheme, type SpheraTheme } from '../../utils/theme'
 import { formatStudyYear, formatFaculty, formatUniversity } from '../../utils/profileMetadata'
 import { ActivityStreakGrid } from './ActivityStreakGrid'
+import { SPHERA_DRAWER_MODAL_BASE, SpheraDrawerHandle } from '../shared/SpheraDrawerModal'
 
 interface SpheraSettingsModalProps {
   isOpen: boolean
@@ -146,7 +147,8 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 transition-opacity animate-in fade-in duration-200" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-[92vh] md:h-[82vh] max-h-[760px] bg-sphera-surface border border-sphera-border rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col md:flex-row animate-in fade-in zoom-in-95 duration-200">
+        <Dialog.Content className={`${SPHERA_DRAWER_MODAL_BASE} bg-sphera-surface sm:max-w-4xl max-sm:h-[90dvh] sm:h-[85vh] md:h-[82vh] sm:max-h-[760px] md:flex-row`}>
+          <SpheraDrawerHandle className="bg-sphera-surface-2" />
           {/* ── DESKTOP SIDEBAR (md+) ── */}
           <div className="hidden md:flex md:w-64 flex-col border-r border-sphera-border bg-sphera-surface-2 shrink-0 p-4 justify-between select-none">
             <div className="space-y-4">

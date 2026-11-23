@@ -2,6 +2,7 @@ import React from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X, Warning as AlertTriangle, StopCircle } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next';
+import { SPHERA_DRAWER_MODAL_BASE, SpheraDrawerHandle } from '../shared/SpheraDrawerModal';
 
 export interface ConfirmationModalProps {
   isOpen: boolean;
@@ -50,7 +51,9 @@ export function ConfirmationModal({
     <Dialog.Root open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 animate-in fade-in duration-200" />
-        <Dialog.Content className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-sphera-surface-2 border ${colorClasses.border} rounded-2xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 p-6 flex flex-col gap-4 text-white`}>
+        <Dialog.Content className={`${SPHERA_DRAWER_MODAL_BASE} sm:max-w-sm ${colorClasses.border} text-white`}>
+          <SpheraDrawerHandle />
+          <div className="p-5 sm:p-6 pt-2 sm:pt-6 flex flex-col gap-4 overflow-y-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-full ${colorClasses.iconBg} flex items-center justify-center shrink-0`}>
@@ -58,7 +61,7 @@ export function ConfirmationModal({
               </div>
               <Dialog.Title className="text-base sm:text-lg font-semibold">{title}</Dialog.Title>
             </div>
-            <Dialog.Close className="text-sphera-text-muted hover:text-white transition-colors bg-sphera-surface hover:bg-sphera-border p-1.5 rounded-full">
+            <Dialog.Close className="hidden sm:flex text-sphera-text-muted hover:text-white transition-colors bg-sphera-surface hover:bg-sphera-border p-1.5 rounded-full">
               <X className="w-4 h-4" />
             </Dialog.Close>
           </div>
@@ -85,6 +88,7 @@ export function ConfirmationModal({
             >
               {confirmLabel || t('common.confirm', 'Confirmer')}
             </button>
+          </div>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

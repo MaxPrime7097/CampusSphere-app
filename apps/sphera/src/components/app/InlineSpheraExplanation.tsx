@@ -4,6 +4,15 @@ import { streamAskQuestion } from '../../services/spheraApi'
 import { MarkdownRenderer } from './MarkdownRenderer'
 import { normalizeAiResponse } from '../../utils/normalizeAiResponse'
 
+export function stripSuggestionsBlock(raw: string): string {
+  if (!raw) return ''
+  // Remove complete [SUGGESTIONS]...[/SUGGESTIONS] block
+  let cleaned = raw.replace(/\[SUGGESTIONS\][\s\S]*?(?:\[\/SUGGESTIONS\]|$)/gi, '')
+  // Also trim any partial opening tag being streamed at the very end (e.g. "[SUG", "[SUGGEST")
+  cleaned = cleaned.replace(/\[(?:S(?:U(?:G(?:G(?:E(?:S(?:T(?:I(?:O(?:N(?:S)?)?)?)?)?)?)?)?)?)?)?$/i, '')
+  return cleaned.trimEnd()
+}
+
 export interface InlineAskEntry {
   prompt: string
   answer: string
@@ -88,12 +97,13 @@ export function useInlineSpheraAsk({
           sessionType,
           (token) => {
             streamedText += token
+            const cleanStream = stripSuggestionsBlock(streamedText)
             setEntries((prev) => {
               const cur = prev[key]
               if (!cur) return prev
               return {
                 ...prev,
-                [key]: { ...cur, answer: streamedText, isStreaming: true, error: null },
+                [key]: { ...cur, answer: cleanStream, isStreaming: true, error: null },
               }
             })
           },
@@ -101,7 +111,7 @@ export function useInlineSpheraAsk({
           { ephemeral: true }
         )
 
-        const finalAnswer = normalizeAiResponse(streamedText || res?.fullText || '')
+        const finalAnswer = stripSuggestionsBlock(normalizeAiResponse(streamedText || res?.fullText || ''))
         setEntries((prev) => {
           const cur = prev[key]
           if (!cur) return prev

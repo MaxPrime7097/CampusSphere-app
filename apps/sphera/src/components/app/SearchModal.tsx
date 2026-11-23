@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { MagnifyingGlass as Search, X, FileText, Brain as BrainCircuit, NotePencil as FilePenLine, Lightning as Zap, Calendar, ArrowRight, Stack as SquareStack, ChatCircle } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next'
 import { encodeHashId } from '../../lib/hashids'
+import { SPHERA_DRAWER_MODAL_BASE, SpheraDrawerHandle } from '../shared/SpheraDrawerModal'
 
 interface SearchModalProps {
   isOpen: boolean
@@ -74,7 +75,8 @@ export function SearchModal({ isOpen, onClose, items }: SearchModalProps) {
     <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 animate-in fade-in duration-200" />
-        <Dialog.Content className="fixed top-20 sm:top-28 left-1/2 -translate-x-1/2 w-[92vw] max-w-2xl bg-sphera-surface-2 border border-sphera-border rounded-2xl shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden flex flex-col max-h-[75vh]">
+        <Dialog.Content className={`${SPHERA_DRAWER_MODAL_BASE} sm:top-28 sm:translate-y-0 sm:w-[92vw] sm:max-w-2xl sm:max-h-[75vh] max-sm:h-[85dvh]`}>
+          <SpheraDrawerHandle className="bg-sphera-surface" />
           {/* Search Header Bar */}
           <div className="flex items-center gap-3 px-4 py-3.5 border-b border-sphera-border bg-sphera-surface">
             <Search className="w-5 h-5 text-sphera-text-muted shrink-0" />
