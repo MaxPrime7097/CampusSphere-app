@@ -11,6 +11,7 @@ import {
   Sparkle,
 } from '@phosphor-icons/react'
 import type { DetectedChapter } from '../../utils/extractChapters'
+import { SpheraDrawerHandle } from '../shared/SpheraDrawerModal'
 
 interface GenerateScopeModalProps {
   isOpen: boolean
@@ -69,11 +70,15 @@ export function GenerateScopeModal({
   const hasChapters = chapters && chapters.length > 0
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+    >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg bg-sphera-surface-2 border border-sphera-border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200"
+        className="w-full sm:max-w-lg bg-sphera-surface-2 border border-sphera-border max-sm:border-x-0 max-sm:border-b-0 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90dvh] sm:max-h-[90vh] max-sm:pb-[env(safe-area-inset-bottom,0px)] max-sm:animate-in max-sm:slide-in-from-bottom sm:animate-in sm:zoom-in-95 duration-200"
       >
+        <SpheraDrawerHandle className="bg-sphera-surface" />
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-sphera-border bg-sphera-surface">
           <div className="flex items-center gap-2.5">
