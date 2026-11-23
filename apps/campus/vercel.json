@@ -34,6 +34,18 @@
       ]
     }
   ],
+  "redirects": [
+    {
+      "source": "/cs-inc",
+      "destination": "/cs",
+      "permanent": true
+    },
+    {
+      "source": "/cs-inc/:path*",
+      "destination": "/cs/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",

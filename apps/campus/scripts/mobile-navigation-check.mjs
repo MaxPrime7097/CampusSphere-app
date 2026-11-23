@@ -16,7 +16,7 @@ const missingRequired = requiredMobileRoutes.filter((route) => !mobileRouteLiter
 const missingInApp = requiredMobileRoutes.filter((route) => !appRoutes.includes(route));
 
 const hasRoleGating = navConfigFile.includes("isAdminUser") && navConfigFile.includes("...adminEntry");
-const hasAdminRoute = appRoutes.includes("/cs-inc/private/admin");
+const hasAdminRoute = appRoutes.includes("/cs/private/admin");
 
 if (missingRequired.length > 0) {
   console.error(`Missing required mobile routes in navigation config: ${missingRequired.join(", ")}`);
