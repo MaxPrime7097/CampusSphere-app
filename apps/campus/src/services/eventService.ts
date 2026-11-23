@@ -79,6 +79,9 @@ export async function getEvents(filters?: EventFilters): Promise<Event[]> {
   if (filters?.category && filters.category !== "all") {
     params.append("category", filters.category);
   }
+  if (filters?.mode && filters.mode !== "all") {
+    params.append("mode", filters.mode);
+  }
   if (filters?.upcoming) {
     params.append("upcoming", "true");
   }
@@ -134,10 +137,24 @@ export async function createEvent(input: CreateEventInput): Promise<Event> {
 }
 
 export async function updateEvent(id: string | number, input: UpdateEventInput): Promise<Event> {
-  let coverImageUrl = typeof input.coverImage === "string" ? input.coverImage : undefined;
+  let coverImageUrl = typeof input.coverImage === "string" ? input.coverImage : input.coverImage === null ? null : undefined;
 
   if (input.coverImage instanceof File) {
-    coverImageUrl = URL.createObjectURL(input.coverImage);
+    try {
+      const formData = new FormData();
+      formData.append("file", input.coverImage);
+      formData.append("type", "cover");
+      const uploadRes = await apiFetch<{ url?: string; file_url?: string; file?: string }>("api/upload/", {
+        method: "POST",
+        body: formData,
+      });
+      const returnedUrl = uploadRes?.url || uploadRes?.file_url || uploadRes?.file;
+      if (returnedUrl) {
+        coverImageUrl = returnedUrl;
+      }
+    } catch {
+      coverImageUrl = URL.createObjectURL(input.coverImage);
+    }
   }
 
   const payload = {

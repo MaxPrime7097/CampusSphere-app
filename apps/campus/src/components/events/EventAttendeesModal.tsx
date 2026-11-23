@@ -24,6 +24,7 @@ interface EventAttendeesModalProps {
   eventTitle: string;
   eventId?: string | number;
   isOrganizer?: boolean;
+  hasTicketing?: boolean;
   onOpenScanner?: () => void;
   onAttendeeUpdated?: (updated: EventAttendee) => void;
 }
@@ -46,6 +47,7 @@ export function EventAttendeesModal({
   eventTitle,
   eventId,
   isOrganizer = false,
+  hasTicketing = false,
   onOpenScanner,
   onAttendeeUpdated,
 }: EventAttendeesModalProps) {
@@ -151,7 +153,7 @@ export function EventAttendeesModal({
             </DialogTitle>
 
             <div className="flex items-center gap-2">
-              {isOrganizer && onOpenScanner && (
+              {isOrganizer && hasTicketing && onOpenScanner && (
                 <Button
                   size="sm"
                   variant="outline"
@@ -182,50 +184,52 @@ export function EventAttendeesModal({
 
         {/* Tabs & Search */}
         <div className="space-y-3 shrink-0">
-          {/* Segmented Control Navigation */}
-          <div className="grid grid-cols-3 p-1 rounded-xl bg-muted/60 border border-border/50 text-xs">
-            <button
-              type="button"
-              onClick={() => setActiveTab("all")}
-              className={cn(
-                "flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all text-xs cursor-pointer",
-                activeTab === "all"
-                  ? "bg-background text-foreground font-semibold shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <span>{t("attendeesModal.tabs.all")}</span>
-              <span className="text-[11px] opacity-70">({totalRegistered})</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("going")}
-              className={cn(
-                "flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all text-xs cursor-pointer",
-                activeTab === "going"
-                  ? "bg-background text-foreground font-semibold shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Check className="h-3 w-3 text-muted-foreground shrink-0" />
-              <span className="truncate">{t("attendeesModal.tabs.going")}</span>
-              <span className="text-[11px] opacity-70">({goingAttendees.length})</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("attended")}
-              className={cn(
-                "flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all text-xs cursor-pointer",
-                activeTab === "attended"
-                  ? "bg-background text-foreground font-semibold shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
-              <span className="truncate">{t("attendeesModal.tabs.attended")}</span>
-              <span className="text-[11px] opacity-70">({attendedAttendees.length})</span>
-            </button>
-          </div>
+          {/* Segmented Control Navigation (only shown when ticketing/check-in is enabled) */}
+          {hasTicketing && (
+            <div className="grid grid-cols-3 p-1 rounded-xl bg-muted/60 border border-border/50 text-xs">
+              <button
+                type="button"
+                onClick={() => setActiveTab("all")}
+                className={cn(
+                  "flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all text-xs cursor-pointer",
+                  activeTab === "all"
+                    ? "bg-background text-foreground font-semibold shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <span>{t("attendeesModal.tabs.all")}</span>
+                <span className="text-[11px] opacity-70">({totalRegistered})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("going")}
+                className={cn(
+                  "flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all text-xs cursor-pointer",
+                  activeTab === "going"
+                    ? "bg-background text-foreground font-semibold shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Check className="h-3 w-3 text-muted-foreground shrink-0" />
+                <span className="truncate">{t("attendeesModal.tabs.going")}</span>
+                <span className="text-[11px] opacity-70">({goingAttendees.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("attended")}
+                className={cn(
+                  "flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all text-xs cursor-pointer",
+                  activeTab === "attended"
+                    ? "bg-background text-foreground font-semibold shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                <span className="truncate">{t("attendeesModal.tabs.attended")}</span>
+                <span className="text-[11px] opacity-70">({attendedAttendees.length})</span>
+              </button>
+            </div>
+          )}
 
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -291,7 +295,7 @@ export function EventAttendeesModal({
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    {isChecked ? (
+                    {hasTicketing && isChecked ? (
                       <Badge
                         variant="secondary"
                         className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px] font-bold"
@@ -307,7 +311,7 @@ export function EventAttendeesModal({
                         >
                           {t("attendeesModal.tabs.going")}
                         </Badge>
-                        {isOrganizer && (
+                        {isOrganizer && hasTicketing && (
                           <Button
                             size="sm"
                             variant="outline"

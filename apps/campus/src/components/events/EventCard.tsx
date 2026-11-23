@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Calendar, Clock, MapPin, Globe, UsersThree as Users, Check, ShareNetwork as Share2, Sparkle as Sparkles, Trophy, Code, Microphone as Mic, BookOpen, Compass } from "@phosphor-icons/react";
+import { Calendar, Clock, MapPin, Globe, UsersThree as Users, Check, ShareNetwork as Share2, Sparkle as Sparkles, Trophy, Code, Microphone as Mic, BookOpen, Compass, ArrowSquareOut, Buildings } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getEventCategoryMeta } from "@/constants/eventCategories";
@@ -26,6 +26,15 @@ const CategoryIconMap: Record<string, any> = {
   other: Compass,
 };
 
+function getDomainLabel(url?: string | null): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
 export function EventCard({ event, onStatusChange, onShare, className = "" }: EventCardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -34,6 +43,8 @@ export function EventCard({ event, onStatusChange, onShare, className = "" }: Ev
   const [localStatus, setLocalStatus] = useState<AttendeeStatus | null>(event.userStatus || null);
   const [attendeesCount, setAttendeesCount] = useState<number>(Number(event.attendeesCount || 0));
 
+  const isExternal = event.eventMode === "external";
+  const externalDomain = getDomainLabel(event.registrationUrl);
   const meta = getEventCategoryMeta(event.category);
   const dateLocale = i18n.language === "en" ? "en-US" : "fr-FR";
   const startDate = new Date(event.startDate);
@@ -120,12 +131,12 @@ export function EventCard({ event, onStatusChange, onShare, className = "" }: Ev
           <Badge variant="muted" size="sm" className="text-[10px] font-normal py-0">
             {categoryLabel}
           </Badge>
-          {event.registrationUrl && (
-            <Badge variant="outline" size="sm" className="text-[10px] font-normal py-0 border-primary/30 text-primary">
+          {isExternal && (
+            <Badge variant="outline" size="sm" className="text-[10px] font-medium py-0 border-primary/30 text-primary">
               {t("card.external")}
             </Badge>
           )}
-          {localStatus === "going" && (
+          {!isExternal && localStatus === "going" && (
             <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
               <Check className="h-3 w-3" /> {t("card.registered")}
             </span>
@@ -142,11 +153,25 @@ export function EventCard({ event, onStatusChange, onShare, className = "" }: Ev
             {event.isOnline ? <Globe className="h-3 w-3 text-sky-500" /> : <MapPin className="h-3 w-3" />}
             {event.isOnline ? t("page.online") : event.location || t("page.campus")}
           </span>
-          <span>·</span>
-          <span className="flex items-center gap-1">
-            <Users className="h-3 w-3" />
-            {attendeesCount}
-          </span>
+          {isExternal ? (
+            (event.organizerName || externalDomain) && (
+              <>
+                <span>·</span>
+                <span className="flex items-center gap-1 truncate max-w-[160px]">
+                  <Buildings className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{event.organizerName || externalDomain}</span>
+                </span>
+              </>
+            )
+          ) : (
+            <>
+              <span>·</span>
+              <span className="flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                {attendeesCount}
+              </span>
+            </>
+          )}
         </div>
       </div>
 
@@ -164,6 +189,29 @@ export function EventCard({ event, onStatusChange, onShare, className = "" }: Ev
 
         {isPast ? (
           <span className="text-xs text-muted-foreground italic px-2">{t("card.finished")}</span>
+        ) : isExternal ? (
+          event.registrationUrl ? (
+            <Button
+              size="sm"
+              asChild
+              variant="secondary"
+              className="h-8 px-2.5 text-xs bg-secondary hover:bg-muted text-secondary-foreground border border-border/60 font-medium gap-1"
+            >
+              <a href={event.registrationUrl} target="_blank" rel="noopener noreferrer">
+                <span>{t("card.registerExternalShort")}</span>
+                <ArrowSquareOut className="h-3.5 w-3.5" />
+              </a>
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="secondary"
+              className="h-8 px-2.5 text-xs bg-secondary hover:bg-muted text-secondary-foreground border border-border/60 font-normal"
+              onClick={() => navigate(getEventUrl(event))}
+            >
+              {t("card.viewDetails")}
+            </Button>
+          )
         ) : localStatus === "going" || localStatus === "attended" ? (
           <Button
             variant="outline"

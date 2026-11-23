@@ -6,6 +6,8 @@ export type EventCategory =
   | "workshop"
   | "other";
 
+export type EventMode = "campus" | "external";
+
 export type AttendeeStatus = "interested" | "going" | "attended";
 
 export interface EventOrganizer {
@@ -35,6 +37,8 @@ export interface Event {
   title: string;
   description?: string;
   category: EventCategory;
+  eventMode?: EventMode;
+  organizerName?: string | null;
   organizer: EventOrganizer;
   sphere?: EventSphere | null;
   sphereId?: string | number | null;
@@ -73,6 +77,8 @@ export interface CreateEventInput {
   title: string;
   description?: string;
   category: EventCategory;
+  eventMode?: EventMode;
+  organizerName?: string | null;
   startDate: string;
   endDate?: string | null;
   location?: string;
@@ -91,6 +97,7 @@ export type UpdateEventInput = Partial<CreateEventInput>;
 
 export interface EventFilters {
   category?: string;
+  mode?: "all" | EventMode;
   upcoming?: boolean | string;
   sphereId?: string | number;
   search?: string;

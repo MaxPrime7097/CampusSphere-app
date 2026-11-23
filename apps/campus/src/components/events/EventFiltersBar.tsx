@@ -30,9 +30,11 @@ export function EventFiltersBar({
   const { t } = useTranslation("events");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const activeCategory = filters.category || "all";
+  const activeMode = filters.mode || "all";
   const activeTimeframe = filters.timeframe || "all";
   const hasActiveFilters =
     (filters.category && filters.category !== "all") ||
+    (filters.mode && filters.mode !== "all") ||
     (filters.timeframe && filters.timeframe !== "all") ||
     Boolean(filters.search);
 
@@ -138,27 +140,59 @@ export function EventFiltersBar({
         </div>
       )}
 
-      {/* Category Pills List (Sans barre de défilement visible) */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        {EVENT_CATEGORY_OPTIONS.map((cat) => {
-          const isSelected = activeCategory === cat.value;
-          const label = t(`categories.${cat.value}Short` as any, { defaultValue: cat.shortLabel || cat.label });
+      {/* Mode Scope & Category Pills Row */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+        {/* Scope Segmented Filter: All / Campus / External */}
+        <div className="inline-flex items-center p-0.5 rounded-xl bg-muted/60 border border-border/50 shrink-0 self-start">
+          {(
+            [
+              { value: "all", label: t("filters.modeAll") },
+              { value: "campus", label: t("filters.modeCampus") },
+              { value: "external", label: t("filters.modeExternal") },
+            ] as const
+          ).map((item) => {
+            const isSelected = activeMode === item.value;
+            return (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => onFilterChange({ mode: item.value })}
+                className={cn(
+                  "px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all cursor-pointer",
+                  isSelected
+                    ? "bg-background text-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
 
-          return (
-            <button
-              key={cat.value}
-              onClick={() => onFilterChange({ category: isSelected ? "all" : cat.value })}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer",
-                isSelected
-                  ? "bg-primary/15 text-primary border border-primary/30 shadow-xs font-semibold"
-                  : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
-              )}
-            >
-              <span>{label}</span>
-            </button>
-          );
-        })}
+        {/* Category Pills List (Sans barre de défilement visible) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 no-scrollbar scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] flex-1">
+          {EVENT_CATEGORY_OPTIONS.map((cat) => {
+            const isSelected = activeCategory === cat.value;
+            const label = t(`categories.${cat.value}Short` as any, { defaultValue: cat.shortLabel || cat.label });
+
+            return (
+              <button
+                key={cat.value}
+                type="button"
+                onClick={() => onFilterChange({ category: isSelected ? "all" : cat.value })}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer",
+                  isSelected
+                    ? "bg-primary/15 text-primary border border-primary/30 shadow-xs font-semibold"
+                    : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent"
+                )}
+              >
+                <span>{label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

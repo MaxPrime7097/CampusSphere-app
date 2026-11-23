@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Calendar, ArrowLeft, Check, Upload, X, Sparkle as Sparkles, Ticket, ArrowSquareOut, LinkSimple, Spinner as Loader2 } from "@phosphor-icons/react";
+import { Calendar, ArrowLeft, Check, Upload, X, Ticket, ArrowSquareOut, LinkSimple, Buildings, Megaphone, Users, CaretDown, Spinner as Loader2 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,8 +19,8 @@ import { EVENT_CATEGORY_OPTIONS } from "@/constants/eventCategories";
 import { getEventById, updateEvent } from "@/services/eventService";
 import { getUserSpheres } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
-import { getEventUrl, encodeHashId } from "@/lib/utils";
-import type { EventCategory, UpdateEventInput } from "@/types/events.types";
+import { cn, getEventUrl, encodeHashId } from "@/lib/utils";
+import type { EventCategory, EventMode, UpdateEventInput } from "@/types/events.types";
 
 export function EventEdit() {
   const { t } = useTranslation("events");
@@ -31,11 +31,14 @@ export function EventEdit() {
 
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [formData, setFormData] = useState<UpdateEventInput>({
     title: "",
     description: "",
     category: "party",
+    eventMode: "campus",
+    organizerName: "",
     startDate: "",
     endDate: "",
     location: "",
@@ -46,6 +49,16 @@ export function EventEdit() {
     registrationUrl: "",
     sphereId: undefined,
   });
+
+  const isExternal = formData.eventMode === "external";
+
+  const handleModeChange = (mode: EventMode) => {
+    setFormData((prev) => ({
+      ...prev,
+      eventMode: mode,
+      ...(mode === "external" ? { hasTicketing: false, maxAttendees: undefined } : {}),
+    }));
+  };
 
   const { data: event, isLoading: isFetching } = useQuery({
     queryKey: ["event", id],
@@ -60,20 +73,26 @@ export function EventEdit() {
 
   useEffect(() => {
     if (event) {
+      const mode: EventMode = event.eventMode === "external" ? "external" : "campus";
       setFormData({
         title: event.title,
         description: event.description || "",
         category: event.category,
+        eventMode: mode,
+        organizerName: event.organizerName || "",
         startDate: event.startDate ? new Date(event.startDate).toISOString().slice(0, 16) : "",
         endDate: event.endDate ? new Date(event.endDate).toISOString().slice(0, 16) : "",
         location: event.location || "",
         isOnline: Boolean(event.isOnline),
         onlineLink: event.onlineLink || "",
         maxAttendees: event.maxAttendees || undefined,
-        hasTicketing: Boolean(event.hasTicketing),
+        hasTicketing: mode === "campus" && Boolean(event.hasTicketing),
         registrationUrl: event.registrationUrl || "",
         sphereId: event.sphereId || undefined,
       });
+      if (mode === "campus" && Boolean(event.hasTicketing)) {
+        setShowAdvanced(true);
+      }
       if (event.coverImage) {
         setCoverPreview(event.coverImage);
       }
@@ -122,8 +141,11 @@ export function EventEdit() {
 
     updateMutation.mutate({
       ...formData,
-      hasTicketing: Boolean(formData.hasTicketing),
-      registrationUrl: formData.registrationUrl?.trim() || null,
+      eventMode: formData.eventMode || "campus",
+      organizerName: isExternal ? formData.organizerName?.trim() || null : null,
+      maxAttendees: isExternal ? null : formData.maxAttendees ?? null,
+      hasTicketing: isExternal ? false : Boolean(formData.hasTicketing),
+      registrationUrl: isExternal ? formData.registrationUrl?.trim() || null : null,
       coverImage: coverFile || coverPreview,
       startDate: formData.startDate ? new Date(formData.startDate).toISOString() : undefined,
       endDate: formData.endDate ? new Date(formData.endDate).toISOString() : undefined,
@@ -165,6 +187,63 @@ export function EventEdit() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Mode Selector */}
+        <div className="p-6 rounded-3xl border border-border/70 bg-card space-y-3">
+          <div>
+            <Label className="text-xs font-bold text-foreground block">{t("createForm.modeSectionTitle")}</Label>
+            <p className="text-[11px] text-muted-foreground">{t("createForm.modeSectionDesc")}</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => handleModeChange("campus")}
+              className={cn(
+                "flex items-start gap-3 p-3.5 rounded-2xl border text-left transition-all cursor-pointer",
+                !isExternal
+                  ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                  : "border-border/60 bg-muted/20 hover:bg-muted/50"
+              )}
+            >
+              <div
+                className={cn(
+                  "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
+                  !isExternal ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                )}
+              >
+                <Users className="h-4 w-4" />
+              </div>
+              <div className="space-y-0.5 min-w-0">
+                <span className="text-xs font-bold text-foreground block">{t("createForm.modeCampusTitle")}</span>
+                <span className="text-[11px] text-muted-foreground block">{t("createForm.modeCampusDesc")}</span>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleModeChange("external")}
+              className={cn(
+                "flex items-start gap-3 p-3.5 rounded-2xl border text-left transition-all cursor-pointer",
+                isExternal
+                  ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                  : "border-border/60 bg-muted/20 hover:bg-muted/50"
+              )}
+            >
+              <div
+                className={cn(
+                  "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
+                  isExternal ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                )}
+              >
+                <Megaphone className="h-4 w-4" />
+              </div>
+              <div className="space-y-0.5 min-w-0">
+                <span className="text-xs font-bold text-foreground block">{t("createForm.modeExternalTitle")}</span>
+                <span className="text-[11px] text-muted-foreground block">{t("createForm.modeExternalDesc")}</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
         {/* Category */}
         <div className="p-6 rounded-3xl border border-border/70 bg-card space-y-3">
           <Label className="text-xs font-bold text-foreground block">{t("createForm.category")}</Label>
@@ -205,6 +284,24 @@ export function EventEdit() {
               required
             />
           </div>
+
+          {isExternal && (
+            <div className="space-y-1.5">
+              <Label htmlFor="organizerName" className="text-xs font-bold text-foreground">
+                {t("createForm.organizerName")}
+              </Label>
+              <div className="relative">
+                <Buildings className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  id="organizerName"
+                  placeholder={t("createForm.organizerNamePlaceholder")}
+                  value={formData.organizerName || ""}
+                  onChange={(e) => setFormData({ ...formData, organizerName: e.target.value })}
+                  className="rounded-xl text-xs pl-9"
+                />
+              </div>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label htmlFor="description" className="text-xs font-bold text-foreground">
@@ -273,25 +370,9 @@ export function EventEdit() {
             </div>
           )}
 
-          {/* Billetterie & Inscription externe */}
-          <div className="space-y-4 pt-3 border-t border-border/50">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-1.5">
-                  <Ticket className="h-3.5 w-3.5 text-primary" />
-                  <Label className="text-xs font-bold text-foreground">{t("createForm.ticketing")}</Label>
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  {t("createForm.ticketingDesc")}
-                </p>
-              </div>
-              <Switch
-                checked={Boolean(formData.hasTicketing)}
-                onCheckedChange={(checked) => setFormData({ ...formData, hasTicketing: checked })}
-              />
-            </div>
-
-            <div className="space-y-1.5 pt-2 border-t border-border/50">
+          {/* Mode-specific Options */}
+          {isExternal ? (
+            <div className="space-y-1.5 pt-3 border-t border-border/50">
               <Label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                 <ArrowSquareOut className="h-3.5 w-3.5 text-primary" />
                 {t("createForm.externalLink")}
@@ -309,7 +390,65 @@ export function EventEdit() {
                 {t("createForm.externalLinkDesc")}
               </p>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-4 pt-3 border-t border-border/50">
+              <div className="space-y-1.5">
+                <Label htmlFor="maxAttendees" className="text-xs text-muted-foreground">
+                  {t("createForm.maxAttendees")}
+                </Label>
+                <Input
+                  id="maxAttendees"
+                  type="number"
+                  placeholder={t("createForm.unlimited")}
+                  value={formData.maxAttendees || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      maxAttendees: e.target.value ? Number(e.target.value) : undefined,
+                    })
+                  }
+                  className="rounded-xl text-xs"
+                />
+              </div>
+
+              <div className="pt-2 border-t border-border/50">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced((v) => !v)}
+                  className="w-full flex items-center justify-between text-left py-1 cursor-pointer"
+                >
+                  <div>
+                    <span className="text-xs font-bold text-foreground block">{t("createForm.advancedOptions")}</span>
+                    <span className="text-[11px] text-muted-foreground block">{t("createForm.advancedOptionsDesc")}</span>
+                  </div>
+                  <CaretDown
+                    className={cn(
+                      "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                      showAdvanced && "rotate-180"
+                    )}
+                  />
+                </button>
+
+                {showAdvanced && (
+                  <div className="flex items-center justify-between pt-3 mt-2 border-t border-border/40">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <Ticket className="h-3.5 w-3.5 text-primary" />
+                        <Label className="text-xs font-bold text-foreground">{t("createForm.ticketing")}</Label>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        {t("createForm.ticketingDesc")}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={Boolean(formData.hasTicketing)}
+                      onCheckedChange={(checked) => setFormData({ ...formData, hasTicketing: checked })}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Banner */}
