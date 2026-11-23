@@ -20,7 +20,7 @@ export default function LegalNotice() {
 
       <SpheraHeader />
 
-      <main className="flex-1 pt-32 pb-24 relative overflow-hidden">
+      <main className="flex-1 pt-16 pb-24 md:pt-20 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-sphera-green/5 blur-[100px] rounded-full pointer-events-none" />
 
         <div className="container mx-auto px-4 max-w-4xl relative z-10 text-sphera-text-muted">
@@ -46,6 +46,7 @@ export default function LegalNotice() {
               <ul className="list-disc pl-5 space-y-2 mt-2">
                 <li><strong>{t('notice.sec2.frontend')}</strong> {t('notice.sec2.frontendVal')}</li>
                 <li><strong>{t('notice.sec2.backend')}</strong> {t('notice.sec2.backendVal')}</li>
+                <li><strong>{t('notice.sec2.database')}</strong> {t('notice.sec2.databaseVal')}</li>
                 <li><strong>{t('notice.sec2.storage')}</strong> {t('notice.sec2.storageVal')}</li>
                 <li><strong>{t('notice.sec2.ai')}</strong> {t('notice.sec2.aiVal')}</li>
               </ul>
@@ -60,7 +61,7 @@ export default function LegalNotice() {
               <h2 className="text-xl font-bold text-white mb-4">{t('notice.sec4.title')}</h2>
               <p>{t('notice.sec4.p1')}</p>
               <p className="mt-2">
-                {t('notice.sec4.p2')} <a href="mailto:policies@campussphere.app" className="text-sphera-green hover:underline">policies@campussphere.app</a> ou <a href="mailto:support@campussphere.app" className="text-sphera-green hover:underline">support@campussphere.app</a>
+                {t('notice.sec4.p2')} <a href="mailto:policies@campussphere.app" className="text-sphera-green hover:underline">policies@campussphere.app</a> {t('or')} <a href="mailto:support@campussphere.app" className="text-sphera-green hover:underline">support@campussphere.app</a>
               </p>
             </section>
           </div>

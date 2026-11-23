@@ -1,9 +1,10 @@
 {
   "lastUpdated": "Dernière mise à jour : 13 Septembre 2026",
+  "or": "ou",
   "notice": {
     "title": "Mentions Légales",
     "seoTitle": "Mentions Légales — Sphera by CampusSphere",
-    "seoDesc": "Mentions légales de Sphera : éditeur, hébergeur cloud Render, Microsoft Azure, AWS et coordonnées légales.",
+    "seoDesc": "Mentions légales de Sphera : éditeur, hébergement cloud Vercel, AWS (EC2, S3, Bedrock), Supabase et coordonnées légales.",
     "sec1": {
       "title": "1. Éditeur du service",
       "p1": "L'application d'assistance académique <strong>Sphera</strong> est un service conçu, développé et opéré par l'équipe fondatrice <strong>CampusSphere</strong>.",
@@ -20,10 +21,12 @@
       "p1": "L'infrastructure technique de Sphera et de CampusSphere s'appuie sur des hébergeurs cloud de premier rang :",
       "frontend": "Frontend & CDN :",
       "frontendVal": "Vercel Inc. (440 N Barranca Ave #4133, Covina, CA 91723, États-Unis).",
-      "backend": "Backend d'application :",
-      "backendVal": "Render Services, Inc. (525 Brannan St, San Francisco, CA 94107, États-Unis), avec une transition programmée vers Microsoft Azure pour accompagner l'augmentation du trafic.",
+      "backend": "Backend d'application & APIs :",
+      "backendVal": "Amazon Web Services (AWS) — Amazon EC2 (Amazon Web Services, Inc., 410 Terry Avenue North, Seattle, WA 98109-5210, États-Unis). Serveurs applicatifs sécurisés et isolés.",
+      "database": "Base de données & Authentification :",
+      "databaseVal": "Supabase Inc. (970 Toa Payoh North #07-04, Singapour 318992). Base PostgreSQL managée, authentification et contrôles d'accès sécurisés.",
       "storage": "Stockage sécurisé des fichiers :",
-      "storageVal": "Amazon Web Services (AWS) - Amazon S3 (Seattle, WA, États-Unis), chiffré au repos (AES-256).",
+      "storageVal": "Amazon Web Services (AWS) — Amazon S3 (Seattle, WA, États-Unis), chiffré au repos (AES-256).",
       "ai": "Fournisseurs d'intelligence artificielle :",
       "aiVal": "Amazon Web Services (AWS Bedrock), complété par Google AI (Gemini) et Groq Inc. Les données d'étude ne sont jamais exploitées pour l'entraînement public des modèles."
     },
@@ -71,7 +74,7 @@
     },
     "sec7": {
       "title": "7. Modification des conditions & Juridiction",
-      "p1": "CampusSphere se réserve le droit de faire évoluer les présentes conditions à tout moment. Les présentes CGU sont soumises à la législation de la Cameroun. Tout litige non résolu à l'amiable sera soumis aux juridictions compétentes de Douala."
+      "p1": "CampusSphere se réserve le droit de faire évoluer les présentes conditions à tout moment. Les présentes CGU sont soumises à la législation du Cameroun. Tout litige non résolu à l'amiable sera soumis aux juridictions compétentes de Douala."
     },
     "sec8": {
       "title": "8. Contact",
@@ -145,15 +148,17 @@
       "title": "4. Hébergement & Sous-Traitants Cloud",
       "p1": "Vos informations ne sont jamais cédées à des régies publicitaires. Les seuls partages techniques indispensables concernent nos prestataires d'infrastructure :",
       "item1Title": "Serveurs Backend d'Application :",
-      "item1Desc": "Render Services, Inc. (avec migration progressive vers Microsoft Azure pour l'évolutivité haute performance).",
-      "item2Title": "Stockage Sécurisé :",
-      "item2Desc": "Amazon Web Services (AWS) - Amazon S3 (stockage chiffré au repos pour vos documents de cours).",
-      "item3Title": "Inférence IA :",
-      "item3Desc": "AWS Bedrock, Google AI et Groq Inc. (traitement temps réel sans rétention pour entraînement).",
-      "item4Title": "Hébergement Web & CDN :",
-      "item4Desc": "Vercel Inc.",
-      "item5Title": "Paiements Mobile Money :",
-      "item5Desc": "Passerelles agréées sécurisées (MTN MoMo, Orange Money) pour l'activation des pass d'étude."
+      "item1Desc": "Amazon Web Services (AWS EC2) — hébergement isolé et sécurisé des API et services applicatifs.",
+      "item2Title": "Base de Données & Authentification :",
+      "item2Desc": "Supabase Inc. — gestion sécurisée des comptes unifiés, sessions et données applicatives chiffrées.",
+      "item3Title": "Stockage Sécurisé :",
+      "item3Desc": "Amazon Web Services (AWS) — Amazon S3 (stockage chiffré au repos AES-256 pour vos documents de cours).",
+      "item4Title": "Inférence IA :",
+      "item4Desc": "AWS Bedrock, Google AI (Gemini) et Groq Inc. (traitement temps réel sans rétention ni entraînement public).",
+      "item5Title": "Hébergement Web & CDN :",
+      "item5Desc": "Vercel Inc. — distribution sécurisée TLS 1.3 et métriques de performance techniques anonymisées.",
+      "item6Title": "Paiements Mobile Money :",
+      "item6Desc": "Passerelle sécurisée Campay (MTN MoMo, Orange Money) sans conservation de code PIN secret."
     },
     "sec5": {
       "title": "5. Sécurité",
