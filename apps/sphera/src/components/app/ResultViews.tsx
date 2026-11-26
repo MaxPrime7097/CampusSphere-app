@@ -235,6 +235,7 @@ export function QuizView({
   onAskQuestion,
   onPause,
   onSaveNote,
+  onStudyComplete,
   workspaceSlots,
 }: {
   content: any
@@ -244,6 +245,7 @@ export function QuizView({
   onAskQuestion?: (prompt: string) => void
   onPause?: () => void
   onSaveNote?: (title: string, text: string) => Promise<void> | void
+  onStudyComplete?: () => void
   workspaceSlots?: WorkspaceSlots
 }) {
   const { t } = useTranslation('study')
@@ -319,14 +321,22 @@ export function QuizView({
     }
   }, [isRetryMode, currentIndex, selectedOption, score, answers, finished, storageKey, questions.length])
 
-  // Clear saved progress on finish
+  // Clear saved progress on finish & notify study milestone
+  const notifiedCompleteRef = useRef(false)
   useEffect(() => {
     if (finished && !isRetryMode) {
       try {
         localStorage.removeItem(storageKey)
       } catch {}
     }
-  }, [finished, isRetryMode, storageKey])
+    if (finished && !notifiedCompleteRef.current) {
+      notifiedCompleteRef.current = true
+      onStudyComplete?.()
+    }
+    if (!finished) {
+      notifiedCompleteRef.current = false
+    }
+  }, [finished, isRetryMode, storageKey, onStudyComplete])
 
   const activeTotal = activeQuestionIndices.length
   const activeOrigIndex = activeQuestionIndices[currentIndex] ?? 0
@@ -975,6 +985,7 @@ export function FlashcardsView({
   onAskQuestion,
   onPause,
   onSaveNote,
+  onStudyComplete,
   workspaceSlots,
 }: {
   content: any
@@ -984,6 +995,7 @@ export function FlashcardsView({
   onAskQuestion?: (prompt: string) => void
   onPause?: () => void
   onSaveNote?: (title: string, text: string) => Promise<void> | void
+  onStudyComplete?: () => void
   workspaceSlots?: WorkspaceSlots
 }) {
   const { t } = useTranslation('study')
@@ -1031,6 +1043,17 @@ export function FlashcardsView({
   const inlineAsk = useInlineSpheraAsk({ sessionId, sessionType })
 
   // Save progress automatically (only for full deck runs)
+  const fcNotifiedCompleteRef = useRef(false)
+  useEffect(() => {
+    if (finished && !fcNotifiedCompleteRef.current) {
+      fcNotifiedCompleteRef.current = true
+      onStudyComplete?.()
+    }
+    if (!finished) {
+      fcNotifiedCompleteRef.current = false
+    }
+  }, [finished, onStudyComplete])
+
   useEffect(() => {
     if (!isReviewSubset && currentIndex > 0 && currentIndex < total && !finished && (known.size > 0 || review.size > 0)) {
       try {

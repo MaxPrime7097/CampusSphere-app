@@ -271,3 +271,67 @@ export async function sendPartnerWelcomeEmail(
     }),
   });
 }
+
+export async function sendRevisionReminderEmail(params: {
+  to: string;
+  firstName: string;
+  subjectLine: string;
+  heading: string;
+  intro: string;
+  tasks: Array<{ subjectName: string; label: string; estimatedMinutes: number }>;
+  upcomingExams: Array<{ name: string; daysUntilExam: number }>;
+}): Promise<boolean> {
+  const spheraUrl = `${env.frontendUrl.replace(/\/$/, "")}/plan`;
+  const examsHtml =
+    params.upcomingExams.length > 0
+      ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-left:4px solid #d97706;border-radius:8px;padding:12px 14px;margin:16px 0">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#92400e;margin-bottom:6px">Examens qui approchent</div>
+          <ul style="margin:0;padding-left:18px;font-size:14px;color:#78350f">
+            ${params.upcomingExams
+              .map(
+                (e) =>
+                  `<li><strong>${escapeHtml(e.name)}</strong> — ${
+                    e.daysUntilExam === 0
+                      ? "C'est aujourd'hui, bon courage !"
+                      : e.daysUntilExam === 1
+                        ? "Demain (J-1)"
+                        : `dans ${e.daysUntilExam} jours (J-${e.daysUntilExam})`
+                  }</li>`,
+              )
+              .join("")}
+          </ul>
+        </div>`
+      : "";
+
+  const tasksHtml =
+    params.tasks.length > 0
+      ? `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-left:4px solid #10b981;border-radius:8px;padding:12px 14px;margin:16px 0">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#047857;margin-bottom:6px">Ton programme du jour</div>
+          <ul style="margin:0;padding-left:18px;font-size:14px;color:#064e3b">
+            ${params.tasks
+              .map(
+                (t) =>
+                  `<li style="margin-bottom:4px"><strong>${escapeHtml(t.subjectName)}</strong> : ${escapeHtml(t.label)} <span style="color:#6b7280;font-size:12px">(~${t.estimatedMinutes} min)</span></li>`,
+              )
+              .join("")}
+          </ul>
+        </div>`
+      : "";
+
+  const body = `
+    <p>Bonjour ${escapeHtml(params.firstName || "Spherian")},</p>
+    <p>${escapeHtml(params.intro)}</p>
+    ${examsHtml}
+    ${tasksHtml}
+    <p style="font-size:13px;color:#6b7280">Pas de pression : tu peux rééquilibrer ton plan en 1 clic si ta journée change.</p>
+  `;
+
+  return send({
+    to: params.to,
+    subject: params.subjectLine,
+    html: layout(params.heading, body, {
+      label: "Ouvrir mon plan du jour",
+      url: spheraUrl,
+    }),
+  });
+}

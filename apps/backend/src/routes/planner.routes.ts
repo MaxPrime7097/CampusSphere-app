@@ -82,6 +82,7 @@ const toggleTaskSchema = z.object({
 const linkSessionSchema = z.object({
   subjectId: z.coerce.number().int().positive().nullable().optional(),
   subject_id: z.coerce.number().int().positive().nullable().optional(),
+  sessionType: z.enum(["session", "annale"]).optional(),
 });
 
 function parseIdParam(req: Request, param = "id"): number {
@@ -428,12 +429,7 @@ plannerRouter.patch("/sessions/:id/subject/", async (req, res) => {
   const sessionId = parseIdParam(req);
   const parsed = linkSessionSchema.parse(req.body ?? {});
   const subjectId = parsed.subjectId !== undefined ? parsed.subjectId : (parsed.subject_id ?? null);
-
-  const session = await prisma.studySession.findFirst({
-    where: { id: sessionId, ownerId: me.id },
-    select: { id: true },
-  });
-  if (!session) throw notFound("Session de cours introuvable.");
+  const sessionType = parsed.sessionType ?? "session";
 
   if (subjectId !== null) {
     const subject = await prisma.studySubject.findFirst({
@@ -443,12 +439,31 @@ plannerRouter.patch("/sessions/:id/subject/", async (req, res) => {
     if (!subject) throw notFound("Matière introuvable.");
   }
 
-  await prisma.studySession.update({
-    where: { id: sessionId },
-    data: { subjectId },
-  });
+  if (sessionType === "annale") {
+    const annale = await prisma.annaleSession.findFirst({
+      where: { id: sessionId, ownerId: me.id },
+      select: { id: true },
+    });
+    if (!annale) throw notFound("Session d'annale introuvable.");
 
-  ok(res, { sessionId, subjectId });
+    await prisma.annaleSession.update({
+      where: { id: sessionId },
+      data: { subjectId },
+    });
+  } else {
+    const session = await prisma.studySession.findFirst({
+      where: { id: sessionId, ownerId: me.id },
+      select: { id: true },
+    });
+    if (!session) throw notFound("Session de cours introuvable.");
+
+    await prisma.studySession.update({
+      where: { id: sessionId },
+      data: { subjectId },
+    });
+  }
+
+  ok(res, { sessionId, subjectId, sessionType });
 });
 
 // ── Plan Generation, Today View, Rebalance & Task Toggle ─────────────────────

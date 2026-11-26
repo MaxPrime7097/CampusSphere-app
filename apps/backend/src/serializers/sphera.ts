@@ -50,6 +50,7 @@ export const annaleSessionInclude = {
   resource: { select: { id: true, title: true, fileUrl: true } },
   coursResource: { select: { id: true, title: true, fileUrl: true } },
   sharedSphere: { select: { id: true, name: true } },
+  subject: { select: { id: true, name: true, color: true, examDate: true } },
 };
 
 /**
@@ -162,6 +163,15 @@ export function serializeAnnaleSession(session: SerializableAnnaleSession): Reco
     is_shared: session.isShared,
     shared_in_sphere: session.sharedSphereId,
     sphere_name: session.sharedSphere?.name ?? null,
+    subject_id: session.subjectId ?? null,
+    subject: session.subject
+      ? {
+          id: session.subject.id,
+          name: session.subject.name,
+          color: session.subject.color,
+          exam_date: session.subject.examDate,
+        }
+      : null,
     created_at: session.createdAt.toISOString(),
     updated_at: session.updatedAt.toISOString(),
   };
