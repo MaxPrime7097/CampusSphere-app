@@ -1106,6 +1106,7 @@ model ChatMessage {
   threadId  Int        @map("thread_id")
   role      String     // 'user' | 'assistant'
   content   String     @db.Text
+  sources   Json?
   createdAt DateTime   @default(now()) @map("created_at")
 
   thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)

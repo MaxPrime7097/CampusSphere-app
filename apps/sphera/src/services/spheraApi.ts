@@ -289,17 +289,29 @@ async function apiFetch<T>(
   return res.text() as unknown as Promise<T>
 }
 
+export interface WebSource {
+  title: string
+  url: string
+  domain: string
+  snippet?: string
+  favicon?: string
+}
+
 export async function streamApiFetch({
   path,
   body,
   onToken,
+  onStatus,
+  onSources,
   signal,
 }: {
   path: string
   body: Record<string, unknown>
   onToken: (token: string) => void
+  onStatus?: (status: string, query?: string) => void
+  onSources?: (sources: WebSource[]) => void
   signal?: AbortSignal
-}): Promise<{ fullText: string; metadata?: any }> {
+}): Promise<{ fullText: string; metadata?: any; sources?: WebSource[] }> {
   const url = `${API_BASE.replace(/\/$/, '')}/${path.replace(/^\//, '')}`
   const token = getToken()
 
@@ -345,6 +357,7 @@ export async function streamApiFetch({
   let buffer = ''
   let fullText = ''
   let metadata: any = null
+  let collectedSources: WebSource[] | undefined
 
   try {
     while (true) {
@@ -366,6 +379,13 @@ export async function streamApiFetch({
           if (parsed.error) {
             throw new Error(parsed.error)
           }
+          if (typeof parsed.status === 'string') {
+            onStatus?.(parsed.status, typeof parsed.query === 'string' ? parsed.query : undefined)
+          }
+          if (Array.isArray(parsed.sources)) {
+            collectedSources = parsed.sources as WebSource[]
+            onSources?.(collectedSources)
+          }
           if (parsed.token) {
             fullText += parsed.token
             onToken(parsed.token)
@@ -382,14 +402,14 @@ export async function streamApiFetch({
     }
   } catch (err: any) {
     if (err?.name === 'AbortError' || signal?.aborted) {
-      return { fullText, metadata }
+      return { fullText, metadata, sources: collectedSources }
     }
     throw err
   } finally {
     reader.releaseLock()
   }
 
-  return { fullText, metadata }
+  return { fullText, metadata, sources: collectedSources }
 }
 
 // ─── Auth API ────────────────────────────────────────────────────
@@ -727,16 +747,45 @@ export async function sendThreadMessage(threadId: number | string, question: str
   });
 }
 
+export type ChatMode = 'tutor' | 'socratic' | 'exam' | 'express';
+
+export async function getChatCapabilities() {
+  return apiFetch<{ success: boolean; data: { webSearch: boolean } }>(
+    'api/sphera/chat/capabilities/',
+    { requireAuth: true },
+  );
+}
+
 export async function streamThreadMessage(
   threadId: number | string,
   question: string,
   onToken: (token: string) => void,
   signal?: AbortSignal,
+  options?: {
+    replaceFromTurnIndex?: number;
+    mode?: ChatMode;
+    contextSessionId?: number | null;
+    contextSubjectId?: number | null;
+    webSearch?: boolean;
+    onStatus?: (status: string, query?: string) => void;
+    onSources?: (sources: WebSource[]) => void;
+  },
 ) {
   return streamApiFetch({
     path: `api/sphera/threads/${threadId}/messages/`,
-    body: { question },
+    body: {
+      question,
+      ...(options?.replaceFromTurnIndex !== undefined
+        ? { replaceFromTurnIndex: options.replaceFromTurnIndex }
+        : {}),
+      ...(options?.mode ? { mode: options.mode } : {}),
+      ...(options?.contextSessionId ? { contextSessionId: options.contextSessionId } : {}),
+      ...(options?.contextSubjectId ? { contextSubjectId: options.contextSubjectId } : {}),
+      ...(options?.webSearch ? { webSearch: true } : {}),
+    },
     onToken,
+    onStatus: options?.onStatus,
+    onSources: options?.onSources,
     signal,
   });
 }

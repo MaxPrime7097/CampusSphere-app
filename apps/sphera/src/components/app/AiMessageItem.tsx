@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react'
-import { Copy, Check, ThumbsUp, ThumbsDown, PencilSimple, ArrowCounterClockwise as RotateCcw, NotePencil } from "@phosphor-icons/react";
+import { Copy, Check, ThumbsUp, ThumbsDown, PencilSimple, ArrowCounterClockwise as RotateCcw, NotePencil, CaretDown, CaretUp, Globe, ArrowSquareOut, Sparkle, MagnifyingGlass, BookOpen } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next'
 import { MarkdownRenderer } from './MarkdownRenderer'
+import type { WebSource } from '../../services/spheraApi'
 
 interface AiMessageItemProps {
   question: string
   answer: string
   index?: number
+  sources?: WebSource[]
+  status?: string | null
+  searchQuery?: string | null
+  hasCourseContext?: boolean
   onEdit?: (index: number, newQuestion: string) => void
   onRegenerate?: (index: number) => void
   onCreateNote?: (question: string, answer: string) => void
@@ -14,20 +19,57 @@ interface AiMessageItemProps {
   disabled?: boolean
 }
 
-export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, onCreateNote, onSelectSuggestion, disabled }: AiMessageItemProps) {
+const THINKING_STEPS_FREE = [
+  'Réflexion en cours…',
+  'Analyse de ta question…',
+  'Structuration de la réponse…',
+]
+
+const THINKING_STEPS_COURSE = [
+  'Lecture de ton cours…',
+  'Analyse des passages clés…',
+  'Rédaction de la réponse…',
+]
+
+export function AiMessageItem({ question, answer, index, sources, status, searchQuery, hasCourseContext, onEdit, onRegenerate, onCreateNote, onSelectSuggestion, disabled }: AiMessageItemProps) {
   const { t } = useTranslation('study')
   const [copied, setCopied] = useState(false)
   const [noteSaved, setNoteSaved] = useState(false)
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [editText, setEditText] = useState(question)
+  const [isQuestionExpanded, setIsQuestionExpanded] = useState(false)
+  const [thinkingStepIdx, setThinkingStepIdx] = useState(0)
+  const [sourcesExpanded, setSourcesExpanded] = useState(true)
+
+  const isLoading = answer === '...'
+
+  useEffect(() => {
+    if (!isLoading) {
+      setThinkingStepIdx(0)
+      return
+    }
+    const interval = setInterval(() => {
+      setThinkingStepIdx((prev) => (prev + 1) % 3)
+    }, 2200)
+    return () => clearInterval(interval)
+  }, [isLoading])
+
+  const isLongQuestion = React.useMemo(() => {
+    if (!question) return false
+    return question.length > 260 || question.split('\n').length > 4
+  }, [question])
 
   const { cleanAnswer, suggestions } = React.useMemo(() => {
     if (!answer) return { cleanAnswer: '', suggestions: [] as string[] }
-    const match = answer.match(/\[SUGGESTIONS\]([\s\S]*?)\[\/SUGGESTIONS\]/i)
-    if (!match) return { cleanAnswer: answer, suggestions: [] as string[] }
-    const clean = answer.replace(/\[SUGGESTIONS\][\s\S]*?\[\/SUGGESTIONS\]/i, '').trim()
-    const list = match[1]
+    const completeMatch = answer.match(/\[SUGGESTIONS\]([\s\S]*?)\[\/SUGGESTIONS\]/i)
+    // Strip complete block, incomplete streaming block ([SUGGESTIONS]...), or partial opening tag ([SUG...)
+    let clean = answer.replace(/\[SUGGESTIONS\][\s\S]*?(?:\[\/SUGGESTIONS\]|$)/gi, '')
+    clean = clean.replace(/\[(?:S(?:U(?:G(?:G(?:E(?:S(?:T(?:I(?:O(?:N(?:S)?)?)?)?)?)?)?)?)?)?)?$/i, '').trimEnd()
+    if (!completeMatch) {
+      return { cleanAnswer: clean, suggestions: [] as string[] }
+    }
+    const list = completeMatch[1]
       .split('\n')
       .map(s => s.trim().replace(/^[-*•\d.]+\s*/, ''))
       .filter(Boolean)
@@ -66,7 +108,9 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, o
     }
   }
 
-  const isLoading = answer === '...'
+  const isCourseThinking = status === 'reading_course' || Boolean(hasCourseContext)
+  const thinkingSteps = isCourseThinking ? THINKING_STEPS_COURSE : THINKING_STEPS_FREE
+  const currentThinkingLabel = thinkingSteps[thinkingStepIdx % thinkingSteps.length]
 
   return (
     <div className="flex flex-col gap-5 py-4 border-b border-sphera-border/30 last:border-b-0 animate-in fade-in duration-300">
@@ -139,7 +183,28 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, o
               </button>
             )}
             <div className="px-4 py-2.5 rounded-2xl rounded-tr-xs bg-sphera-surface-2 border border-sphera-border/70 text-white text-sm leading-relaxed shadow-sm">
-              <p className="whitespace-pre-wrap">{question}</p>
+              <p className={`whitespace-pre-wrap break-words ${isLongQuestion && !isQuestionExpanded ? 'line-clamp-4' : ''}`}>
+                {question}
+              </p>
+              {isLongQuestion && (
+                <button
+                  type="button"
+                  onClick={() => setIsQuestionExpanded((prev) => !prev)}
+                  className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-sphera-green hover:text-green-300 transition-colors cursor-pointer"
+                >
+                  {isQuestionExpanded ? (
+                    <>
+                      <CaretUp className="w-3 h-3" />
+                      <span>Réduire</span>
+                    </>
+                  ) : (
+                    <>
+                      <CaretDown className="w-3 h-3" />
+                      <span>Voir plus</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -148,14 +213,148 @@ export function AiMessageItem({ question, answer, index, onEdit, onRegenerate, o
       {/* 2. AI Response: Full-width, NO bubble, NO avatar, beautiful modern typography */}
       <div className="w-full flex flex-col items-start pr-1 sm:pr-4">
         {isLoading ? (
-          <div className="flex items-center gap-1.5 py-3 px-1 text-sphera-text-muted">
-            <span className="w-2 h-2 rounded-full bg-sphera-green/80 animate-bounce" />
-            <span className="w-2 h-2 rounded-full bg-sphera-green/80 animate-bounce [animation-delay:0.2s]" />
-            <span className="w-2 h-2 rounded-full bg-sphera-green/80 animate-bounce [animation-delay:0.4s]" />
-          </div>
+          status === 'searching_web' ? (
+            /* Live Web Search Progress (Phase 1: querying Tavily) */
+            <div className="my-1.5 flex flex-col gap-2 px-3.5 py-2.5 rounded-2xl bg-sky-500/[0.07] border border-sky-400/25 max-w-md animate-in fade-in duration-200">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-5 w-5 items-center justify-center shrink-0">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-sky-400/25 animate-ping" />
+                  <Globe weight="duotone" className="relative w-4 h-4 text-sky-400" />
+                </span>
+                <span className="text-xs sm:text-[13px] font-semibold sphera-shimmer-text-sky">
+                  Recherche sur le web…
+                </span>
+              </div>
+              {searchQuery && (
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sphera-surface/80 border border-sphera-border/70 text-[11px] text-sphera-text-muted max-w-full">
+                  <MagnifyingGlass className="w-3 h-3 text-sky-400 shrink-0" />
+                  <span className="truncate">« {searchQuery} »</span>
+                </div>
+              )}
+            </div>
+          ) : sources && sources.length > 0 ? (
+            /* Live Web Search Progress (Phase 2: sources retrieved, synthesizing answer) */
+            <div className="my-1.5 flex flex-col gap-2 px-3.5 py-2.5 rounded-2xl bg-sky-500/[0.06] border border-sky-400/25 max-w-md animate-in fade-in duration-200">
+              <div className="flex items-center gap-2.5">
+                <div className="flex items-center -space-x-1.5 shrink-0">
+                  {sources.slice(0, 4).map((src, idx) => (
+                    <span
+                      key={idx}
+                      className="w-5 h-5 rounded-full bg-sphera-surface-2 border border-sphera-border flex items-center justify-center overflow-hidden shadow-xs"
+                    >
+                      {src.favicon ? (
+                        <img
+                          src={src.favicon}
+                          alt=""
+                          className="w-3 h-3 object-contain"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).style.display = 'none'
+                          }}
+                        />
+                      ) : (
+                        <Globe className="w-3 h-3 text-sky-400" />
+                      )}
+                    </span>
+                  ))}
+                </div>
+                <span className="text-xs sm:text-[13px] font-semibold sphera-shimmer-text-sky">
+                  {sources.length} source{sources.length > 1 ? 's' : ''} consultée{sources.length > 1 ? 's' : ''} — Synthèse en cours…
+                </span>
+              </div>
+            </div>
+          ) : (
+            /* Modern ChatGPT/Claude-style Shimmering Thinking State */
+            <div className="my-2 flex items-center gap-2.5 py-1 px-0.5 animate-in fade-in duration-200">
+              <span className="relative flex h-5 w-5 items-center justify-center shrink-0">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-sphera-green/20 animate-ping [animation-duration:2.2s]" />
+                {isCourseThinking ? (
+                  <BookOpen weight="duotone" className="relative w-4 h-4 text-sphera-green" />
+                ) : (
+                  <Sparkle weight="duotone" className="relative w-4 h-4 text-sphera-green" />
+                )}
+              </span>
+              <span className="text-xs sm:text-[13px] font-medium sphera-shimmer-text tracking-[-0.01em]">
+                {currentThinkingLabel}
+              </span>
+            </div>
+          )
         ) : (
           <div className="w-full space-y-3">
             <MarkdownRenderer content={cleanAnswer} className="text-white/95" />
+
+            {/* Grounded Web Sources strip (Perplexity / ChatGPT Search style) */}
+            {sources && sources.length > 0 && (
+              <div className="pt-2 space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setSourcesExpanded((prev) => !prev)}
+                  className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-sphera-surface-2/75 hover:bg-sphera-surface-2 border border-sphera-border/70 hover:border-sky-400/40 text-[11px] font-semibold text-white/85 transition-all cursor-pointer"
+                >
+                  <span className="flex items-center -space-x-1.5">
+                    {sources.slice(0, 3).map((src, idx) => (
+                      <span
+                        key={idx}
+                        className="w-4 h-4 rounded-full bg-sphera-surface border border-sphera-border flex items-center justify-center overflow-hidden"
+                      >
+                        {src.favicon ? (
+                          <img
+                            src={src.favicon}
+                            alt=""
+                            className="w-2.5 h-2.5 object-contain"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).style.display = 'none'
+                            }}
+                          />
+                        ) : (
+                          <Globe className="w-2.5 h-2.5 text-sky-400" />
+                        )}
+                      </span>
+                    ))}
+                  </span>
+                  <span className="text-sky-300/95">
+                    {sources.length} source{sources.length > 1 ? 's' : ''} web
+                  </span>
+                  {sourcesExpanded ? (
+                    <CaretUp className="w-3 h-3 text-sphera-text-muted" />
+                  ) : (
+                    <CaretDown className="w-3 h-3 text-sphera-text-muted" />
+                  )}
+                </button>
+
+                {sourcesExpanded && (
+                  <div className="flex flex-wrap gap-1.5 animate-in fade-in duration-150">
+                    {sources.map((src, sIdx) => (
+                      <a
+                        key={`${src.url}-${sIdx}`}
+                        href={src.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={`${src.title} — ${src.url}`}
+                        className="group/src inline-flex items-center gap-1.5 max-w-[235px] px-2.5 py-1 rounded-lg bg-sphera-surface-2/80 hover:bg-sphera-surface-2 border border-sphera-border/70 hover:border-sky-400/50 text-[11px] text-white/85 hover:text-white transition-all"
+                      >
+                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-sm bg-sky-500/15 text-sky-300 font-bold text-[10px] shrink-0">
+                          {sIdx + 1}
+                        </span>
+                        {src.favicon ? (
+                          <img
+                            src={src.favicon}
+                            alt=""
+                            className="w-3 h-3 rounded-xs shrink-0 object-contain"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).style.display = 'none'
+                            }}
+                          />
+                        ) : (
+                          <Globe className="w-3 h-3 text-sphera-text-muted shrink-0" />
+                        )}
+                        <span className="truncate font-medium">{src.title || src.domain}</span>
+                        <ArrowSquareOut className="w-3 h-3 text-sphera-text-muted group-hover/src:text-sky-300 shrink-0" />
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Action Toolbar: Copy, Thumbs Up, Thumbs Down */}
             <div className="flex items-center gap-1 pt-2 text-sphera-text-muted">

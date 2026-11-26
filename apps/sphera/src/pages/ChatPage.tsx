@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate, useParams, useLocation, Link } from 'react-router-dom'
 import {
   ChatCircle,
@@ -16,24 +16,53 @@ import {
   GraduationCap,
   List as Menu,
   Spinner as Loader2,
-  Square
+  Square,
+  Lightning,
+  Compass,
+  Exam,
+  Paperclip,
+  MagnifyingGlass,
+  Globe,
 } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 import {
   getStandaloneChatThread,
   createStandaloneChatThread,
-  sendThreadMessage,
+  getChatCapabilities,
   streamThreadMessage,
   deleteChatThread,
   renameChatThread,
+  createArtefact,
   type ChatThreadItem,
-  createArtefact
+  type ChatMode,
+  type WebSource,
 } from '../services/spheraApi'
 import { AiMessageItem } from '../components/app/AiMessageItem'
 import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal'
 import { encodeHashId, parseSlugId } from '../lib/hashids'
-import { invalidateSpheraSessions } from '../hooks/useSpheraQueries'
+import {
+  invalidateSpheraSessions,
+  useSessionsQuery,
+  usePlannerSubjectsQuery,
+} from '../hooks/useSpheraQueries'
+
+type ChatContextSelection =
+  | { type: 'session'; id: number; label: string }
+  | { type: 'subject'; id: number; label: string; color: string }
+  | null
+
+const CHAT_MODES: Array<{
+  id: ChatMode
+  label: string
+  description: string
+  icon: typeof Sparkle
+}> = [
+  { id: 'tutor', label: 'Tuteur', description: 'Explications claires avec exemples et analogies', icon: Sparkle },
+  { id: 'socratic', label: 'Socrate', description: 'Te guide étape par étape par questions sans donner la réponse directe', icon: Compass },
+  { id: 'exam', label: 'Examen', description: 'Te pose des questions pièges type partiel et note tes réponses', icon: Exam },
+  { id: 'express', label: 'Express', description: 'Réponses ultra-concises en points clés essentiels', icon: Lightning },
+]
 
 const STARTER_SUGGESTIONS = [
   {
@@ -73,9 +102,69 @@ export default function ChatPage() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
 
   // Messages in current thread
-  const [messages, setMessages] = useState<Array<{ question: string; answer: string; id?: number }>>([])
+  const [messages, setMessages] = useState<
+    Array<{
+      question: string
+      answer: string
+      id?: number
+      sources?: WebSource[]
+      status?: string | null
+      searchQuery?: string | null
+    }>
+  >([])
   const [inputMessage, setInputMessage] = useState('')
   const [isSending, setIsSending] = useState(false)
+
+  // Pedagogical chat mode, Web Search toggle & optional course/subject context (defaults to free general chat!)
+  const [chatMode, setChatMode] = useState<ChatMode>('tutor')
+  const [webSearchEnabled, setWebSearchEnabled] = useState(false)
+  const [webSearchAvailable, setWebSearchAvailable] = useState<boolean | null>(null)
+  const [attachedContext, setAttachedContext] = useState<ChatContextSelection>(null)
+
+  useEffect(() => {
+    let mounted = true
+    getChatCapabilities()
+      .then((res) => {
+        if (mounted && typeof res?.data?.webSearch === 'boolean') {
+          setWebSearchAvailable(res.data.webSearch)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      mounted = false
+    }
+  }, [])
+  const [contextMenuOpen, setContextMenuOpen] = useState(false)
+  const [contextSearch, setContextSearch] = useState('')
+  const contextMenuRef = useRef<HTMLDivElement>(null)
+
+  const { data: rawSessions = [] } = useSessionsQuery()
+  const { data: plannerSubjects = [] } = usePlannerSubjectsQuery()
+
+  const availableCourses = useMemo(() => {
+    return (rawSessions || [])
+      .filter(
+        (s: any) =>
+          s.source_filename !== 'Discussion libre' &&
+          s.source_filename !== '__sphera_standalone_chat__' &&
+          s.sourceFilename !== '__sphera_standalone_chat__',
+      )
+      .map((s: any) => ({
+        id: Number(s.id),
+        title: s.resource_title || s.source_filename || `Cours #${s.id}`,
+      }))
+  }, [rawSessions])
+
+  useEffect(() => {
+    if (!contextMenuOpen) return
+    const handleOutside = (e: MouseEvent) => {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
+        setContextMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutside)
+    return () => document.removeEventListener('mousedown', handleOutside)
+  }, [contextMenuOpen])
 
   // Rename, Delete Modal & Toast feedback state
   const [isEditingTitle, setIsEditingTitle] = useState(false)
@@ -96,6 +185,8 @@ export default function ChatPage() {
   const [showScrollBottom, setShowScrollBottom] = useState(false)
   const abortControllerRef = useRef<AbortController | null>(null)
   const isInitialThreadLoadRef = useRef(true)
+  // Prevents the newly-created thread's useEffect GET from overwriting the live 1st-message SSE stream
+  const skipNextLoadThreadIdRef = useRef<number | null>(null)
 
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
     if (messagesScrollRef.current) {
@@ -119,7 +210,7 @@ export default function ChatPage() {
   }
 
   const formatThreadMessages = (rawMsgs: any[] = []) => {
-    const formatted: Array<{ question: string; answer: string; id?: number }> = []
+    const formatted: Array<{ question: string; answer: string; id?: number; sources?: WebSource[] }> = []
     for (let i = 0; i < rawMsgs.length; i++) {
       const m = rawMsgs[i]
       if (m.role === 'user') {
@@ -127,7 +218,11 @@ export default function ChatPage() {
         formatted.push({
           question: m.content,
           answer: next && next.role === 'assistant' ? next.content : '',
-          id: m.id
+          id: m.id,
+          sources:
+            next && next.role === 'assistant' && Array.isArray(next.sources)
+              ? (next.sources as WebSource[])
+              : undefined,
         })
         if (next && next.role === 'assistant') i++
       }
@@ -179,6 +274,11 @@ export default function ChatPage() {
       return
     }
 
+    if (skipNextLoadThreadIdRef.current === activeThreadId) {
+      skipNextLoadThreadIdRef.current = null
+      return
+    }
+
     let isMounted = true
     setIsLoadingMessages(true)
 
@@ -215,7 +315,7 @@ export default function ChatPage() {
       const updated = [...prev]
       for (let i = updated.length - 1; i >= 0; i--) {
         if (updated[i].answer === '...') {
-          updated[i].answer = '*(Génération interrompue)*'
+          updated[i] = { ...updated[i], answer: '*(Génération interrompue)*', status: null }
           break
         }
       }
@@ -224,6 +324,18 @@ export default function ChatPage() {
   }
 
   // ─── 4. Send Message / Create Thread ─────────────────────────
+  const buildStreamOptions = (extra?: {
+    replaceFromTurnIndex?: number
+    onStatus?: (status: string, query?: string) => void
+    onSources?: (sources: WebSource[]) => void
+  }) => ({
+    ...extra,
+    mode: chatMode,
+    contextSessionId: attachedContext?.type === 'session' ? attachedContext.id : null,
+    contextSubjectId: attachedContext?.type === 'subject' ? attachedContext.id : null,
+    webSearch: webSearchEnabled,
+  })
+
   const handleStartNewChatWithQuestion = async (questionText: string) => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
@@ -235,13 +347,20 @@ export default function ChatPage() {
     isInitialThreadLoadRef.current = false
     setIsSending(true)
     const tempQuestion = questionText
-    setMessages([{ question: tempQuestion, answer: '...' }])
+    setMessages([
+      {
+        question: tempQuestion,
+        answer: '...',
+        status: webSearchEnabled ? 'searching_web' : null,
+      },
+    ])
 
     try {
-      // 1. Create the thread shell instantly (very fast, ~30ms)
-      const res = await createStandaloneChatThread({ title: tempQuestion.slice(0, 40) }, controller.signal)
+      // 1. Create the thread shell instantly (backend computes clean word-boundary title)
+      const res = await createStandaloneChatThread({ title: tempQuestion.slice(0, 80) }, controller.signal)
       const newThread = res?.data
       if (newThread) {
+        skipNextLoadThreadIdRef.current = newThread.id
         setActiveThreadId(newThread.id)
         setActiveThread(newThread)
         const hash = encodeHashId(newThread.id) || newThread.id
@@ -250,15 +369,39 @@ export default function ChatPage() {
 
         // 2. Stream the first message in real time
         let streamedText = ''
+        let streamedSources: WebSource[] | undefined
         await streamThreadMessage(
           newThread.id,
           tempQuestion,
           (token) => {
             streamedText += token
-            setMessages([{ question: tempQuestion, answer: streamedText }])
+            setMessages([
+              {
+                question: tempQuestion,
+                answer: streamedText,
+                sources: streamedSources,
+                status: null,
+              },
+            ])
           },
-          controller.signal
+          controller.signal,
+          buildStreamOptions({
+            onStatus: (status, query) => {
+              setMessages((prev) => {
+                if (!prev[0]) return prev
+                return [{ ...prev[0], status, ...(query ? { searchQuery: query } : {}) }]
+              })
+            },
+            onSources: (sources) => {
+              streamedSources = sources
+              setMessages((prev) => {
+                if (!prev[0]) return prev
+                return [{ ...prev[0], sources }]
+              })
+            },
+          })
         )
+        invalidateSpheraSessions()
       }
     } catch (err: any) {
       if (err?.name === 'AbortError' || controller.signal.aborted) {
@@ -298,7 +441,14 @@ export default function ChatPage() {
 
     // Append to current thread with loading indicator
     const newMsgIndex = messages.length
-    setMessages((prev) => [...prev, { question: trimmed, answer: '...' }])
+    setMessages((prev) => [
+      ...prev,
+      {
+        question: trimmed,
+        answer: '...',
+        status: webSearchEnabled ? 'searching_web' : null,
+      },
+    ])
     setIsSending(true)
 
     // Smooth scroll down to bring the new question into view
@@ -318,13 +468,38 @@ export default function ChatPage() {
             if (updated[newMsgIndex]) {
               updated[newMsgIndex] = {
                 ...updated[newMsgIndex],
-                answer: streamedText
+                answer: streamedText,
+                status: null,
               }
             }
             return updated
           })
         },
-        controller.signal
+        controller.signal,
+        buildStreamOptions({
+          onStatus: (status, query) => {
+            setMessages((prev) => {
+              const updated = [...prev]
+              if (updated[newMsgIndex]) {
+                updated[newMsgIndex] = {
+                  ...updated[newMsgIndex],
+                  status,
+                  ...(query ? { searchQuery: query } : {}),
+                }
+              }
+              return updated
+            })
+          },
+          onSources: (sources) => {
+            setMessages((prev) => {
+              const updated = [...prev]
+              if (updated[newMsgIndex]) {
+                updated[newMsgIndex] = { ...updated[newMsgIndex], sources }
+              }
+              return updated
+            })
+          },
+        })
       )
       invalidateSpheraSessions()
     } catch (err: any) {
@@ -337,7 +512,8 @@ export default function ChatPage() {
         if (updated[newMsgIndex]) {
           updated[newMsgIndex] = {
             ...updated[newMsgIndex],
-            answer: streamedText || "Une erreur est survenue lors de la réponse. Veuillez réessayer."
+            answer: streamedText || "Une erreur est survenue lors de la réponse. Veuillez réessayer.",
+            status: null,
           }
         }
         return updated
@@ -355,7 +531,7 @@ export default function ChatPage() {
     handleSendMessageWithText(inputMessage)
   }
 
-  // Handle Edit & Regenerate
+  // Handle Edit & Regenerate (rewinds thread cleanly from `index` in both UI and DB — zero duplicates!)
   const handleEditMessage = async (index: number, newQuestion: string) => {
     if (!activeThreadId || isSending) return
 
@@ -367,13 +543,14 @@ export default function ChatPage() {
     abortControllerRef.current = controller
 
     setIsSending(true)
-    setMessages((prev) => {
-      const updated = [...prev]
-      if (updated[index]) {
-        updated[index] = { question: newQuestion, answer: '...' }
-      }
-      return updated
-    })
+    setMessages((prev) => [
+      ...prev.slice(0, index),
+      {
+        question: newQuestion,
+        answer: '...',
+        status: webSearchEnabled ? 'searching_web' : null,
+      },
+    ])
 
     let streamedText = ''
     try {
@@ -385,18 +562,55 @@ export default function ChatPage() {
           setMessages((prev) => {
             const updated = [...prev]
             if (updated[index]) {
-              updated[index] = { ...updated[index], answer: streamedText }
+              updated[index] = { ...updated[index], answer: streamedText, status: null }
             }
             return updated
           })
         },
-        controller.signal
+        controller.signal,
+        buildStreamOptions({
+          replaceFromTurnIndex: index,
+          onStatus: (status, query) => {
+            setMessages((prev) => {
+              const updated = [...prev]
+              if (updated[index]) {
+                updated[index] = {
+                  ...updated[index],
+                  status,
+                  ...(query ? { searchQuery: query } : {}),
+                }
+              }
+              return updated
+            })
+          },
+          onSources: (sources) => {
+            setMessages((prev) => {
+              const updated = [...prev]
+              if (updated[index]) {
+                updated[index] = { ...updated[index], sources }
+              }
+              return updated
+            })
+          },
+        })
       )
+      invalidateSpheraSessions()
     } catch (err: any) {
       if (err?.name === 'AbortError' || controller.signal.aborted) {
         return
       }
       console.error('Erreur modification message:', err)
+      setMessages((prev) => {
+        const updated = [...prev]
+        if (updated[index]) {
+          updated[index] = {
+            ...updated[index],
+            answer: streamedText || "Une erreur est survenue lors de la réponse. Veuillez réessayer.",
+            status: null,
+          }
+        }
+        return updated
+      })
     } finally {
       if (abortControllerRef.current === controller) {
         abortControllerRef.current = null
@@ -411,19 +625,17 @@ export default function ChatPage() {
     handleEditMessage(index, target.question)
   }
 
-  // Create Note from answer
-  const handleCreateNote = async (question: string, answer: string) => {
-    if (!activeThread?.sessionId) {
-      showToast("Impossible de créer une note sur cette discussion.", 'error')
-      return
-    }
+  // Save answer as Note directly into the attached course session (when a real course is linked)
+  const handleSaveNoteToAttachedCourse = async (question: string, answer: string) => {
+    if (attachedContext?.type !== 'session') return
     try {
-      await createArtefact(activeThread.sessionId, {
+      await createArtefact(attachedContext.id, {
         type: 'note',
-        title: question.length > 40 ? question.slice(0, 40) + '…' : question,
-        content: { text: `# ${question}\n\n${answer}` }
+        title: question.length > 42 ? question.slice(0, 42) + '…' : question,
+        subtitle: 'Enregistrée depuis le Chat',
+        content: { text: `# ${question}\n\n${answer}` },
       })
-      showToast('Note enregistrée !', 'success')
+      showToast(`Note ajoutée au cours « ${attachedContext.label} » !`, 'success')
     } catch (err) {
       console.error('Erreur création note:', err)
       showToast("Erreur lors de l'enregistrement de la note.", 'error')
@@ -627,7 +839,7 @@ export default function ChatPage() {
                 Que souhaites-tu explorer ?
               </h2>
               <p className="text-xs sm:text-sm text-sphera-text-muted max-w-md mb-8 px-4">
-                Sphera est ton tuteur académique universel. Pose une question libre, résous un problème ou approfondis un sujet de cours.
+                Apprends librement sur n’importe quel sujet, résous un problème, ou relie optionnellement un de tes cours ci-dessous.
               </p>
 
               {/* Starter Suggestions Grid */}
@@ -664,9 +876,13 @@ export default function ChatPage() {
                   index={i}
                   question={msg.question}
                   answer={msg.answer}
+                  sources={msg.sources}
+                  status={msg.status}
+                  searchQuery={msg.searchQuery}
+                  hasCourseContext={Boolean(attachedContext)}
                   onEdit={handleEditMessage}
                   onRegenerate={handleRegenerate}
-                  onCreateNote={handleCreateNote}
+                  onCreateNote={attachedContext?.type === 'session' ? handleSaveNoteToAttachedCourse : undefined}
                   onSelectSuggestion={(sug) => handleSendMessageWithText(sug)}
                   disabled={isSending}
                 />
@@ -694,6 +910,236 @@ export default function ChatPage() {
               </button>
             </div>
           )}
+
+          {/* Compact Mode, Web Search & Optional Course/Subject Context Bar */}
+          <div className="flex items-center justify-between gap-2 mb-2 px-1">
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* Optional Context Picker (Free Chat by default!) */}
+              <div ref={contextMenuRef} className="relative shrink-0">
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setContextMenuOpen((prev) => !prev)
+                      setContextSearch('')
+                    }}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all cursor-pointer ${
+                      attachedContext
+                        ? 'bg-sphera-green/12 border-sphera-green/40 text-white'
+                        : 'bg-sphera-surface/80 border-sphera-border/70 text-sphera-text-muted hover:text-white hover:border-sphera-border'
+                    }`}
+                    title={
+                      attachedContext
+                        ? `Contexte actif : ${attachedContext.label}`
+                        : 'Optionnel : relier un cours ou une matière à cette discussion'
+                    }
+                  >
+                    {attachedContext?.type === 'subject' ? (
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: attachedContext.color || '#22c55e' }}
+                      />
+                    ) : attachedContext?.type === 'session' ? (
+                      <BookOpen weight="duotone" className="w-3.5 h-3.5 text-sphera-green shrink-0" />
+                    ) : (
+                      <Paperclip className="w-3.5 h-3.5 shrink-0" />
+                    )}
+                    <span className="truncate max-w-[115px] sm:max-w-[165px]">
+                      {attachedContext ? attachedContext.label : 'Discussion libre'}
+                    </span>
+                  </button>
+                  {attachedContext && (
+                    <button
+                      type="button"
+                      onClick={() => setAttachedContext(null)}
+                      className="p-1 rounded-full text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors cursor-pointer"
+                      title="Revenir en discussion libre (sans cours)"
+                      aria-label="Retirer le contexte"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                {contextMenuOpen && (
+                <div className="absolute bottom-full left-0 mb-2 w-72 rounded-2xl border border-sphera-border bg-sphera-surface-2 shadow-2xl p-2.5 space-y-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-sphera-text-muted">
+                      Contexte de la discussion
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setContextMenuOpen(false)}
+                      className="text-sphera-text-muted hover:text-white cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {(availableCourses.length + plannerSubjects.length > 5) && (
+                    <div className="relative">
+                      <MagnifyingGlass className="w-3.5 h-3.5 text-sphera-text-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={contextSearch}
+                        onChange={(e) => setContextSearch(e.target.value)}
+                        placeholder="Rechercher un cours ou une matière..."
+                        className="w-full pl-8 pr-2.5 py-1.5 rounded-lg bg-sphera-surface border border-sphera-border text-xs text-white placeholder-sphera-text-muted focus:outline-none focus:border-sphera-green"
+                      />
+                    </div>
+                  )}
+
+                  <div className="max-h-56 overflow-y-auto space-y-1 custom-scrollbar">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAttachedContext(null)
+                        setContextMenuOpen(false)
+                      }}
+                      className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
+                        !attachedContext
+                          ? 'bg-sphera-green/15 text-white font-semibold'
+                          : 'text-white/80 hover:bg-sphera-surface'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <ChatCircle weight="duotone" className="w-3.5 h-3.5 text-sphera-green shrink-0" />
+                        <span>Discussion libre (hors cours)</span>
+                      </span>
+                      {!attachedContext && <Check className="w-3.5 h-3.5 text-sphera-green shrink-0" />}
+                    </button>
+
+                    {plannerSubjects.length > 0 && (
+                      <>
+                        <div className="px-2 pt-1.5 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-sphera-text-muted">
+                          Mes matières
+                        </div>
+                        {plannerSubjects
+                          .filter((s) => !contextSearch.trim() || s.name.toLowerCase().includes(contextSearch.toLowerCase()))
+                          .map((s) => {
+                            const isSelected = attachedContext?.type === 'subject' && attachedContext.id === s.id
+                            return (
+                              <button
+                                key={`subj-${s.id}`}
+                                type="button"
+                                onClick={() => {
+                                  setAttachedContext({ type: 'subject', id: s.id, label: s.name, color: s.color })
+                                  setContextMenuOpen(false)
+                                }}
+                                className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-sphera-green/15 text-white font-semibold'
+                                    : 'text-white/85 hover:bg-sphera-surface'
+                                }`}
+                              >
+                                <span className="flex items-center gap-2 min-w-0">
+                                  <span
+                                    className="w-2 h-2 rounded-full shrink-0"
+                                    style={{ backgroundColor: s.color || '#22c55e' }}
+                                  />
+                                  <span className="truncate">{s.name}</span>
+                                </span>
+                                {isSelected && <Check className="w-3.5 h-3.5 text-sphera-green shrink-0" />}
+                              </button>
+                            )
+                          })}
+                      </>
+                    )}
+
+                    {availableCourses.length > 0 && (
+                      <>
+                        <div className="px-2 pt-1.5 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-sphera-text-muted">
+                          Mes cours
+                        </div>
+                        {availableCourses
+                          .filter((c) => !contextSearch.trim() || c.title.toLowerCase().includes(contextSearch.toLowerCase()))
+                          .slice(0, 15)
+                          .map((c) => {
+                            const isSelected = attachedContext?.type === 'session' && attachedContext.id === c.id
+                            return (
+                              <button
+                                key={`sess-${c.id}`}
+                                type="button"
+                                onClick={() => {
+                                  setAttachedContext({ type: 'session', id: c.id, label: c.title })
+                                  setContextMenuOpen(false)
+                                }}
+                                className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
+                                  isSelected
+                                    ? 'bg-sphera-green/15 text-white font-semibold'
+                                    : 'text-white/85 hover:bg-sphera-surface'
+                                }`}
+                              >
+                                <span className="flex items-center gap-2 min-w-0">
+                                  <BookOpen className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                                  <span className="truncate">{c.title}</span>
+                                </span>
+                                {isSelected && <Check className="w-3.5 h-3.5 text-sphera-green shrink-0" />}
+                              </button>
+                            )
+                          })}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+              </div>
+
+              {/* Web Search Toggle Pill (Tavily Grounding) */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (webSearchAvailable === false && !webSearchEnabled) {
+                    showToast('Recherche Web indisponible : configure TAVILY_API_KEY côté serveur.', 'error')
+                    return
+                  }
+                  setWebSearchEnabled((prev) => !prev)
+                }}
+                title={
+                  webSearchAvailable === false
+                    ? 'Recherche Web non configurée sur le serveur (TAVILY_API_KEY manquante)'
+                    : webSearchEnabled
+                      ? 'Recherche Web activée — Sphera cite des sources en temps réel'
+                      : 'Activer la recherche Web temps réel avec sources cliquables'
+                }
+                aria-pressed={webSearchEnabled}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all cursor-pointer shrink-0 ${
+                  webSearchEnabled
+                    ? 'bg-sky-500/15 border-sky-400/50 text-sky-300 shadow-[0_0_12px_rgba(56,189,248,0.18)]'
+                    : webSearchAvailable === false
+                      ? 'bg-sphera-surface/40 border-sphera-border/40 text-sphera-text-muted/60 hover:text-sphera-text-muted'
+                      : 'bg-sphera-surface/80 border-sphera-border/70 text-sphera-text-muted hover:text-white hover:border-sphera-border'
+                }`}
+              >
+                <Globe weight={webSearchEnabled ? 'duotone' : 'regular'} className="w-3.5 h-3.5 shrink-0" />
+                <span>Web</span>
+              </button>
+            </div>
+
+            {/* Pedagogical Mode Pills */}
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+              {CHAT_MODES.map((m) => {
+                const Icon = m.icon
+                const isActive = chatMode === m.id
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setChatMode(m.id)}
+                    title={m.description}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all whitespace-nowrap cursor-pointer ${
+                      isActive
+                        ? 'bg-sphera-surface border-sphera-green/50 text-sphera-green font-semibold'
+                        : 'bg-transparent border-transparent text-sphera-text-muted hover:text-white hover:bg-sphera-surface/60'
+                    }`}
+                  >
+                    <Icon weight={isActive ? 'fill' : 'regular'} className="w-3 h-3 shrink-0" />
+                    <span>{m.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
 
           <form
             onSubmit={handleSendMessage}

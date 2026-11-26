@@ -102,6 +102,7 @@ export const env = {
     anthropicApiKey: process.env.ANTHROPIC_API_KEY || null,
     geminiApiKey: process.env.GEMINI_API_KEY || null,
     groqApiKey: process.env.GROQ_API_KEY || null,
+    tavilyApiKey: process.env.TAVILY_API_KEY || "",
     bedrock: {
       accessKeyId: process.env.BEDROCK_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID || "",
       secretAccessKey: process.env.BEDROCK_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY || "",
