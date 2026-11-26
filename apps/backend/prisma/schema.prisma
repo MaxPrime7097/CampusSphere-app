@@ -359,6 +359,8 @@ model User {
   generationUsages    GenerationUsage[]
   aiUsageLogs         AIUsageLog[]
   spheraPreferences   SpheraPreferences?
+  studySubjects       StudySubject[]
+  revisionPlans       RevisionPlan[]
 
   @@index([university])
   @@index([faculty])
@@ -1028,19 +1030,23 @@ model StudySession {
 
   isShared       Boolean @default(false) @map("is_shared")
   sharedSphereId Int?    @map("shared_sphere_id")
+  subjectId      Int?    @map("subject_id")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  owner        User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  resource     Resource?    @relation(fields: [resourceId], references: [id], onDelete: SetNull)
-  sphereFile   SphereFile?  @relation(fields: [sphereFileId], references: [id], onDelete: SetNull)
-  sharedSphere Sphere?      @relation(fields: [sharedSphereId], references: [id], onDelete: SetNull)
-  artefacts    Artefact[]
-  chatThreads  ChatThread[]
+  owner         User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  resource      Resource?      @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+  sphereFile    SphereFile?    @relation(fields: [sphereFileId], references: [id], onDelete: SetNull)
+  sharedSphere  Sphere?        @relation(fields: [sharedSphereId], references: [id], onDelete: SetNull)
+  subject       StudySubject?  @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  artefacts     Artefact[]
+  chatThreads   ChatThread[]
+  revisionTasks RevisionTask[]
 
   @@index([ownerId, createdAt])
   @@index([sharedSphereId, isShared])
+  @@index([subjectId])
   @@map("study_sessions")
 }
 
@@ -1119,17 +1125,20 @@ model AnnaleSession {
 
   isShared       Boolean @default(false) @map("is_shared")
   sharedSphereId Int?    @map("shared_sphere_id")
+  subjectId      Int?    @map("subject_id")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  owner         User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  resource      Resource? @relation("AnnalePaper", fields: [resourceId], references: [id], onDelete: SetNull)
-  coursResource Resource? @relation("AnnaleCours", fields: [coursResourceId], references: [id], onDelete: SetNull)
-  sharedSphere  Sphere?   @relation(fields: [sharedSphereId], references: [id], onDelete: SetNull)
+  owner         User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  resource      Resource?     @relation("AnnalePaper", fields: [resourceId], references: [id], onDelete: SetNull)
+  coursResource Resource?     @relation("AnnaleCours", fields: [coursResourceId], references: [id], onDelete: SetNull)
+  sharedSphere  Sphere?       @relation(fields: [sharedSphereId], references: [id], onDelete: SetNull)
+  subject       StudySubject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
 
   @@index([ownerId, createdAt])
   @@index([sharedSphereId, isShared])
+  @@index([subjectId])
   @@map("annale_sessions")
 }
 
@@ -1323,6 +1332,82 @@ model SpheraPreferences {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sphera_preferences")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Sphera Proactive Revision Planner
+// ─────────────────────────────────────────────────────────────
+
+model StudySubject {
+  id        Int      @id @default(autoincrement())
+  ownerId   Int      @map("owner_id")
+  name      String
+  /// Local date YYYY-MM-DD (timezone-safe exam date, optional).
+  examDate  String?  @map("exam_date")
+  /// Declared importance from 1 (low) to 5 (critical).
+  weight    Int      @default(3)
+  color     String   @default("#22c55e")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  owner          User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  studySessions  StudySession[]
+  annaleSessions AnnaleSession[]
+  tasks          RevisionTask[]
+
+  @@index([ownerId])
+  @@map("study_subjects")
+}
+
+model RevisionPlan {
+  id          Int      @id @default(autoincrement())
+  ownerId     Int      @map("owner_id")
+  /// Inclusive range as local dates YYYY-MM-DD.
+  startDate   String   @map("start_date")
+  endDate     String   @map("end_date")
+  /// Target tasks per study day: 1 (light), 2 (normal), 3 (intensive).
+  dailyLoad   Int      @default(2) @map("daily_load")
+  /// Optional array of weekday numbers (0=Sun..6=Sat) to rest.
+  restDays    Json     @default("[]") @map("rest_days")
+  /// 'actif' | 'termine' | 'archive'
+  status      String   @default("actif")
+  generatedAt DateTime @default(now()) @map("generated_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  owner User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  tasks RevisionTask[]
+
+  @@index([ownerId, status])
+  @@map("revision_plans")
+}
+
+model RevisionTask {
+  id               Int       @id @default(autoincrement())
+  planId           Int       @map("plan_id")
+  subjectId        Int       @map("subject_id")
+  sessionId        Int?      @map("session_id")
+  /// Local date YYYY-MM-DD.
+  scheduledDate    String    @map("scheduled_date")
+  /// 'decouverte' | 'ancrage' | 'validation'
+  phase            String    @default("decouverte")
+  /// 'fiche' | 'flashcards' | 'quiz' | 'annale' | 'relecture'
+  actionType       String    @default("fiche") @map("action_type")
+  chapterTitle     String?   @map("chapter_title")
+  label            String
+  estimatedMinutes Int       @default(20) @map("estimated_minutes")
+  isDone           Boolean   @default(false) @map("is_done")
+  completedAt      DateTime? @map("completed_at")
+  position         Int       @default(0)
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  plan    RevisionPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  subject StudySubject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  session StudySession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([planId, scheduledDate])
+  @@index([subjectId])
+  @@index([sessionId])
+  @@map("revision_tasks")
 }
 
 // ─────────────────────────────────────────────────────────────

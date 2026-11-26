@@ -33,6 +33,7 @@ import { QuotaIndicator } from '../components/app/QuotaIndicator'
 import { PasteTextModal } from '../components/app/PasteTextModal'
 import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal'
 import { ShareModal } from '../components/app/ShareModal'
+import { TodayWidget } from '../components/planner/TodayWidget'
 import { useSessionsQuery, useAnnalesQuery, useChatThreadsQuery, invalidateSpheraSessions } from '../hooks/useSpheraQueries'
 import { encodeHashId } from '../lib/hashids'
 
@@ -208,6 +209,9 @@ export default function Dashboard() {
             <QuotaIndicator />
           </div>
         </div>
+
+        {/* Proactive Daily Revision Planner Widget */}
+        <TodayWidget />
 
         {/* ─── Action Cards (Télécharger / Coller) ─────────────── */}
         <div className="max-w-2xl mx-auto mb-4 px-4 sm:px-0">

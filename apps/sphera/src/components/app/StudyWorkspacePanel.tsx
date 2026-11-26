@@ -104,6 +104,7 @@ interface StudyWorkspacePanelProps {
   onArtefactCreated?: (artefact: ArtefactItem) => void
   onCreateNoteWithContent?: (title: string, text: string) => Promise<void>
   extractedText?: string
+  initialTool?: ToolType | null
 }
 
 export function StudyWorkspacePanel({
@@ -143,6 +144,7 @@ export function StudyWorkspacePanel({
   onArtefactCreated,
   onCreateNoteWithContent,
   extractedText = '',
+  initialTool = null,
 }: StudyWorkspacePanelProps) {
   const { t } = useTranslation('study')
 
@@ -204,6 +206,40 @@ export function StudyWorkspacePanel({
   const [activeView, setActiveView] = useState<ActiveWorkspaceView | null>(() =>
     isAnnale && hasDirectAnnaleCorrection ? { type: 'annale', title: "Corrigé de l'annale" } : null
   )
+
+  // Auto-open requested tool when arriving from Planner (?tool=fiche|flashcards|quiz|mindmap|audio)
+  const handledInitialToolRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!initialTool || !sessionContent) return
+    const key = `${sessionId ?? ''}:${initialTool}`
+    if (handledInitialToolRef.current === key) return
+
+    const validTools: ToolType[] = ['fiche', 'quiz', 'flashcards', 'mindmap', 'audio']
+    if (!validTools.includes(initialTool)) return
+
+    const hasFiche = Boolean(sessionContent?.fiche_content || sessionContent?.fiche)
+    const hasToolContent = initialTool === 'fiche' ? hasFiche : Boolean(sessionContent?.[initialTool])
+    const matchingArtefact = artefacts.find((a) => a.type === initialTool)
+
+    const titles: Record<ToolType, string> = {
+      fiche: 'Fiche de cours',
+      quiz: "Quiz d'entraînement",
+      flashcards: 'Cartes mémoire',
+      mindmap: 'Schéma du cours',
+      audio: 'Cours en audio',
+    }
+
+    if (hasToolContent) {
+      handledInitialToolRef.current = key
+      setActiveView({ type: initialTool, title: titles[initialTool] })
+    } else if (matchingArtefact) {
+      handledInitialToolRef.current = key
+      setActiveView({ type: initialTool, title: matchingArtefact.title || titles[initialTool], artefactId: matchingArtefact.id })
+    } else if (initialTool === 'quiz' || initialTool === 'flashcards') {
+      handledInitialToolRef.current = key
+      setScopeModal({ isOpen: true, toolType: initialTool })
+    }
+  }, [initialTool, sessionId, sessionContent, artefacts])
 
   const [generatingAnnaleMode, setGeneratingAnnaleMode] = useState<'rapide' | 'complete' | null>(null)
 

@@ -1083,4 +1083,208 @@ export async function exportPdfFromBackend(
   return { blob, filename };
 }
 
+// ─── Proactive Revision Planner ─────────────────────────────────
+
+export function getLocalIsoDate(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+export interface StudySubjectItem {
+  id: number;
+  name: string;
+  examDate: string | null;
+  daysUntilExam: number | null;
+  weight: number;
+  color: string;
+  createdAt: string;
+  sessionsCount: number;
+  sessions: Array<{ id: number; title: string; toolTypes: string[] }>;
+  progress: { done: number; total: number; pct: number };
+}
+
+export interface RevisionTaskItem {
+  id: number;
+  planId: number;
+  subjectId: number;
+  sessionId: number | null;
+  sessionTitle: string | null;
+  scheduledDate: string;
+  phase: 'decouverte' | 'ancrage' | 'validation';
+  actionType: 'fiche' | 'flashcards' | 'quiz' | 'annale' | 'relecture';
+  chapterTitle: string | null;
+  label: string;
+  estimatedMinutes: number;
+  isDone: boolean;
+  completedAt: string | null;
+  position: number;
+  isReady: boolean;
+  subject: {
+    id: number;
+    name: string;
+    color: string;
+    examDate: string | null;
+    weight: number;
+  } | null;
+}
+
+export interface RevisionDayGroup {
+  date: string;
+  isToday: boolean;
+  isPast: boolean;
+  tasks: RevisionTaskItem[];
+  doneCount: number;
+  totalCount: number;
+}
+
+export interface RevisionPlanData {
+  id: number;
+  startDate: string;
+  endDate: string;
+  dailyLoad: number;
+  restDays: number[];
+  status: string;
+  generatedAt: string;
+  totalTasks: number;
+  completedTasks: number;
+  overdueCount: number;
+  completionPct: number;
+  days: RevisionDayGroup[];
+}
+
+export interface PlannerTodayData {
+  hasPlan: boolean;
+  planId?: number;
+  subjectsCount: number;
+  date: string;
+  tasks: RevisionTaskItem[];
+  overdueCount: number;
+  nextStudyDate?: string | null;
+  upcomingExams: Array<{
+    id: number;
+    name: string;
+    color: string;
+    examDate: string;
+    daysUntilExam: number;
+  }>;
+  planProgress: { completed: number; total: number; pct: number } | null;
+}
+
+export async function getPlannerSubjects(): Promise<{ success: boolean; data: StudySubjectItem[] }> {
+  const date = getLocalIsoDate();
+  return apiFetch(`api/sphera/planner/subjects/?date=${encodeURIComponent(date)}`, {
+    method: 'GET',
+    requireAuth: true,
+  });
+}
+
+export async function createPlannerSubject(payload: {
+  name: string;
+  examDate?: string | null;
+  weight?: number;
+  color?: string;
+  sessionIds?: number[];
+}): Promise<{ success: boolean; data: any }> {
+  return apiFetch('api/sphera/planner/subjects/', {
+    method: 'POST',
+    body: payload,
+    requireAuth: true,
+  });
+}
+
+export async function updatePlannerSubject(
+  id: number,
+  payload: {
+    name?: string;
+    examDate?: string | null;
+    weight?: number;
+    color?: string;
+    sessionIds?: number[];
+  },
+): Promise<{ success: boolean; data: any }> {
+  return apiFetch(`api/sphera/planner/subjects/${id}/`, {
+    method: 'PATCH',
+    body: payload,
+    requireAuth: true,
+  });
+}
+
+export async function deletePlannerSubject(id: number): Promise<{ success: boolean }> {
+  return apiFetch(`api/sphera/planner/subjects/${id}/`, {
+    method: 'DELETE',
+    requireAuth: true,
+  });
+}
+
+export async function linkSessionToSubject(
+  sessionId: number | string,
+  subjectId: number | null,
+): Promise<{ success: boolean; data: { sessionId: number; subjectId: number | null } }> {
+  return apiFetch(`api/sphera/planner/sessions/${sessionId}/subject/`, {
+    method: 'PATCH',
+    body: { subjectId },
+    requireAuth: true,
+  });
+}
+
+export async function getPlannerToday(): Promise<{ success: boolean; data: PlannerTodayData }> {
+  const date = getLocalIsoDate();
+  return apiFetch(`api/sphera/planner/today/?date=${encodeURIComponent(date)}`, {
+    method: 'GET',
+    requireAuth: true,
+  });
+}
+
+export async function getPlannerPlan(): Promise<{ success: boolean; data: RevisionPlanData | null }> {
+  const date = getLocalIsoDate();
+  return apiFetch(`api/sphera/planner/plan/?date=${encodeURIComponent(date)}`, {
+    method: 'GET',
+    requireAuth: true,
+  });
+}
+
+export async function generatePlannerPlan(options?: {
+  dailyLoad?: number;
+  restDays?: number[];
+  startDate?: string;
+  endDate?: string;
+}): Promise<{ success: boolean; data: RevisionPlanData }> {
+  return apiFetch('api/sphera/planner/plan/generate/', {
+    method: 'POST',
+    body: {
+      startDate: getLocalIsoDate(),
+      ...options,
+    },
+    requireAuth: true,
+  });
+}
+
+export async function rebalancePlannerPlan(options?: {
+  dailyLoad?: number;
+  restDays?: number[];
+}): Promise<{ success: boolean; data: RevisionPlanData }> {
+  return apiFetch('api/sphera/planner/plan/rebalance/', {
+    method: 'POST',
+    body: {
+      date: getLocalIsoDate(),
+      ...options,
+    },
+    requireAuth: true,
+  });
+}
+
+export async function togglePlannerTask(
+  taskId: number,
+  isDone: boolean,
+): Promise<{ success: boolean; data: RevisionTaskItem }> {
+  return apiFetch(`api/sphera/planner/tasks/${taskId}/`, {
+    method: 'PATCH',
+    body: { isDone },
+    requireAuth: true,
+  });
+}
+
 

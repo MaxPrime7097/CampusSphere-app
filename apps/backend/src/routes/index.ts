@@ -22,6 +22,7 @@ import { messagingRouter } from "./messaging.routes.js";
 import { notificationsRouter } from "./notifications.routes.js";
 import { eventsRouter } from "./events.routes.js";
 import { spheraRouter } from "./sphera.routes.js";
+import { plannerRouter } from "./planner.routes.js";
 import { quizLiveRouter } from "./quizLive.routes.js";
 import { uploadsRouter } from "./uploads.routes.js";
 import { searchRouter } from "./search.routes.js";
@@ -56,6 +57,8 @@ apiRouter.use("/notifications", notificationsRouter);
 
 // One router, two prefixes. `/api/study/` is the legacy path api.ts still calls
 // (FE-06); aliasing rather than duplicating means there is no second copy to drift.
+apiRouter.use("/sphera/planner", plannerRouter);
+apiRouter.use("/revision-plan", plannerRouter);
 apiRouter.use("/sphera", spheraRouter);
 apiRouter.use("/study", spheraRouter);
 apiRouter.use("/quiz-live", quizLiveRouter);
