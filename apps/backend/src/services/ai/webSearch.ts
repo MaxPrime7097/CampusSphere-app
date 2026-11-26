@@ -1,11 +1,13 @@
 /**
- * Web Search grounding service powered by Tavily REST API.
+ * Web Search grounding & intelligent auto-trigger service powered by Tavily REST API.
  *
  * Provider-agnostic: works identically with Claude Haiku 4.5 (Bedrock),
  * DeepSeek V3.2, Gemini, and Groq without coupling to any single LLM vendor.
  */
 
 import { env } from "../../config/env.js";
+import { parseJsonWithFallback } from "./json.js";
+import { callWithFallback } from "./providers.js";
 import type { QaEntry } from "./rag.js";
 
 export interface WebSource {
@@ -14,6 +16,11 @@ export interface WebSource {
   domain: string;
   snippet: string;
   favicon?: string;
+}
+
+export interface WebSearchPlan {
+  shouldSearch: boolean;
+  query: string;
 }
 
 const TAVILY_SEARCH_URL = "https://api.tavily.com/search";
@@ -41,34 +48,184 @@ function parseSafeHttpUrl(rawUrl: unknown): { url: string; domain: string } | nu
   }
 }
 
+/** Fast zero-latency check for trivial greetings / acknowledgements that never need web search. */
+export function isTrivialNonSearchMessage(question: string): boolean {
+  const clean = question.replace(/\s+/g, " ").trim().toLowerCase();
+  if (!clean) return true;
+  if (
+    clean.length <= 28 &&
+    /^(bonjour|bonsoir|salut|coucou|hello|hi|hey|merci|merci beaucoup|thanks|thank you|ok|okay|d'accord|compris|super|parfait|cool|top|ça marche|ca marche|oui|non|yes|no)[!.\s?]*$/i.test(
+      clean,
+    )
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/** Detect explicit user intent to search or verify information on the web. */
+export function hasExplicitWebIntent(question: string): boolean {
+  const clean = question.replace(/\s+/g, " ").trim();
+  return /\b(cherche|recherche|rechercher|chercher|vérifie|verifie|vérifier|verifier|google|sur internet|sur le web|en ligne|actualité|actualités|actu|news|dernières nouvelles|trouve(?:r|-moi)? des sources|search online|look up|web search|latest news)\b/i.test(
+    clean,
+  );
+}
+
+/** Detect temporal / current-event hints where real-time lookup may be needed even with an attached course. */
+export function hasTemporalOrLiveSignal(question: string): boolean {
+  return /\b(202[5-9]|203\d|aujourd'hui|maintenant|actuel|actuelle|actuellement|récent|récente|récents|récentes|dernier|dernière|derniers|dernières|nouveauté|nouveautés|cette année|ce mois|cette semaine|en cours|prix|tarif|cours actuel|today|current|currently|recent|latest|breaking|price)\b/i.test(
+    question,
+  );
+}
+
 /**
- * Build a search-friendly query from the student's question and recent turn context.
- * Short follow-up questions (e.g. "Et en 2026 ?", "Pourquoi ?") inherit key context
- * from the previous question without adding an extra LLM call.
+ * Deterministic fallback query builder used if the fast LLM query rewriter is unavailable.
+ * Handles short follow-ups and anaphoric references ("le sujet dont on parle", "dessus", etc.)
+ * by pulling context from the previous turn.
  */
 export function buildSearchQuery(question: string, history?: QaEntry[]): string {
   const cleanQ = question.replace(/\s+/g, " ").trim();
   if (!cleanQ) return "";
 
-  const isShortFollowUp =
-    cleanQ.length < 55 &&
+  const isAnaphoricFollowUp =
     history &&
     history.length > 0 &&
-    (/^(et |mais |sinon |pourtant |qu'en est-il|pourquoi\s*\??$|comment\s*\??$|and |but |what about |why\s*\??$|how\s*\??$)/i.test(
-      cleanQ,
-    ) ||
-      /\b(ça|cela|ce point|ce sujet|cet exemple|cette notion|le premier|le deuxième|this|that|it)\b/i.test(
+    ((cleanQ.length < 55 &&
+      (/^(et |mais |sinon |pourtant |qu'en est-il|pourquoi\s*\??$|comment\s*\??$|and |but |what about |why\s*\??$|how\s*\??$)/i.test(
+        cleanQ,
+      ) ||
+        /\b(ça|cela|ce point|ce sujet|cet exemple|cette notion|le premier|le deuxième|dessus|this|that|it)\b/i.test(
+          cleanQ,
+        ))) ||
+      /\b(sujet dont on parle|ce dont on parle|notre sujet|ce qu'on vient de voir|ce thème|topic we(?:'re| are) talking about|what we(?:'re| are) discussing)\b/i.test(
         cleanQ,
       ));
 
-  if (isShortFollowUp) {
-    const lastQ = history[history.length - 1]?.question?.replace(/\s+/g, " ").trim() ?? "";
+  if (isAnaphoricFollowUp) {
+    // Walk backwards to find the most substantive prior user question
+    const substantivePrev = [...history]
+      .reverse()
+      .find((entry) => entry.question && entry.question.trim().length >= 10 && !isTrivialNonSearchMessage(entry.question));
+    const lastQ = substantivePrev?.question?.replace(/\s+/g, " ").trim() ?? "";
+    const lastA = substantivePrev?.answer
+      ?.replace(/\[SUGGESTIONS\][\s\S]*$/i, "")
+      .replace(/[#*_`>\[\]]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 140) ?? "";
+
     if (lastQ) {
+      // If the user explicitly says "cherche sur le sujet dont on parle", replace vague phrasing with actual topic
+      if (/\b(sujet dont on parle|ce dont on parle|notre sujet|dessus)\b/i.test(cleanQ)) {
+        const core = `${lastQ} ${lastA}`.trim().slice(0, 220);
+        return core.slice(0, MAX_QUERY_CHARS);
+      }
       return `${lastQ.slice(0, 160)} ${cleanQ}`.slice(0, MAX_QUERY_CHARS);
     }
   }
 
   return cleanQ.slice(0, MAX_QUERY_CHARS);
+}
+
+/**
+ * Fast intelligent web-search router & contextual query rewriter.
+ *
+ * Uses the ultra-fast "suggestions" tier (Groq first) to decide:
+ *  1. Whether real-time web search is genuinely needed (auto-trigger), OR forced by the user.
+ *  2. A clean, standalone, context-resolved search query (fixing vague follow-ups like
+ *     "cherche sur le sujet dont on parle").
+ *
+ * Never throws — falls back gracefully to deterministic rules if the router call fails.
+ */
+export async function planWebSearch(
+  question: string,
+  history?: QaEntry[],
+  options?: {
+    forceWebSearch?: boolean;
+    hasCourseContext?: boolean;
+    userId?: number;
+  },
+): Promise<WebSearchPlan> {
+  const cleanQ = question.replace(/\s+/g, " ").trim();
+  if (!cleanQ || !isWebSearchConfigured()) {
+    return { shouldSearch: false, query: "" };
+  }
+
+  const forced = Boolean(options?.forceWebSearch);
+  const explicitIntent = hasExplicitWebIntent(cleanQ);
+
+  // Zero-latency bypass for obvious non-web messages when not explicitly forced
+  if (!forced && !explicitIntent) {
+    if (isTrivialNonSearchMessage(cleanQ)) {
+      return { shouldSearch: false, query: "" };
+    }
+    // When a course is attached and there is no explicit web request or live/temporal cue, stay focused on the course
+    if (options?.hasCourseContext && !hasTemporalOrLiveSignal(cleanQ)) {
+      return { shouldSearch: false, query: "" };
+    }
+  }
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const recentHistory = (history ?? [])
+    .slice(-3)
+    .map((entry) => {
+      const cleanAns = (entry.answer || "")
+        .replace(/\[SUGGESTIONS\][\s\S]*$/i, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 240);
+      return `User: ${entry.question.slice(0, 200)}\nAssistant: ${cleanAns}`;
+    })
+    .join("\n\n");
+
+  const mustSearch = forced || explicitIntent;
+  const routerPrompt = `You are a fast search-routing and query-rewriting engine for an academic AI tutor.
+Today's date is ${todayIso}.
+
+TASK:
+1. Decide whether a real-time web search is needed ("shouldSearch": true/false).
+2. If "shouldSearch" is true, write a concise, standalone, high-signal search engine query ("query") in the same language as the user's request, resolving ALL pronouns or references ("le sujet dont on parle", "ça", "ce point", "dessus", "it", "this") using <recent_conversation>.
+
+ROUTING RULES:
+${
+  mustSearch
+    ? `- The user EXPLICITLY requested a web search. You MUST return "shouldSearch": true.
+- Focus 100% on rewriting the user's request into a clean, self-contained search query that captures the REAL topic from <recent_conversation> (NEVER output vague phrases like "sujet dont on parle" or "cherche sur internet").`
+    : `- Return "shouldSearch": true ONLY IF:
+  * The question asks about recent/live/post-2024 facts, current events, news, current officeholders, recent laws/reforms, latest software/AI releases, live statistics/prices, or specific obscure real-world entities/organizations/papers that require up-to-date verification.
+- Return "shouldSearch": false IF:
+  * The question is timeless academic/general knowledge (math proofs, physics laws, classic history, biology mechanisms, grammar, programming fundamentals, essay methodology, flashcards/quiz requests, solving a math/code problem given in the prompt).`
+}
+
+Output STRICT JSON only (no markdown fences, no commentary):
+{"shouldSearch": boolean, "query": "standalone search query or empty string"}
+
+${recentHistory ? `<recent_conversation>\n${recentHistory}\n</recent_conversation>\n\n` : ""}<user_message>
+${cleanQ}
+</user_message>`;
+
+  try {
+    const raw = await callWithFallback(routerPrompt, 180, {
+      toolType: "suggestions",
+      userId: options?.userId,
+    });
+    const parsed = parseJsonWithFallback(raw);
+    const shouldSearch = mustSearch ? true : Boolean(parsed.shouldSearch);
+    const rawQuery = typeof parsed.query === "string" ? parsed.query.replace(/\s+/g, " ").trim() : "";
+
+    if (!shouldSearch) {
+      return { shouldSearch: false, query: "" };
+    }
+
+    const finalQuery = (rawQuery || buildSearchQuery(cleanQ, history)).slice(0, MAX_QUERY_CHARS);
+    return { shouldSearch: true, query: finalQuery };
+  } catch (err: any) {
+    console.warn("[sphera-web] Search planner fallback:", err?.message || err);
+    if (mustSearch) {
+      return { shouldSearch: true, query: buildSearchQuery(cleanQ, history) };
+    }
+    return { shouldSearch: false, query: "" };
+  }
 }
 
 interface TavilyResultItem {

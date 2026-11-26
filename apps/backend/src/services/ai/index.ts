@@ -16,6 +16,7 @@ export { type QaEntry } from "./rag.js";
 export {
   buildSearchQuery,
   isWebSearchConfigured,
+  planWebSearch,
   searchWeb,
   type WebSource,
 } from "./webSearch.js";
