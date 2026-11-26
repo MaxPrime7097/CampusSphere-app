@@ -13,7 +13,12 @@
 
 import { describe, it, expect } from "vitest";
 import { annalePrompt, freeChatPrompt, qaPrompt, suggestionsPrompt, toolPrompt } from "../../src/services/ai/prompts.js";
-import { buildSearchQuery, formatWebSourcesForPrompt } from "../../src/services/ai/webSearch.js";
+import {
+  buildSearchQuery,
+  formatWebSourcesForPrompt,
+  hasExplicitWebIntent,
+  isTrivialNonSearchMessage,
+} from "../../src/services/ai/webSearch.js";
 import { cleanJson, parseJsonWithFallback, UnparseableModelOutputError } from "../../src/services/ai/json.js";
 import { correctionsCount } from "../../src/serializers/sphera.js";
 import { generateFichePdfHtml } from "../../src/services/pdf/templates.js";
@@ -309,15 +314,39 @@ describe("tts provider & ssml", () => {
 });
 
 describe("web search grounding (Tavily)", () => {
-  it("enriches short follow-up questions with prior turn context", () => {
+  it("detects trivial non-search messages and explicit web intent accurately", () => {
+    expect(isTrivialNonSearchMessage("Bonjour !")).toBe(true);
+    expect(isTrivialNonSearchMessage("Merci beaucoup")).toBe(true);
+    expect(isTrivialNonSearchMessage("Qui est le président actuel ?")).toBe(false);
+
+    expect(hasExplicitWebIntent("Cherche sur le sujet dont on parle")).toBe(true);
+    expect(hasExplicitWebIntent("Vérifie en ligne les dates du concours")).toBe(true);
+    expect(hasExplicitWebIntent("Explique le théorème de Pythagore")).toBe(false);
+  });
+
+  it("enriches short follow-up questions and vague references with prior turn context", () => {
     const history = [
-      { question: "Quelle est la réforme du bac en France ?", answer: "Elle a introduit les spécialités." },
+      {
+        question: "Quelle est la réforme du bac en France ?",
+        answer: "Elle a introduit les spécialités en première et terminale.",
+      },
     ];
     expect(buildSearchQuery("Et en 2026 ?", history)).toContain("réforme du bac");
     expect(buildSearchQuery("Et en 2026 ?", history)).toContain("Et en 2026 ?");
 
+    const vague = buildSearchQuery("Cherche sur le sujet dont on parle", history);
+    expect(vague).toContain("réforme du bac");
+    expect(vague).not.toContain("sujet dont on parle");
+
     const standalone = buildSearchQuery("Explique la loi de Moore en informatique", history);
     expect(standalone).toBe("Explique la loi de Moore en informatique");
+  });
+
+  it("enforces student-voice rebound suggestions and forbids tutor-voice openings", () => {
+    const prompt = freeChatPrompt("Explique la photosynthèse");
+    expect(prompt).toContain("STUDENT'S OWN VOICE");
+    expect(prompt).toContain("Aimerais-tu");
+    expect(prompt).toContain("STRICTLY FORBIDDEN openings");
   });
 
   it("injects numbered <web_sources> and citation rules into freeChatPrompt and qaPrompt", () => {

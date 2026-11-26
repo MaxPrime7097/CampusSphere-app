@@ -36,7 +36,6 @@ import { getWeekStartDate } from "../lib/weekHelper.js";
 import { synthesizeSpeech, sanitizeDialogueTurns, type DialogueTurn } from "../services/ttsProvider.js";
 import { invalidatePreferencesCache } from "../services/ai/userContext.js";
 import {
-  buildSearchQuery,
   generateAnnale,
   generateFromSelection,
   generateQaAnswer,
@@ -46,6 +45,7 @@ import {
   isToolType,
   isWebSearchConfigured,
   MIN_SOURCE_CHARS,
+  planWebSearch,
   searchWeb,
   VALID_TOOL_TYPES,
   type AnnaleMode,
@@ -1618,13 +1618,21 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
     req.query.stream === "true" ||
     (req.body && (req.body as any).stream === true);
 
+  const isStandaloneThread = !(thread.session.extractedText || "").trim();
+  const canConsiderWebSearch = isWebSearchConfigured() && (Boolean(webSearch) || isStandaloneThread);
+
   if (!isStream) {
     let webSources: WebSource[] = [];
-    if (webSearch && isWebSearchConfigured()) {
-      const searchRes = await searchWeb(buildSearchQuery(question, previousThreadHistory), {
-        maxResults: 5,
+    if (canConsiderWebSearch) {
+      const plan = await planWebSearch(question, previousThreadHistory, {
+        forceWebSearch: Boolean(webSearch),
+        hasCourseContext: Boolean(effectiveSourceText.trim()),
+        userId: me.id,
       });
-      webSources = searchRes.sources;
+      if (plan.shouldSearch && plan.query) {
+        const searchRes = await searchWeb(plan.query, { maxResults: 5 });
+        webSources = searchRes.sources;
+      }
     }
 
     const answer = await generateQaAnswer(
@@ -1679,26 +1687,41 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
   let fullAnswer = "";
   let webSources: WebSource[] = [];
   try {
+    // Emit an immediate initial status before fast search planning
     if (webSearch && isWebSearchConfigured()) {
-      const searchQuery = buildSearchQuery(question, previousThreadHistory);
-      res.write(`data: ${JSON.stringify({ status: "searching_web", query: searchQuery })}\n\n`);
-      const searchRes = await searchWeb(searchQuery, {
-        maxResults: 5,
-        signal: abortController.signal,
+      res.write(`data: ${JSON.stringify({ status: "searching_web" })}\n\n`);
+    } else if (effectiveSourceText.trim()) {
+      res.write(`data: ${JSON.stringify({ status: "reading_course" })}\n\n`);
+    } else {
+      res.write(`data: ${JSON.stringify({ status: "thinking" })}\n\n`);
+    }
+
+    if (canConsiderWebSearch) {
+      const plan = await planWebSearch(question, previousThreadHistory, {
+        forceWebSearch: Boolean(webSearch),
+        hasCourseContext: Boolean(effectiveSourceText.trim()),
+        userId: me.id,
       });
       if (abortController.signal.aborted) {
         res.end();
         return;
       }
-      webSources = searchRes.sources;
-      if (webSources.length > 0) {
-        res.write(`data: ${JSON.stringify({ sources: webSources })}\n\n`);
+      if (plan.shouldSearch && plan.query) {
+        res.write(`data: ${JSON.stringify({ status: "searching_web", query: plan.query })}\n\n`);
+        const searchRes = await searchWeb(plan.query, {
+          maxResults: 5,
+          signal: abortController.signal,
+        });
+        if (abortController.signal.aborted) {
+          res.end();
+          return;
+        }
+        webSources = searchRes.sources;
+        if (webSources.length > 0) {
+          res.write(`data: ${JSON.stringify({ sources: webSources })}\n\n`);
+        }
+        res.write(`data: ${JSON.stringify({ status: "generating" })}\n\n`);
       }
-      res.write(`data: ${JSON.stringify({ status: "generating" })}\n\n`);
-    } else if (effectiveSourceText.trim()) {
-      res.write(`data: ${JSON.stringify({ status: "reading_course" })}\n\n`);
-    } else {
-      res.write(`data: ${JSON.stringify({ status: "thinking" })}\n\n`);
     }
 
     const stream = streamQaAnswer(

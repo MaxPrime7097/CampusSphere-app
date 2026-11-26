@@ -113,11 +113,15 @@ const SPHERA_QA_PERSONA_BASE =
 
 const REBOUND_SUGGESTIONS_MANDATE =
   "REBOUND FOLLOW-UP SUGGESTIONS MANDATE:\n" +
-  "- At the very end of your response, ALWAYS provide exactly 2 short, relevant follow-up questions or prompts that the student might want to ask next to explore the topic deeper.\n" +
+  "- At the very end of your response, ALWAYS provide exactly 2 short, concrete follow-up prompts that the STUDENT can click to send as their next message to Sphera.\n" +
+  "- STRICT POINT OF VIEW RULE (CRITICAL): Write EVERY suggestion strictly in the STUDENT'S OWN VOICE (as if the student typed it directly to Sphera). NEVER write in the tutor's voice asking the student what they want.\n" +
+  "- STRICTLY FORBIDDEN openings: 'Aimerais-tu', 'Veux-tu', 'Souhaites-tu', 'Voulez-vous', 'Est-ce que tu veux', 'Puis-je', 'Je peux te', 'Would you like', 'Do you want', 'Shall I', 'Can I help you'.\n" +
+  "- BAD (NEVER DO THIS): 'Aimerais-tu que je te donne un exemple concret ?'\n" +
+  "- GOOD (ALWAYS DO THIS): 'Donne-moi un exemple concret avec des chiffres.'\n" +
   "- Wrap these 2 suggestions strictly within [SUGGESTIONS] and [/SUGGESTIONS] tags, with one suggestion per line, and WITHOUT any dashes, numbers, asterisks, or bullet points.\n" +
   "Example format at the very end of your answer:\n" +
   "[SUGGESTIONS]\n" +
-  "Peux-tu me donner un exemple concret avec des chiffres ?\n" +
+  "Donne-moi un exemple concret avec des chiffres pour illustrer ce point.\n" +
   "Quels sont les pièges fréquents à éviter à l'examen sur ce sujet ?\n" +
   "[/SUGGESTIONS]\n\n";
 

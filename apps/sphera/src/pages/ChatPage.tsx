@@ -1099,8 +1099,8 @@ export default function ChatPage() {
                   webSearchAvailable === false
                     ? 'Recherche Web non configurée sur le serveur (TAVILY_API_KEY manquante)'
                     : webSearchEnabled
-                      ? 'Recherche Web activée — Sphera cite des sources en temps réel'
-                      : 'Activer la recherche Web temps réel avec sources cliquables'
+                      ? 'Recherche Web forcée sur chaque message (clique pour repasser en mode Auto)'
+                      : 'Recherche Web automatique active — clique pour forcer la recherche Web'
                 }
                 aria-pressed={webSearchEnabled}
                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all cursor-pointer shrink-0 ${

@@ -31,6 +31,71 @@ const THINKING_STEPS_COURSE = [
   'Rédaction de la réponse…',
 ]
 
+/**
+ * Safety net: ensures clickable rebound suggestions are ALWAYS written in the
+ * student's voice (ready to send as the student's next message), even if an LLM
+ * slips into tutor-style phrasing like "Aimerais-tu que je t'explique X ?".
+ */
+function normalizeStudentSuggestion(raw: string): string {
+  const s = raw.trim().replace(/^[-*•\d.]+\s*/, '')
+  if (!s) return ''
+
+  // French tutor-voice patterns -> student voice
+  const frJeT = s.match(
+    /^(?:aimerais-tu|veux-tu|souhaites-tu|voulez-vous|est-ce que tu veux|est-ce que tu aimerais)\s+que\s+je\s+t['’](.+)$/i,
+  )
+  if (frJeT) {
+    return `Peux-tu m'${frJeT[1].trim()}`
+  }
+
+  const frJeTe = s.match(
+    /^(?:aimerais-tu|veux-tu|souhaites-tu|voulez-vous|est-ce que tu veux|est-ce que tu aimerais)\s+que\s+je\s+te\s+(.+)$/i,
+  )
+  if (frJeTe) {
+    return `Peux-tu me ${frJeTe[1].trim()}`
+  }
+
+  const frJe = s.match(
+    /^(?:aimerais-tu|veux-tu|souhaites-tu|voulez-vous|est-ce que tu veux|est-ce que tu aimerais)\s+que\s+j(?:e\s+|['’])(.+)$/i,
+  )
+  if (frJe) {
+    return `Peux-tu ${frJe[1].trim()}`
+  }
+
+  const frQuOn = s.match(
+    /^(?:aimerais-tu|veux-tu|souhaites-tu|voulez-vous|est-ce que tu veux|est-ce que tu aimerais)\s+qu['’]on\s+(.+)$/i,
+  )
+  if (frQuOn) {
+    return `Pouvons-nous ${frQuOn[1].trim()}`
+  }
+
+  const frInf = s.match(
+    /^(?:aimerais-tu|veux-tu|souhaites-tu|voulez-vous|est-ce que tu veux|est-ce que tu aimerais)\s+(.+)$/i,
+  )
+  if (frInf) {
+    const rest = frInf[1].trim()
+    return `Je voudrais ${rest}`
+  }
+
+  // English tutor-voice patterns -> student voice
+  const enMeTo = s.match(/^(?:would you like|do you want)\s+me\s+to\s+(.+)$/i)
+  if (enMeTo) {
+    return `Can you ${enMeTo[1].trim()}`
+  }
+
+  const enShallI = s.match(/^(?:shall i|should i|can i)\s+(.+)$/i)
+  if (enShallI) {
+    return `Can you ${enShallI[1].trim()}`
+  }
+
+  const enTo = s.match(/^(?:would you like|do you want)\s+to\s+(.+)$/i)
+  if (enTo) {
+    return `Let's ${enTo[1].trim()}`
+  }
+
+  return s
+}
+
 export function AiMessageItem({ question, answer, index, sources, status, searchQuery, hasCourseContext, onEdit, onRegenerate, onCreateNote, onSelectSuggestion, disabled }: AiMessageItemProps) {
   const { t } = useTranslation('study')
   const [copied, setCopied] = useState(false)
@@ -71,7 +136,7 @@ export function AiMessageItem({ question, answer, index, sources, status, search
     }
     const list = completeMatch[1]
       .split('\n')
-      .map(s => s.trim().replace(/^[-*•\d.]+\s*/, ''))
+      .map(normalizeStudentSuggestion)
       .filter(Boolean)
       .slice(0, 2)
     return { cleanAnswer: clean, suggestions: list }
