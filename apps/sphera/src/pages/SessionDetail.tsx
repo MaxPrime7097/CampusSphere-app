@@ -1230,6 +1230,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
           }}
           extractedText={session.extracted_text}
           initialTool={requestedTool}
+          subjectId={session.subject_id ?? session.subject?.id ?? null}
         />
       </div>
       {selectionToolbar && (

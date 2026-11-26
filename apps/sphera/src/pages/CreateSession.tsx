@@ -50,9 +50,11 @@ import {
   sendThreadMessage,
   streamThreadMessage,
   deleteChatThread,
+  linkSessionToSubject,
   type ArtefactItem,
   type ChatThreadItem,
 } from '../services/spheraApi'
+import { SubjectPickerPill } from '../components/planner/SubjectPickerPill'
 import { QuestionSuggestions } from '../components/app/QuestionSuggestions'
 import { normalizeAiResponse } from '../utils/normalizeAiResponse'
 import { CommandMenu, COMMANDS, type Command } from '../components/app/CommandMenu'
@@ -64,7 +66,7 @@ import { AiMessageItem } from '../components/app/AiMessageItem'
 import { TextSelectionToolbar, type SelectionActionType } from '../components/app/TextSelectionToolbar'
 import { useTranslation } from 'react-i18next'
 import { setCached } from '../utils/sessionCache'
-import { updateSessionDetailCache, invalidateSpheraSessions } from '../hooks/useSpheraQueries'
+import { updateSessionDetailCache, invalidateSpheraSessions, invalidateSpheraPlanner } from '../hooks/useSpheraQueries'
 import { encodeHashId } from '../lib/hashids'
 
 export default function CreateSession() {
@@ -75,6 +77,7 @@ export default function CreateSession() {
 
   const [generationMode, setGenerationMode] = useState<'study' | 'annale'>('study')
   const [selectedTools, setSelectedTools] = useState<ToolType[]>(['fiche'])
+  const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null)
   const [annaleMode, setAnnaleMode] = useState<'complete' | 'rapide'>('complete')
   const [generating, setGenerating] = useState(false)
   const [creationStep, setCreationStep] = useState<number>(1)
@@ -473,6 +476,10 @@ export default function CreateSession() {
         setTextSource(payload.extracted_text)
       }
       if (payload.id) {
+        if (selectedSubjectId) {
+          await linkSessionToSubject(payload.id, selectedSubjectId, 'session').catch(() => {})
+          invalidateSpheraPlanner()
+        }
         setSessionId(payload.id)
         invalidateSpheraSessions()
         const hashId = encodeHashId(payload.id) || payload.id
@@ -502,6 +509,10 @@ export default function CreateSession() {
       clearTimeout(stepTimer)
       const payload = result?.data ?? result
       if (payload.id) {
+        if (selectedSubjectId) {
+          await linkSessionToSubject(payload.id, selectedSubjectId, 'annale').catch(() => {})
+          invalidateSpheraPlanner()
+        }
         setSessionId(payload.id)
         invalidateSpheraSessions()
         const hashId = encodeHashId(payload.id) || payload.id
@@ -1461,9 +1472,18 @@ export default function CreateSession() {
                 </div>
               ) : (
                 <>
-                  <div className="mb-8 text-center">
+                  <div className="mb-6 text-center">
                     <h2 className="font-display text-2xl font-bold text-white mb-2">{t('createSession.title')}</h2>
                     <p className="text-sm text-sphera-text-muted">Choisissez comment exploiter ce document</p>
+                  </div>
+
+                  {/* Optional zero-friction Subject tagging before creating session */}
+                  <div className="mb-6 flex flex-wrap items-center justify-center gap-2 text-xs text-sphera-text-muted">
+                    <span>Matière (optionnel) :</span>
+                    <SubjectPickerPill
+                      value={selectedSubjectId}
+                      onChange={(id) => setSelectedSubjectId(id)}
+                    />
                   </div>
 
                   {error && <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400 w-full max-w-md">{error}</div>}

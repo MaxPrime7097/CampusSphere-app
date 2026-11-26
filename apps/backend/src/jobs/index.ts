@@ -13,6 +13,7 @@
 import { prisma } from "../lib/prisma.js";
 import { claimPeriod } from "./lock.js";
 import { sendEventReminders } from "../services/eventNotifications.js";
+import { sendDailyRevisionReminders } from "../services/planner/revisionReminders.js";
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -74,6 +75,7 @@ const JOBS: ScheduledJob[] = [
   { name: "cleanup-expired-spheres", periodSeconds: 3600, run: cleanupExpiredSpheres },
   { name: "prune-revoked-tokens", periodSeconds: 86_400, run: pruneRevokedTokens },
   { name: "send-event-reminders", periodSeconds: 3600, run: sendEventReminders },
+  { name: "send-revision-reminders", periodSeconds: 3600, run: sendDailyRevisionReminders },
   { name: "check-bedrock-budget", periodSeconds: 3600, run: checkBedrockBudgetAlert },
 ];
 

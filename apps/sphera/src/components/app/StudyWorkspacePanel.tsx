@@ -43,6 +43,8 @@ import {
   Exam,
   Lightning,
   Columns,
+  CalendarCheck,
+  CheckCircle,
 } from '@phosphor-icons/react'
 import { SpheraSettingsModal } from '../settings/SpheraSettingsModal'
 import { MarkdownRenderer } from './MarkdownRenderer'
@@ -53,8 +55,9 @@ import { AiMessageItem } from './AiMessageItem'
 import { CommandMenu, COMMANDS, type Command } from './CommandMenu'
 import { QuestionSuggestions } from './QuestionSuggestions'
 import { isTextEnglish } from '../../utils/detectLanguage'
-import { createArtefact, correctAnnale, type ArtefactItem, type ChatThreadItem, type ToolType } from '../../services/spheraApi'
-import { updateSessionDetailCache } from '../../hooks/useSpheraQueries'
+import { createArtefact, correctAnnale, togglePlannerTask, type ArtefactItem, type ChatThreadItem, type ToolType } from '../../services/spheraApi'
+import { updateSessionDetailCache, usePlannerTodayQuery, invalidateSpheraPlanner } from '../../hooks/useSpheraQueries'
+import { SubjectPickerPill } from '../planner/SubjectPickerPill'
 import { usePodcastPlayer, podcastStore } from '../../utils/podcastPlayerStore'
 import { GenerateScopeModal } from './GenerateScopeModal'
 import { detectChaptersFromText, type DetectedChapter } from '../../utils/extractChapters'
@@ -105,6 +108,7 @@ interface StudyWorkspacePanelProps {
   onCreateNoteWithContent?: (title: string, text: string) => Promise<void>
   extractedText?: string
   initialTool?: ToolType | null
+  subjectId?: number | null
 }
 
 export function StudyWorkspacePanel({
@@ -145,6 +149,7 @@ export function StudyWorkspacePanel({
   onCreateNoteWithContent,
   extractedText = '',
   initialTool = null,
+  subjectId = null,
 }: StudyWorkspacePanelProps) {
   const { t } = useTranslation('study')
 
@@ -638,6 +643,42 @@ export function StudyWorkspacePanel({
 
   const isToolView = activeView !== null && activeView.type !== 'chat'
 
+  // Proactive Planner link: detect if this session has a pending task scheduled for today
+  const { data: plannerToday } = usePlannerTodayQuery(Boolean(sessionId))
+  const [completingTaskId, setCompletingTaskId] = useState<number | null>(null)
+  const [milestoneTaskId, setMilestoneTaskId] = useState<number | null>(null)
+
+  const pendingTodayTask = useMemo(() => {
+    if (!sessionId || !plannerToday?.tasks?.length) return null
+    const numericId = Number(sessionId)
+    return (
+      plannerToday.tasks.find((t) => !t.isDone && t.sessionId !== null && Number(t.sessionId) === numericId) ||
+      null
+    )
+  }, [sessionId, plannerToday])
+
+  const handleStudyMilestone = () => {
+    if (pendingTodayTask) {
+      setMilestoneTaskId(pendingTodayTask.id)
+    }
+  }
+
+  const handleCompleteTodayTask = async () => {
+    if (!pendingTodayTask || completingTaskId === pendingTodayTask.id) return
+    setCompletingTaskId(pendingTodayTask.id)
+    try {
+      await togglePlannerTask(pendingTodayTask.id, true)
+      setMilestoneTaskId(null)
+      invalidateSpheraPlanner()
+      showPanelFeedback('Séance du jour validée dans Mon Plan !', 'success', 3200)
+    } catch (err) {
+      console.error('[StudyWorkspacePanel] Failed to complete planner task:', err)
+      showPanelFeedback("Impossible de valider la séance pour l'instant.", 'error')
+    } finally {
+      setCompletingTaskId(null)
+    }
+  }
+
   const readToolProgress = (
     toolType: 'quiz' | 'flashcards',
     artefactId?: number | string,
@@ -716,6 +757,14 @@ export function StudyWorkspacePanel({
                   </span>
                 )}
               </button>
+              {sessionId && (
+                <SubjectPickerPill
+                  compact
+                  value={subjectId}
+                  sessionId={sessionId}
+                  sessionType={isAnnale ? 'annale' : 'session'}
+                />
+              )}
               {onOpenShare && (
                 <button type="button" onClick={onOpenShare} className="p-1.5 rounded-lg text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors" title="Partager">
                   <ShareNetwork className="w-4 h-4" />
@@ -826,6 +875,51 @@ export function StudyWorkspacePanel({
 
       {/* Thin contextual progress bar slot directly anchored under Top Bar */}
       {isToolView && <div ref={setProgressSlotEl} className="w-full shrink-0 z-20" />}
+
+      {/* Contextual "Séance du jour" Planner Bar + Soft Auto-Completion Prompt */}
+      {pendingTodayTask && (
+        <div
+          className={`px-3 sm:px-4 py-2 border-b flex items-center justify-between gap-2.5 shrink-0 z-10 transition-colors ${
+            milestoneTaskId === pendingTodayTask.id
+              ? 'bg-sphera-green/15 border-sphera-green/35'
+              : 'bg-sphera-surface-2/60 border-sphera-border/60'
+          }`}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <CalendarCheck
+              weight="duotone"
+              className="w-4 h-4 text-sphera-green shrink-0"
+            />
+            <span className="text-xs text-white/90 truncate">
+              {milestoneTaskId === pendingTodayTask.id ? (
+                <strong className="text-sphera-green">Bravo ! Séance terminée — </strong>
+              ) : (
+                <span className="text-sphera-green font-semibold">Séance du jour : </span>
+              )}
+              <span>{pendingTodayTask.label}</span>
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleCompleteTodayTask}
+            disabled={completingTaskId === pendingTodayTask.id}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shrink-0 cursor-pointer disabled:opacity-50 ${
+              milestoneTaskId === pendingTodayTask.id
+                ? 'bg-sphera-green hover:bg-sphera-green-hover text-black shadow-sm'
+                : 'bg-sphera-surface hover:bg-sphera-green hover:text-black border border-sphera-green/35 text-sphera-green'
+            }`}
+          >
+            {completingTaskId === pendingTodayTask.id ? (
+              <Spinner className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <CheckCircle weight="fill" className="w-3.5 h-3.5" />
+            )}
+            <span>
+              {milestoneTaskId === pendingTodayTask.id ? 'Valider dans Mon Plan' : 'Marquer fait'}
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* Dynamic Panel Feedback Toast */}
       {panelFeedback && (
@@ -1736,6 +1830,7 @@ export function StudyWorkspacePanel({
                   onGenerateChapterFlashcards={onGenerateChapterFlashcards}
                   onRegenerateFiche={onRegenerateFiche}
                   onSaveNote={handleSaveInlineNote}
+                  onAllChaptersMastered={handleStudyMilestone}
                   isRegenerating={isRegeneratingFiche}
                   isGeneratingItem={isGeneratingArtefact}
                   generatingChapterArtefact={generatingChapterArtefact}
@@ -1756,6 +1851,7 @@ export function StudyWorkspacePanel({
                 artefactId={activeView.artefactId}
                 onPause={() => setActiveView(null)}
                 onSaveNote={handleSaveInlineNote}
+                onStudyComplete={handleStudyMilestone}
                 workspaceSlots={workspaceSlots}
                 onAskQuestion={(prompt) => {
                   onSendMessage(prompt)
@@ -1774,6 +1870,7 @@ export function StudyWorkspacePanel({
                 artefactId={activeView.artefactId}
                 onPause={() => setActiveView(null)}
                 onSaveNote={handleSaveInlineNote}
+                onStudyComplete={handleStudyMilestone}
                 workspaceSlots={workspaceSlots}
                 onAskQuestion={(prompt) => {
                   onSendMessage(prompt)

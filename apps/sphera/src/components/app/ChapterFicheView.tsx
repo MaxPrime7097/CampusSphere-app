@@ -89,6 +89,7 @@ interface ChapterFicheViewProps {
   onGenerateChapterFlashcards: (chapterTitle: string, chapterSummary: string) => void
   onRegenerateFiche: () => void
   onSaveNote?: (title: string, text: string) => Promise<void> | void
+  onAllChaptersMastered?: () => void
   isRegenerating?: boolean
   isGeneratingItem?: boolean
   generatingChapterArtefact?: { type: 'quiz' | 'flashcards'; chapter: string } | null
@@ -134,6 +135,7 @@ export function ChapterFicheView({
   onGenerateChapterFlashcards,
   onRegenerateFiche,
   onSaveNote,
+  onAllChaptersMastered,
   isRegenerating = false,
   isGeneratingItem = false,
   generatingChapterArtefact = null,
@@ -202,6 +204,12 @@ export function ChapterFicheView({
         localStorage.setItem(masteryStorageKey, JSON.stringify(next))
       } catch {
         // ignore quota errors
+      }
+      if (next[chapterKey] && chapitres && chapitres.length > 0) {
+        const allDone = chapitres.every((c, i) => Boolean(next[c.id || `chap_${i}`]))
+        if (allDone) {
+          onAllChaptersMastered?.()
+        }
       }
       return next
     })

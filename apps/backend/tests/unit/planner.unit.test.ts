@@ -5,6 +5,7 @@ import {
   extractSessionChapters,
   type SchedulerSubjectInput,
 } from "../../src/services/planner/revisionScheduler.js";
+import { buildRevisionReminderPayload } from "../../src/services/planner/revisionReminders.js";
 
 describe("Sphera Revision Scheduler (V1.5)", () => {
   it("prioritizes an upcoming exam over an undated subject of equal or higher weight", () => {
@@ -121,5 +122,27 @@ describe("Sphera Revision Scheduler (V1.5)", () => {
       {},
     );
     expect(chapters).toEqual(["Chap. 1 — Introduction", "Chap. 2 — Théorème central"]);
+  });
+
+  it("builds proactive J-3 exam and daily morning reminder copy accurately", () => {
+    expect(buildRevisionReminderPayload({ todayTasks: [], upcomingExams: [] })).toBeNull();
+
+    const examReminder = buildRevisionReminderPayload({
+      todayTasks: [{ subjectName: "Algorithmique", label: "Quiz final", estimatedMinutes: 20 }],
+      upcomingExams: [{ name: "Algorithmique", daysUntilExam: 3 }],
+    });
+    expect(examReminder?.title).toContain("Algorithmique");
+    expect(examReminder?.title).toContain("J-3");
+    expect(examReminder?.message).toContain("1 séance");
+
+    const dailyReminder = buildRevisionReminderPayload({
+      todayTasks: [
+        { subjectName: "Physique", label: "Fiche Chap. 1", estimatedMinutes: 20 },
+        { subjectName: "Maths", label: "Flashcards", estimatedMinutes: 15 },
+      ],
+      upcomingExams: [{ name: "Physique", daysUntilExam: 10 }],
+    });
+    expect(dailyReminder?.title).toContain("2 séances");
+    expect(dailyReminder?.message).toContain("35 min");
   });
 });

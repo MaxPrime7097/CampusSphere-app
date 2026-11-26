@@ -1222,10 +1222,11 @@ export async function deletePlannerSubject(id: number): Promise<{ success: boole
 export async function linkSessionToSubject(
   sessionId: number | string,
   subjectId: number | null,
+  sessionType: 'session' | 'annale' = 'session',
 ): Promise<{ success: boolean; data: { sessionId: number; subjectId: number | null } }> {
   return apiFetch(`api/sphera/planner/sessions/${sessionId}/subject/`, {
     method: 'PATCH',
-    body: { subjectId },
+    body: { subjectId, sessionType },
     requireAuth: true,
   });
 }
