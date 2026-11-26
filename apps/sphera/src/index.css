@@ -295,3 +295,80 @@
 .font-live {
   font-family: 'Space Grotesk', sans-serif !important;
 }
+
+/* Modern ChatGPT/Perplexity-style shimmering thinking & search text */
+@keyframes sphera-text-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: -100% 50%;
+  }
+}
+
+.sphera-shimmer-text {
+  background: linear-gradient(
+    90deg,
+    rgba(161, 161, 170, 0.72) 0%,
+    rgba(255, 255, 255, 0.98) 45%,
+    rgba(134, 239, 172, 0.95) 55%,
+    rgba(161, 161, 170, 0.72) 100%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: sphera-text-shimmer 2.1s linear infinite;
+}
+
+.sphera-shimmer-text-sky {
+  background: linear-gradient(
+    90deg,
+    rgba(125, 211, 252, 0.68) 0%,
+    rgba(240, 249, 255, 0.98) 48%,
+    rgba(56, 189, 248, 0.95) 58%,
+    rgba(125, 211, 252, 0.68) 100%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: sphera-text-shimmer 1.9s linear infinite;
+}
+
+[data-theme="clair"] .sphera-shimmer-text {
+  background: linear-gradient(
+    90deg,
+    rgba(74, 98, 82, 0.75) 0%,
+    rgba(23, 48, 31, 0.98) 45%,
+    rgba(22, 163, 74, 0.95) 55%,
+    rgba(74, 98, 82, 0.75) 100%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+[data-theme="clair"] .sphera-shimmer-text-sky {
+  background: linear-gradient(
+    90deg,
+    rgba(2, 132, 199, 0.7) 0%,
+    rgba(12, 74, 110, 0.98) 48%,
+    rgba(14, 165, 233, 0.95) 58%,
+    rgba(2, 132, 199, 0.7) 100%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sphera-shimmer-text,
+  .sphera-shimmer-text-sky {
+    animation: none;
+    background: none;
+    color: rgb(var(--sphera-text-muted));
+  }
+}

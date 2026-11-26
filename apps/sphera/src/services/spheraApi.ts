@@ -293,11 +293,13 @@ export async function streamApiFetch({
   path,
   body,
   onToken,
+  onStatus,
   signal,
 }: {
   path: string
   body: Record<string, unknown>
   onToken: (token: string) => void
+  onStatus?: (status: string) => void
   signal?: AbortSignal
 }): Promise<{ fullText: string; metadata?: any }> {
   const url = `${API_BASE.replace(/\/$/, '')}/${path.replace(/^\//, '')}`
@@ -365,6 +367,9 @@ export async function streamApiFetch({
           const parsed = JSON.parse(dataStr)
           if (parsed.error) {
             throw new Error(parsed.error)
+          }
+          if (typeof parsed.status === 'string') {
+            onStatus?.(parsed.status)
           }
           if (parsed.token) {
             fullText += parsed.token
@@ -727,16 +732,34 @@ export async function sendThreadMessage(threadId: number | string, question: str
   });
 }
 
+export type ChatMode = 'tutor' | 'socratic' | 'exam' | 'express';
+
 export async function streamThreadMessage(
   threadId: number | string,
   question: string,
   onToken: (token: string) => void,
   signal?: AbortSignal,
+  options?: {
+    replaceFromTurnIndex?: number;
+    mode?: ChatMode;
+    contextSessionId?: number | null;
+    contextSubjectId?: number | null;
+    onStatus?: (status: string) => void;
+  },
 ) {
   return streamApiFetch({
     path: `api/sphera/threads/${threadId}/messages/`,
-    body: { question },
+    body: {
+      question,
+      ...(options?.replaceFromTurnIndex !== undefined
+        ? { replaceFromTurnIndex: options.replaceFromTurnIndex }
+        : {}),
+      ...(options?.mode ? { mode: options.mode } : {}),
+      ...(options?.contextSessionId ? { contextSessionId: options.contextSessionId } : {}),
+      ...(options?.contextSubjectId ? { contextSubjectId: options.contextSubjectId } : {}),
+    },
     onToken,
+    onStatus: options?.onStatus,
     signal,
   });
 }

@@ -8,7 +8,7 @@
 
 import { badRequest, serviceUnavailable } from "../../lib/errors.js";
 import { parseJsonWithFallback, UnparseableModelOutputError } from "./json.js";
-import { annalePrompt, qaPrompt, freeChatPrompt, suggestionsPrompt, toolPrompt, quizFromSelectionPrompt, flashcardFromSelectionPrompt, type AnnaleMode, type ToolType } from "./prompts.js";
+import { annalePrompt, qaPrompt, freeChatPrompt, suggestionsPrompt, toolPrompt, quizFromSelectionPrompt, flashcardFromSelectionPrompt, type AnnaleMode, type ChatMode, type ToolType } from "./prompts.js";
 import { AllProvidersFailedError, callWithFallback, streamWithFallback, TOKENS_ANNALE, TOKENS_DEFAULT, TOKENS_FICHE, TOKENS_FLASHCARDS, TOKENS_QUIZ } from "./providers.js";
 import { buildContextPrefix, buildStyleInstructions, getUserAcademicContext, getUserPreferences } from "./userContext.js";
 import { extractRelevantPassages, type QaEntry } from "./rag.js";
@@ -178,7 +178,7 @@ export async function generateQaAnswer(
   question: string,
   userId?: number,
   history?: QaEntry[],
-  options?: { inlineMode?: boolean },
+  options?: { inlineMode?: boolean; chatMode?: ChatMode; allowGeneralKnowledge?: boolean },
 ): Promise<string> {
   const prefix = await resolveContextPrefix(userId, {
     ignoreLanguageOverride: Boolean(options?.inlineMode),
@@ -186,7 +186,7 @@ export async function generateQaAnswer(
 
   // If no source text is provided (Free / General Academic Chat mode)
   if (!sourceText || sourceText.trim().length < MIN_SOURCE_CHARS) {
-    const prompt = prefix + freeChatPrompt(question, history);
+    const prompt = prefix + freeChatPrompt(question, history, { chatMode: options?.chatMode });
     try {
       return (
         await callWithFallback(prompt, TOKENS_DEFAULT, { toolType: "qa", userId })
@@ -203,6 +203,8 @@ export async function generateQaAnswer(
     qaPrompt(processedText, question, history, isFiltered, {
       noSuggestions: Boolean(options?.inlineMode),
       preferSourceLanguage: Boolean(options?.inlineMode),
+      chatMode: options?.chatMode,
+      allowGeneralKnowledge: Boolean(options?.allowGeneralKnowledge),
     });
   try {
     return (
@@ -223,7 +225,7 @@ export async function* streamQaAnswer(
   userId?: number,
   history?: QaEntry[],
   signal?: AbortSignal,
-  options?: { inlineMode?: boolean },
+  options?: { inlineMode?: boolean; chatMode?: ChatMode; allowGeneralKnowledge?: boolean },
 ): AsyncGenerator<string, { fullText: string }, void> {
   const prefix = await resolveContextPrefix(userId, {
     ignoreLanguageOverride: Boolean(options?.inlineMode),
@@ -231,7 +233,7 @@ export async function* streamQaAnswer(
 
   // If no source text is provided (Free / General Academic Chat mode)
   if (!sourceText || sourceText.trim().length < MIN_SOURCE_CHARS) {
-    const prompt = prefix + freeChatPrompt(question, history);
+    const prompt = prefix + freeChatPrompt(question, history, { chatMode: options?.chatMode });
     try {
       return yield* streamWithFallback(prompt, TOKENS_DEFAULT, { toolType: "qa", userId }, signal);
     } catch (error) {
@@ -246,6 +248,8 @@ export async function* streamQaAnswer(
     qaPrompt(processedText, question, history, isFiltered, {
       noSuggestions: Boolean(options?.inlineMode),
       preferSourceLanguage: Boolean(options?.inlineMode),
+      chatMode: options?.chatMode,
+      allowGeneralKnowledge: Boolean(options?.allowGeneralKnowledge),
     });
   try {
     return yield* streamWithFallback(prompt, TOKENS_DEFAULT, { toolType: "qa", userId }, signal);

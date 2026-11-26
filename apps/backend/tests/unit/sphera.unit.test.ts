@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { annalePrompt, qaPrompt, suggestionsPrompt, toolPrompt } from "../../src/services/ai/prompts.js";
+import { annalePrompt, freeChatPrompt, qaPrompt, suggestionsPrompt, toolPrompt } from "../../src/services/ai/prompts.js";
 import { cleanJson, parseJsonWithFallback, UnparseableModelOutputError } from "../../src/services/ai/json.js";
 import { correctionsCount } from "../../src/serializers/sphera.js";
 import { generateFichePdfHtml } from "../../src/services/pdf/templates.js";
@@ -113,6 +113,22 @@ describe("prompt construction", () => {
 
     const longFiche = toolPrompt("fiche", SOURCE.repeat(350));
     expect(longFiche).toContain("Document length: LONG");
+  });
+
+  it("supports pedagogical chat modes and conversational continuity in freeChatPrompt", () => {
+    const socratic = freeChatPrompt("Aide-moi sur cette intégrale", undefined, { chatMode: "socratic" });
+    expect(socratic).toContain("SOCRATIC GUIDANCE");
+
+    const exam = freeChatPrompt("Interroge-moi sur la thermodynamique", undefined, { chatMode: "exam" });
+    expect(exam).toContain("EXAM DRILL");
+
+    const express = freeChatPrompt("Résume la mitose", undefined, { chatMode: "express" });
+    expect(express).toContain("EXPRESS SYNTHESIS");
+
+    const ongoing = freeChatPrompt("Et pour le cas limite ?", [
+      { question: "C'est quoi l'enthalpie ?", answer: "H = U + PV" },
+    ]);
+    expect(ongoing).toContain("NEVER repeat greetings");
   });
 });
 

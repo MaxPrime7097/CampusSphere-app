@@ -1507,22 +1507,98 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
   });
   if (!thread) throw notFound("Fil de discussion introuvable.");
 
-  const { question } = z.object({ question: z.string().trim().min(1) }).parse(req.body ?? {});
+  const { question, replaceFromTurnIndex, mode, contextSessionId, contextSubjectId } = z
+    .object({
+      question: z.string().trim().min(1),
+      replaceFromTurnIndex: z.coerce.number().int().min(0).optional(),
+      mode: z.enum(["tutor", "socratic", "exam", "express"]).optional(),
+      contextSessionId: z.coerce.number().int().positive().nullable().optional(),
+      contextSubjectId: z.coerce.number().int().positive().nullable().optional(),
+    })
+    .parse(req.body ?? {});
 
-  const previousThreadHistory: QaEntry[] = [];
+  // Resolve effective source text:
+  // - In-session thread: uses that session's extractedText strictly.
+  // - Standalone chat with optional attached course or subject: pulls its extractedText
+  //   while allowing general academic knowledge so free exploration always stays seamless.
+  let effectiveSourceText = thread.session.extractedText || "";
+  let allowGeneralKnowledge = false;
+
+  if (!effectiveSourceText.trim()) {
+    if (contextSessionId) {
+      const ctxSession = await prisma.studySession.findFirst({
+        where: { id: contextSessionId, ownerId: me.id },
+        select: { extractedText: true },
+      });
+      if (ctxSession?.extractedText?.trim()) {
+        effectiveSourceText = ctxSession.extractedText;
+        allowGeneralKnowledge = true;
+      }
+    } else if (contextSubjectId) {
+      const subjectSessions = await prisma.studySession.findMany({
+        where: { subjectId: contextSubjectId, ownerId: me.id },
+        select: {
+          sourceFilename: true,
+          extractedText: true,
+          resource: { select: { title: true } },
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 6,
+      });
+      const combined = subjectSessions
+        .filter((s) => s.extractedText && s.extractedText.trim().length > 30)
+        .map((s) => {
+          const label = s.resource?.title || s.sourceFilename || "Cours";
+          return `=== Cours : ${label} ===\n${s.extractedText.slice(0, 8000)}`;
+        })
+        .join("\n\n");
+      if (combined.trim()) {
+        effectiveSourceText = combined.slice(0, 36_000);
+        allowGeneralKnowledge = true;
+      }
+    }
+  }
+
+  // Build ordered turn pairs (user + optional assistant) from existing messages
   const existingMsgs = thread.messages || [];
+  const existingTurns: Array<{
+    userMsg: (typeof existingMsgs)[number];
+    assistantMsg?: (typeof existingMsgs)[number];
+  }> = [];
   for (let i = 0; i < existingMsgs.length; i++) {
     const m = existingMsgs[i];
     if (m.role === "user") {
       const next = existingMsgs[i + 1];
-      previousThreadHistory.push({
-        question: m.content,
-        answer: next && next.role === "assistant" ? next.content : "",
-        created_at: m.createdAt.toISOString(),
-      });
-      if (next && next.role === "assistant") i++;
+      const hasAssistant = Boolean(next && next.role === "assistant");
+      existingTurns.push({ userMsg: m, assistantMsg: hasAssistant ? next : undefined });
+      if (hasAssistant) i++;
     }
   }
+
+  // If editing or regenerating from a specific turn, remove that turn and any subsequent turns
+  // so the thread history stays clean with zero duplicates on reload.
+  let keptTurns = existingTurns;
+  if (replaceFromTurnIndex !== undefined && replaceFromTurnIndex < existingTurns.length) {
+    const toDeleteIds: number[] = [];
+    for (let t = replaceFromTurnIndex; t < existingTurns.length; t++) {
+      toDeleteIds.push(existingTurns[t].userMsg.id);
+      if (existingTurns[t].assistantMsg) {
+        toDeleteIds.push(existingTurns[t].assistantMsg!.id);
+      }
+    }
+    if (toDeleteIds.length > 0) {
+      await prisma.chatMessage.deleteMany({
+        where: { threadId: thread.id, id: { in: toDeleteIds } },
+      });
+    }
+    keptTurns = existingTurns.slice(0, replaceFromTurnIndex);
+  }
+
+  const previousThreadHistory: QaEntry[] = keptTurns.map((t) => ({
+    question: t.userMsg.content,
+    answer: t.assistantMsg?.content ?? "",
+    created_at: t.userMsg.createdAt.toISOString(),
+  }));
 
   const isStream =
     req.headers.accept?.includes("text/event-stream") ||
@@ -1531,10 +1607,11 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
 
   if (!isStream) {
     const answer = await generateQaAnswer(
-      thread.session.extractedText,
+      effectiveSourceText,
       question,
       me.id,
       previousThreadHistory,
+      { chatMode: mode, allowGeneralKnowledge },
     );
 
     await prisma.chatMessage.create({
@@ -1542,6 +1619,10 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
     });
     const assistantMsg = await prisma.chatMessage.create({
       data: { threadId: thread.id, role: "assistant", content: answer },
+    });
+    await prisma.chatThread.update({
+      where: { id: thread.id },
+      data: { updatedAt: new Date() },
     });
 
     return ok(res, assistantMsg);
@@ -1553,9 +1634,13 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
     abortController.abort();
   });
 
-  // 1. Immediately persist user message
+  // 1. Immediately persist user message & touch thread updatedAt so it bubbles to top
   await prisma.chatMessage.create({
     data: { threadId: thread.id, role: "user", content: question },
+  });
+  await prisma.chatThread.update({
+    where: { id: thread.id },
+    data: { updatedAt: new Date() },
   });
 
   // 2. Setup SSE headers
@@ -1567,12 +1652,19 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
 
   let fullAnswer = "";
   try {
+    if (effectiveSourceText.trim()) {
+      res.write(`data: ${JSON.stringify({ status: "reading_course" })}\n\n`);
+    } else {
+      res.write(`data: ${JSON.stringify({ status: "thinking" })}\n\n`);
+    }
+
     const stream = streamQaAnswer(
-      thread.session.extractedText,
+      effectiveSourceText,
       question,
       me.id,
       previousThreadHistory,
       abortController.signal,
+      { chatMode: mode, allowGeneralKnowledge },
     );
 
     for await (const token of stream) {
@@ -1582,6 +1674,10 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
 
     const assistantMsg = await prisma.chatMessage.create({
       data: { threadId: thread.id, role: "assistant", content: fullAnswer },
+    });
+    await prisma.chatThread.update({
+      where: { id: thread.id },
+      data: { updatedAt: new Date() },
     });
 
     res.write(`data: ${JSON.stringify({ done: true, message: assistantMsg })}\n\n`);
@@ -1700,13 +1796,23 @@ spheraRouter.post("/chat/threads/", async (req, res) => {
     });
   }
 
-  const threadTitle =
-    title ||
-    (question
-      ? question.length > 40
-        ? question.slice(0, 40) + "…"
-        : question
-      : "Nouvelle discussion");
+  const cleanTitleFromText = (raw?: string): string => {
+    if (!raw) return "Nouvelle discussion";
+    const singleLine = raw
+      .replace(/[#*_`>]+/g, " ")
+      .replace(/\s+/g, " ")
+      .replace(/^(bonjour|salut|hello|hi|coucou|bonsoir)[\s,!.:;-]*/i, "")
+      .trim();
+    const base = singleLine || raw.replace(/\s+/g, " ").trim();
+    if (!base) return "Nouvelle discussion";
+    const capitalized = base.charAt(0).toUpperCase() + base.slice(1);
+    if (capitalized.length <= 48) return capitalized;
+    const cut = capitalized.slice(0, 48);
+    const lastSpace = cut.lastIndexOf(" ");
+    return (lastSpace > 20 ? cut.slice(0, lastSpace) : cut).trimEnd() + "…";
+  };
+
+  const threadTitle = cleanTitleFromText(title || question);
 
   const thread = await prisma.chatThread.create({
     data: {
