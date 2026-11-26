@@ -457,13 +457,12 @@ export default function Dashboard() {
                           {getItemIcon(item._type)}
                         </div>
                         {item.subject?.name && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-sphera-surface border border-sphera-border text-white/85 max-w-[130px]">
-                            <span
-                              className="w-1.5 h-1.5 rounded-full shrink-0"
-                              style={{ backgroundColor: item.subject.color || '#22c55e' }}
-                            />
-                            <span className="truncate">{item.subject.name}</span>
-                          </span>
+                          <span
+                            className="w-2.5 h-2.5 rounded-full shrink-0 ring-2 ring-sphera-bg shadow-xs"
+                            style={{ backgroundColor: item.subject.color || '#22c55e' }}
+                            title={`Matière : ${item.subject.name}`}
+                            aria-label={`Matière : ${item.subject.name}`}
+                          />
                         )}
                         {isInProgress && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-sphera-green/15 text-sphera-green border border-sphera-green/30">

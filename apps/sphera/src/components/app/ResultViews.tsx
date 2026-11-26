@@ -10,6 +10,8 @@ import { usePodcastPlayer, podcastStore, getPodcastVoiceData } from '../../utils
 import type { WorkspaceSlots } from './workspaceSlots'
 import { useInlineSpheraAsk, InlineSpheraAnswerCard, type InlineAskEntry } from './InlineSpheraExplanation'
 import { isTextEnglish } from '../../utils/detectLanguage'
+import { saveSessionStudyProgress } from '../../services/spheraApi'
+import { useSessionStudyProgressQuery, invalidateSessionStudyProgress, invalidateSpheraPlanner } from '../../hooks/useSpheraQueries'
 
 const formatText = (text: any) => {
   if (!text || typeof text !== 'string') return text;
@@ -321,7 +323,7 @@ export function QuizView({
     }
   }, [isRetryMode, currentIndex, selectedOption, score, answers, finished, storageKey, questions.length])
 
-  // Clear saved progress on finish & notify study milestone
+  // Clear saved progress on finish & notify study milestone + sync score to server
   const notifiedCompleteRef = useRef(false)
   useEffect(() => {
     if (finished && !isRetryMode) {
@@ -332,11 +334,23 @@ export function QuizView({
     if (finished && !notifiedCompleteRef.current) {
       notifiedCompleteRef.current = true
       onStudyComplete?.()
+      if (sessionId && sessionType === 'session' && activeQuestionIndices.length > 0) {
+        const scorePct = Math.round((score / activeQuestionIndices.length) * 100)
+        void saveSessionStudyProgress(sessionId, {
+          lastQuizScore: scorePct,
+          incrementQuizAttempt: true,
+        })
+          .then(() => {
+            invalidateSessionStudyProgress(sessionId)
+            invalidateSpheraPlanner()
+          })
+          .catch(() => {})
+      }
     }
     if (!finished) {
       notifiedCompleteRef.current = false
     }
-  }, [finished, isRetryMode, storageKey, onStudyComplete])
+  }, [finished, isRetryMode, storageKey, onStudyComplete, sessionId, sessionType, score, activeQuestionIndices.length])
 
   const activeTotal = activeQuestionIndices.length
   const activeOrigIndex = activeQuestionIndices[currentIndex] ?? 0
@@ -1042,17 +1056,28 @@ export function FlashcardsView({
 
   const inlineAsk = useInlineSpheraAsk({ sessionId, sessionType })
 
-  // Save progress automatically (only for full deck runs)
+  // Save progress automatically (only for full deck runs) + sync mastery to server on finish
   const fcNotifiedCompleteRef = useRef(false)
   useEffect(() => {
     if (finished && !fcNotifiedCompleteRef.current) {
       fcNotifiedCompleteRef.current = true
       onStudyComplete?.()
+      if (sessionId && sessionType === 'session' && total > 0) {
+        void saveSessionStudyProgress(sessionId, {
+          flashcardsMastered: known.size,
+          flashcardsTotal: total,
+        })
+          .then(() => {
+            invalidateSessionStudyProgress(sessionId)
+            invalidateSpheraPlanner()
+          })
+          .catch(() => {})
+      }
     }
     if (!finished) {
       fcNotifiedCompleteRef.current = false
     }
-  }, [finished, onStudyComplete])
+  }, [finished, onStudyComplete, sessionId, sessionType, known.size, total])
 
   useEffect(() => {
     if (!isReviewSubset && currentIndex > 0 && currentIndex < total && !finished && (known.size > 0 || review.size > 0)) {
@@ -2564,7 +2589,8 @@ export function MindmapView({
 
   const inlineAsk = useInlineSpheraAsk({ sessionId, sessionType });
 
-  // Persistent concept mastery state
+  // Persistent concept mastery state (localStorage + cross-device backend sync)
+  const { data: mmServerProgress } = useSessionStudyProgressQuery(sessionType === 'session' ? sessionId : null);
   const masteryStorageKey = useMemo(
     () => `sphera_mm_mastered_${sessionId || 'local'}_${artefactId || 'main'}`,
     [sessionId, artefactId]
@@ -2582,6 +2608,18 @@ export function MindmapView({
   });
 
   useEffect(() => {
+    const serverNodes = mmServerProgress?.masteredMindmapNodes;
+    if (serverNodes && typeof serverNodes === 'object') {
+      const synced = Object.entries(serverNodes)
+        .filter(([, v]) => Boolean(v))
+        .map(([k]) => k);
+      if (synced.length > 0) {
+        setMasteredIds((prev) => new Set([...Array.from(prev), ...synced]));
+      }
+    }
+  }, [mmServerProgress]);
+
+  useEffect(() => {
     try {
       localStorage.setItem(masteryStorageKey, JSON.stringify(Array.from(masteredIds)));
     } catch {}
@@ -2592,9 +2630,16 @@ export function MindmapView({
       const next = new Set(prev);
       if (next.has(conceptId)) next.delete(conceptId);
       else next.add(conceptId);
+      if (sessionId && sessionType === 'session') {
+        const record: Record<string, boolean> = {};
+        next.forEach((id) => { record[id] = true; });
+        void saveSessionStudyProgress(sessionId, { masteredMindmapNodes: record })
+          .then(() => invalidateSessionStudyProgress(sessionId))
+          .catch(() => {});
+      }
       return next;
     });
-  }, []);
+  }, [sessionId, sessionType]);
 
   const toggleBranch = (idx: number) => {
     setCollapsedBranches(prev => ({ ...prev, [idx]: !prev[idx] }));

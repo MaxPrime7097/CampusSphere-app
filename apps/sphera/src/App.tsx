@@ -1,31 +1,39 @@
 // Force Vite HMR reload
-import React, { useEffect } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useSpheraAuth } from './contexts/SpheraAuthContext';
 import Landing from './pages/Landing';
-import AppPage from './pages/AppPage';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import GuestResult from './pages/GuestResult';
 import Dashboard from './pages/Dashboard';
-import SessionDetail from './pages/SessionDetail';
-import AnnaleDetail from './pages/AnnaleDetail';
-import CreateSession from './pages/CreateSession';
-import ChatPage from './pages/ChatPage';
-import PlannerPage from './pages/PlannerPage';
-import Pricing from './pages/Pricing';
-import Blogs from './pages/Blogs';
-import BlogDetail from './pages/BlogDetail';
-import Privacy from './pages/Privacy';
-import Terms from './pages/Terms';
-import LegalNotice from './pages/LegalNotice';
-import TermsOfSale from './pages/TermsOfSale';
-import SpheraLiveShowcase from './pages/SpheraLiveShowcase';
-import QuizLiveHome from './pages/QuizLiveHome';
-import QuizLiveHost from './pages/QuizLiveHost';
-import QuizLiveJoin from './pages/QuizLiveJoin';
 import { SidebarLayout } from './components/layout/SidebarLayout';
+
+const GuestResult = lazy(() => import('./pages/GuestResult'));
+const SessionDetail = lazy(() => import('./pages/SessionDetail'));
+const CreateSession = lazy(() => import('./pages/CreateSession'));
+const ChatPage = lazy(() => import('./pages/ChatPage'));
+const PlannerPage = lazy(() => import('./pages/PlannerPage'));
+const Pricing = lazy(() => import('./pages/Pricing'));
+const Blogs = lazy(() => import('./pages/Blogs'));
+const BlogDetail = lazy(() => import('./pages/BlogDetail'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const Terms = lazy(() => import('./pages/Terms'));
+const LegalNotice = lazy(() => import('./pages/LegalNotice'));
+const TermsOfSale = lazy(() => import('./pages/TermsOfSale'));
+const SpheraLiveShowcase = lazy(() => import('./pages/SpheraLiveShowcase'));
+const QuizLiveHome = lazy(() => import('./pages/QuizLiveHome'));
+const QuizLiveHost = lazy(() => import('./pages/QuizLiveHost'));
+const QuizLiveJoin = lazy(() => import('./pages/QuizLiveJoin'));
+
+function RouteLoader() {
+  return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
+      <div className="w-7 h-7 rounded-full border-2 border-sphera-green/30 border-t-sphera-green animate-spin" />
+      <span className="text-xs text-sphera-text-muted">Chargement…</span>
+    </div>
+  );
+}
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -125,6 +133,7 @@ export default function App() {
       </Helmet>
       <SSOCatcher />
       <main className="flex-1">
+        <Suspense fallback={<RouteLoader />}>
         <Routes>
           {/* Public */}
           <Route path="/" element={<Landing />} />
@@ -163,6 +172,7 @@ export default function App() {
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </main>
     </div>
   );

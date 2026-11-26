@@ -361,6 +361,7 @@ model User {
   spheraPreferences   SpheraPreferences?
   studySubjects       StudySubject[]
   revisionPlans       RevisionPlan[]
+  studyProgresses     StudyProgress[]
 
   @@index([university])
   @@index([faculty])
@@ -1040,9 +1041,10 @@ model StudySession {
   sphereFile    SphereFile?    @relation(fields: [sphereFileId], references: [id], onDelete: SetNull)
   sharedSphere  Sphere?        @relation(fields: [sharedSphereId], references: [id], onDelete: SetNull)
   subject       StudySubject?  @relation(fields: [subjectId], references: [id], onDelete: SetNull)
-  artefacts     Artefact[]
-  chatThreads   ChatThread[]
-  revisionTasks RevisionTask[]
+  artefacts       Artefact[]
+  chatThreads     ChatThread[]
+  revisionTasks   RevisionTask[]
+  studyProgresses StudyProgress[]
 
   @@index([ownerId, createdAt])
   @@index([sharedSphereId, isShared])
@@ -1408,6 +1410,26 @@ model RevisionTask {
   @@index([subjectId])
   @@index([sessionId])
   @@map("revision_tasks")
+}
+
+model StudyProgress {
+  id                   Int      @id @default(autoincrement())
+  userId               Int      @map("user_id")
+  sessionId            Int      @map("session_id")
+  masteredChapters     Json     @default("{}") @map("mastered_chapters")
+  masteredMindmapNodes Json     @default("{}") @map("mastered_mindmap_nodes")
+  lastQuizScore        Int?     @map("last_quiz_score")
+  quizAttempts         Int      @default(0) @map("quiz_attempts")
+  flashcardsMastered   Int      @default(0) @map("flashcards_mastered")
+  flashcardsTotal      Int      @default(0) @map("flashcards_total")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session StudySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sessionId])
+  @@index([userId])
+  @@map("study_progress")
 }
 
 // ─────────────────────────────────────────────────────────────

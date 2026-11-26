@@ -551,6 +551,20 @@ export default function PlannerPage() {
                               </span>
                             )}
                             <span className="text-[11px] text-sphera-text-muted">Priorité {s.weight}/5</span>
+                            {typeof s.masteryScore === 'number' && (
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                  s.masteryScore < 60
+                                    ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                                    : s.masteryScore >= 85
+                                      ? 'bg-sphera-green/15 text-sphera-green border-sphera-green/30'
+                                      : 'bg-cyan-500/10 text-cyan-300 border-cyan-500/25'
+                                }`}
+                                title="Score moyen synchronisé (Quiz & Flashcards) utilisé par le planificateur adaptatif"
+                              >
+                                {s.masteryScore < 60 ? `À renforcer · ${s.masteryScore}%` : `Maîtrise · ${s.masteryScore}%`}
+                              </span>
+                            )}
                           </div>
 
                           <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-sphera-text-muted">

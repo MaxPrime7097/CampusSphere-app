@@ -26,6 +26,8 @@ import DownloadPDFButton from '../shared/DownloadPDFButton'
 import { useDownloadPDF } from '../../hooks/useDownloadPDF'
 import type { WorkspaceSlots } from './workspaceSlots'
 import { InlineSpheraAnswerCard, useInlineSpheraAsk } from './InlineSpheraExplanation'
+import { saveSessionStudyProgress } from '../../services/spheraApi'
+import { useSessionStudyProgressQuery, invalidateSessionStudyProgress } from '../../hooks/useSpheraQueries'
 
 interface ChapterBlock {
   id?: string
@@ -172,7 +174,8 @@ export function ChapterFicheView({
     a_retenir: true,
   })
 
-  // Chapter mastery persistence in localStorage
+  // Chapter mastery persistence (localStorage + cross-device backend sync)
+  const { data: serverProgress } = useSessionStudyProgressQuery(sessionType === 'session' ? sessionId : null)
   const masteryStorageKey = useMemo(() => {
     const idPart = sessionId ? String(sessionId) : (fiche.titre || 'fiche').slice(0, 40)
     return `sphera_fiche_mastered_${idPart}`
@@ -181,20 +184,20 @@ export function ChapterFicheView({
   const [masteredChapters, setMasteredChapters] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
+    let localMap: Record<string, boolean> = {}
     try {
       const saved = localStorage.getItem(masteryStorageKey)
       if (saved) {
         const parsed = JSON.parse(saved)
-        if (parsed && typeof parsed === 'object') {
-          setMasteredChapters(parsed)
-          return
-        }
+        if (parsed && typeof parsed === 'object') localMap = parsed
       }
-      setMasteredChapters({})
-    } catch {
-      setMasteredChapters({})
-    }
-  }, [masteryStorageKey])
+    } catch {}
+    const serverMap =
+      serverProgress?.masteredChapters && typeof serverProgress.masteredChapters === 'object'
+        ? serverProgress.masteredChapters
+        : {}
+    setMasteredChapters({ ...localMap, ...serverMap })
+  }, [masteryStorageKey, serverProgress])
 
   const toggleChapterMastered = (chapterKey: string) => {
     setMasteredChapters((prev) => {
@@ -204,6 +207,11 @@ export function ChapterFicheView({
         localStorage.setItem(masteryStorageKey, JSON.stringify(next))
       } catch {
         // ignore quota errors
+      }
+      if (sessionId && sessionType === 'session') {
+        void saveSessionStudyProgress(sessionId, { masteredChapters: next })
+          .then(() => invalidateSessionStudyProgress(sessionId))
+          .catch(() => {})
       }
       if (next[chapterKey] && chapitres && chapitres.length > 0) {
         const allDone = chapitres.every((c, i) => Boolean(next[c.id || `chap_${i}`]))

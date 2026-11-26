@@ -10,10 +10,12 @@ import {
   getPlannerSubjects,
   getPlannerToday,
   getPlannerPlan,
+  getSessionStudyProgress,
   type GenerationQuota,
   type StudySubjectItem,
   type PlannerTodayData,
   type RevisionPlanData,
+  type StudyProgressData,
 } from '../services/spheraApi'
 import { getCached, setCached, getOngoingGenerations } from '../utils/sessionCache'
 import { queryClient } from '../lib/queryClient'
@@ -33,6 +35,7 @@ export const spheraKeys = {
   plannerSubjects: () => ['sphera', 'planner', 'subjects'] as const,
   plannerToday: () => ['sphera', 'planner', 'today'] as const,
   plannerPlan: () => ['sphera', 'planner', 'plan'] as const,
+  studyProgress: (sessionId: string | number) => ['sphera', 'progress', String(sessionId)] as const,
 }
 
 // ─── Queries ──────────────────────────────────────────────────────────────
@@ -209,6 +212,24 @@ export function invalidateSpheraPlanner() {
   queryClient.invalidateQueries({ queryKey: spheraKeys.plannerSubjects() })
   queryClient.invalidateQueries({ queryKey: spheraKeys.plannerToday() })
   queryClient.invalidateQueries({ queryKey: spheraKeys.plannerPlan() })
+}
+
+export function useSessionStudyProgressQuery(sessionId?: string | number | null) {
+  return useQuery<StudyProgressData | null>({
+    queryKey: spheraKeys.studyProgress(sessionId || 'none'),
+    queryFn: async () => {
+      if (!sessionId) return null
+      const res = await getSessionStudyProgress(sessionId)
+      return res?.data ?? null
+    },
+    enabled: Boolean(sessionId),
+    staleTime: 60 * 1000,
+  })
+}
+
+export function invalidateSessionStudyProgress(sessionId?: string | number | null) {
+  if (!sessionId) return
+  queryClient.invalidateQueries({ queryKey: spheraKeys.studyProgress(sessionId) })
 }
 
 export function invalidateSessionDetail(id: string | number, type: 'session' | 'annale' = 'session') {

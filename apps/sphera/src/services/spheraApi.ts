@@ -1100,6 +1100,7 @@ export interface StudySubjectItem {
   daysUntilExam: number | null;
   weight: number;
   color: string;
+  masteryScore?: number | null;
   createdAt: string;
   sessionsCount: number;
   sessions: Array<{ id: number; title: string; toolTypes: string[] }>;
@@ -1284,6 +1285,46 @@ export async function togglePlannerTask(
   return apiFetch(`api/sphera/planner/tasks/${taskId}/`, {
     method: 'PATCH',
     body: { isDone },
+    requireAuth: true,
+  });
+}
+
+// ─── Cross-Device Study Progress Persistence ────────────────────
+
+export interface StudyProgressData {
+  sessionId: number;
+  masteredChapters: Record<string, boolean>;
+  masteredMindmapNodes: Record<string, boolean>;
+  lastQuizScore: number | null;
+  quizAttempts: number;
+  flashcardsMastered: number;
+  flashcardsTotal: number;
+  updatedAt?: string;
+}
+
+export async function getSessionStudyProgress(
+  sessionId: string | number,
+): Promise<{ success: boolean; data: StudyProgressData }> {
+  return apiFetch(`api/sphera/planner/progress/${sessionId}/`, {
+    method: 'GET',
+    requireAuth: true,
+  });
+}
+
+export async function saveSessionStudyProgress(
+  sessionId: string | number,
+  patch: {
+    masteredChapters?: Record<string, boolean>;
+    masteredMindmapNodes?: Record<string, boolean>;
+    lastQuizScore?: number | null;
+    incrementQuizAttempt?: boolean;
+    flashcardsMastered?: number;
+    flashcardsTotal?: number;
+  },
+): Promise<{ success: boolean; data: StudyProgressData }> {
+  return apiFetch(`api/sphera/planner/progress/${sessionId}/`, {
+    method: 'PATCH',
+    body: patch,
     requireAuth: true,
   });
 }

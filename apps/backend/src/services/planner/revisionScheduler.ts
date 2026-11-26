@@ -29,6 +29,8 @@ export interface SchedulerSubjectInput {
   weight: number; // 1..5
   sessions: SchedulerSessionInput[];
   alreadyCompletedCount?: number;
+  /** Real student mastery score (0..100) derived from synced quiz/flashcard progress. */
+  masteryScore?: number | null;
 }
 
 export interface ScheduledTaskDraft {
@@ -101,7 +103,7 @@ export function weekdayOfIso(dateStr: string): number {
  * - Recency multiplier ensures fair spaced interleaving across all subjects.
  */
 export function computeSubjectPriority(
-  subject: Pick<SchedulerSubjectInput, "examDate" | "weight">,
+  subject: Pick<SchedulerSubjectInput, "examDate" | "weight" | "masteryScore">,
   currentDate: string,
   daysSinceLastScheduled: number,
   scheduledCountSoFar: number,
@@ -133,7 +135,16 @@ export function computeSubjectPriority(
   // Mild balance damping so no single subject starves others over a long plan
   const loadBalance = 1 / (1 + scheduledCountSoFar * 0.12);
 
-  return urgencyBase * weightFactor * recencyMultiplier * loadBalance;
+  // Adaptive mastery adjustment based on real synced Quiz / Flashcards performance:
+  // Struggling (<50%) -> +40% priority; needs work (50-74%) -> +15%; mastered (>=85%) -> -20%
+  let masteryMultiplier = 1.0;
+  if (typeof subject.masteryScore === "number" && !Number.isNaN(subject.masteryScore)) {
+    if (subject.masteryScore < 50) masteryMultiplier = 1.4;
+    else if (subject.masteryScore < 75) masteryMultiplier = 1.15;
+    else if (subject.masteryScore >= 85) masteryMultiplier = 0.8;
+  }
+
+  return urgencyBase * weightFactor * recencyMultiplier * loadBalance * masteryMultiplier;
 }
 
 /** Extract chapter titles from a StudySession's ficheContent or content.fiche. */
