@@ -22,18 +22,21 @@ import {
   Exam,
   Paperclip,
   MagnifyingGlass,
+  Globe,
 } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 import {
   getStandaloneChatThread,
   createStandaloneChatThread,
+  getChatCapabilities,
   streamThreadMessage,
   deleteChatThread,
   renameChatThread,
   createArtefact,
   type ChatThreadItem,
   type ChatMode,
+  type WebSource,
 } from '../services/spheraApi'
 import { AiMessageItem } from '../components/app/AiMessageItem'
 import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal'
@@ -104,15 +107,33 @@ export default function ChatPage() {
       question: string
       answer: string
       id?: number
+      sources?: WebSource[]
       status?: string | null
+      searchQuery?: string | null
     }>
   >([])
   const [inputMessage, setInputMessage] = useState('')
   const [isSending, setIsSending] = useState(false)
 
-  // Pedagogical chat mode & optional course/subject context (defaults to free general chat!)
+  // Pedagogical chat mode, Web Search toggle & optional course/subject context (defaults to free general chat!)
   const [chatMode, setChatMode] = useState<ChatMode>('tutor')
+  const [webSearchEnabled, setWebSearchEnabled] = useState(false)
+  const [webSearchAvailable, setWebSearchAvailable] = useState<boolean | null>(null)
   const [attachedContext, setAttachedContext] = useState<ChatContextSelection>(null)
+
+  useEffect(() => {
+    let mounted = true
+    getChatCapabilities()
+      .then((res) => {
+        if (mounted && typeof res?.data?.webSearch === 'boolean') {
+          setWebSearchAvailable(res.data.webSearch)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      mounted = false
+    }
+  }, [])
   const [contextMenuOpen, setContextMenuOpen] = useState(false)
   const [contextSearch, setContextSearch] = useState('')
   const contextMenuRef = useRef<HTMLDivElement>(null)
@@ -189,7 +210,7 @@ export default function ChatPage() {
   }
 
   const formatThreadMessages = (rawMsgs: any[] = []) => {
-    const formatted: Array<{ question: string; answer: string; id?: number }> = []
+    const formatted: Array<{ question: string; answer: string; id?: number; sources?: WebSource[] }> = []
     for (let i = 0; i < rawMsgs.length; i++) {
       const m = rawMsgs[i]
       if (m.role === 'user') {
@@ -198,6 +219,10 @@ export default function ChatPage() {
           question: m.content,
           answer: next && next.role === 'assistant' ? next.content : '',
           id: m.id,
+          sources:
+            next && next.role === 'assistant' && Array.isArray(next.sources)
+              ? (next.sources as WebSource[])
+              : undefined,
         })
         if (next && next.role === 'assistant') i++
       }
@@ -301,12 +326,14 @@ export default function ChatPage() {
   // ─── 4. Send Message / Create Thread ─────────────────────────
   const buildStreamOptions = (extra?: {
     replaceFromTurnIndex?: number
-    onStatus?: (status: string) => void
+    onStatus?: (status: string, query?: string) => void
+    onSources?: (sources: WebSource[]) => void
   }) => ({
     ...extra,
     mode: chatMode,
     contextSessionId: attachedContext?.type === 'session' ? attachedContext.id : null,
     contextSubjectId: attachedContext?.type === 'subject' ? attachedContext.id : null,
+    webSearch: webSearchEnabled,
   })
 
   const handleStartNewChatWithQuestion = async (questionText: string) => {
@@ -320,7 +347,13 @@ export default function ChatPage() {
     isInitialThreadLoadRef.current = false
     setIsSending(true)
     const tempQuestion = questionText
-    setMessages([{ question: tempQuestion, answer: '...', status: attachedContext ? 'reading_course' : 'thinking' }])
+    setMessages([
+      {
+        question: tempQuestion,
+        answer: '...',
+        status: webSearchEnabled ? 'searching_web' : null,
+      },
+    ])
 
     try {
       // 1. Create the thread shell instantly (backend computes clean word-boundary title)
@@ -336,17 +369,35 @@ export default function ChatPage() {
 
         // 2. Stream the first message in real time
         let streamedText = ''
+        let streamedSources: WebSource[] | undefined
         await streamThreadMessage(
           newThread.id,
           tempQuestion,
           (token) => {
             streamedText += token
-            setMessages([{ question: tempQuestion, answer: streamedText, status: null }])
+            setMessages([
+              {
+                question: tempQuestion,
+                answer: streamedText,
+                sources: streamedSources,
+                status: null,
+              },
+            ])
           },
           controller.signal,
           buildStreamOptions({
-            onStatus: (status) => {
-              setMessages((prev) => (prev[0] ? [{ ...prev[0], status }] : prev))
+            onStatus: (status, query) => {
+              setMessages((prev) => {
+                if (!prev[0]) return prev
+                return [{ ...prev[0], status, ...(query ? { searchQuery: query } : {}) }]
+              })
+            },
+            onSources: (sources) => {
+              streamedSources = sources
+              setMessages((prev) => {
+                if (!prev[0]) return prev
+                return [{ ...prev[0], sources }]
+              })
             },
           })
         )
@@ -392,7 +443,11 @@ export default function ChatPage() {
     const newMsgIndex = messages.length
     setMessages((prev) => [
       ...prev,
-      { question: trimmed, answer: '...', status: attachedContext ? 'reading_course' : 'thinking' },
+      {
+        question: trimmed,
+        answer: '...',
+        status: webSearchEnabled ? 'searching_web' : null,
+      },
     ])
     setIsSending(true)
 
@@ -411,18 +466,35 @@ export default function ChatPage() {
           setMessages((prev) => {
             const updated = [...prev]
             if (updated[newMsgIndex]) {
-              updated[newMsgIndex] = { ...updated[newMsgIndex], answer: streamedText, status: null }
+              updated[newMsgIndex] = {
+                ...updated[newMsgIndex],
+                answer: streamedText,
+                status: null,
+              }
             }
             return updated
           })
         },
         controller.signal,
         buildStreamOptions({
-          onStatus: (status) => {
+          onStatus: (status, query) => {
             setMessages((prev) => {
               const updated = [...prev]
               if (updated[newMsgIndex]) {
-                updated[newMsgIndex] = { ...updated[newMsgIndex], status }
+                updated[newMsgIndex] = {
+                  ...updated[newMsgIndex],
+                  status,
+                  ...(query ? { searchQuery: query } : {}),
+                }
+              }
+              return updated
+            })
+          },
+          onSources: (sources) => {
+            setMessages((prev) => {
+              const updated = [...prev]
+              if (updated[newMsgIndex]) {
+                updated[newMsgIndex] = { ...updated[newMsgIndex], sources }
               }
               return updated
             })
@@ -473,7 +545,11 @@ export default function ChatPage() {
     setIsSending(true)
     setMessages((prev) => [
       ...prev.slice(0, index),
-      { question: newQuestion, answer: '...', status: attachedContext ? 'reading_course' : 'thinking' },
+      {
+        question: newQuestion,
+        answer: '...',
+        status: webSearchEnabled ? 'searching_web' : null,
+      },
     ])
 
     let streamedText = ''
@@ -494,11 +570,24 @@ export default function ChatPage() {
         controller.signal,
         buildStreamOptions({
           replaceFromTurnIndex: index,
-          onStatus: (status) => {
+          onStatus: (status, query) => {
             setMessages((prev) => {
               const updated = [...prev]
               if (updated[index]) {
-                updated[index] = { ...updated[index], status }
+                updated[index] = {
+                  ...updated[index],
+                  status,
+                  ...(query ? { searchQuery: query } : {}),
+                }
+              }
+              return updated
+            })
+          },
+          onSources: (sources) => {
+            setMessages((prev) => {
+              const updated = [...prev]
+              if (updated[index]) {
+                updated[index] = { ...updated[index], sources }
               }
               return updated
             })
@@ -787,7 +876,9 @@ export default function ChatPage() {
                   index={i}
                   question={msg.question}
                   answer={msg.answer}
+                  sources={msg.sources}
                   status={msg.status}
+                  searchQuery={msg.searchQuery}
                   hasCourseContext={Boolean(attachedContext)}
                   onEdit={handleEditMessage}
                   onRegenerate={handleRegenerate}
@@ -993,6 +1084,36 @@ export default function ChatPage() {
                 </div>
               )}
               </div>
+
+              {/* Web Search Toggle Pill (Tavily Grounding) */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (webSearchAvailable === false && !webSearchEnabled) {
+                    showToast('Recherche Web indisponible : configure TAVILY_API_KEY côté serveur.', 'error')
+                    return
+                  }
+                  setWebSearchEnabled((prev) => !prev)
+                }}
+                title={
+                  webSearchAvailable === false
+                    ? 'Recherche Web non configurée sur le serveur (TAVILY_API_KEY manquante)'
+                    : webSearchEnabled
+                      ? 'Recherche Web activée — Sphera cite des sources en temps réel'
+                      : 'Activer la recherche Web temps réel avec sources cliquables'
+                }
+                aria-pressed={webSearchEnabled}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all cursor-pointer shrink-0 ${
+                  webSearchEnabled
+                    ? 'bg-sky-500/15 border-sky-400/50 text-sky-300 shadow-[0_0_12px_rgba(56,189,248,0.18)]'
+                    : webSearchAvailable === false
+                      ? 'bg-sphera-surface/40 border-sphera-border/40 text-sphera-text-muted/60 hover:text-sphera-text-muted'
+                      : 'bg-sphera-surface/80 border-sphera-border/70 text-sphera-text-muted hover:text-white hover:border-sphera-border'
+                }`}
+              >
+                <Globe weight={webSearchEnabled ? 'duotone' : 'regular'} className="w-3.5 h-3.5 shrink-0" />
+                <span>Web</span>
+              </button>
             </div>
 
             {/* Pedagogical Mode Pills */}

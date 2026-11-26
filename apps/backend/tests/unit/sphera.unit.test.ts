@@ -13,6 +13,7 @@
 
 import { describe, it, expect } from "vitest";
 import { annalePrompt, freeChatPrompt, qaPrompt, suggestionsPrompt, toolPrompt } from "../../src/services/ai/prompts.js";
+import { buildSearchQuery, formatWebSourcesForPrompt } from "../../src/services/ai/webSearch.js";
 import { cleanJson, parseJsonWithFallback, UnparseableModelOutputError } from "../../src/services/ai/json.js";
 import { correctionsCount } from "../../src/serializers/sphera.js";
 import { generateFichePdfHtml } from "../../src/services/pdf/templates.js";
@@ -304,5 +305,47 @@ describe("tts provider & ssml", () => {
       { speaker: "A", text: "Troisième point." },
       { speaker: "B", text: "Quatrième point." },
     ]);
+  });
+});
+
+describe("web search grounding (Tavily)", () => {
+  it("enriches short follow-up questions with prior turn context", () => {
+    const history = [
+      { question: "Quelle est la réforme du bac en France ?", answer: "Elle a introduit les spécialités." },
+    ];
+    expect(buildSearchQuery("Et en 2026 ?", history)).toContain("réforme du bac");
+    expect(buildSearchQuery("Et en 2026 ?", history)).toContain("Et en 2026 ?");
+
+    const standalone = buildSearchQuery("Explique la loi de Moore en informatique", history);
+    expect(standalone).toBe("Explique la loi de Moore en informatique");
+  });
+
+  it("injects numbered <web_sources> and citation rules into freeChatPrompt and qaPrompt", () => {
+    const sources = [
+      {
+        title: "AI Act — Parlement européen",
+        url: "https://www.europarl.europa.eu/ai-act",
+        domain: "europarl.europa.eu",
+        snippet: "Le règlement européen sur l'IA entre progressivement en vigueur entre 2024 et 2026.",
+      },
+    ];
+    const formatted = formatWebSourcesForPrompt(sources);
+    expect(formatted.block).toContain("<web_sources>");
+    expect(formatted.block).toContain("[1] AI Act — Parlement européen (europarl.europa.eu)");
+    expect(formatted.instructions).toContain("Cite sources inline");
+
+    const freePrompt = freeChatPrompt("Où en est l'AI Act européen ?", [], { webSources: sources });
+    expect(freePrompt).toContain("<web_sources>");
+    expect(freePrompt).toContain("europarl.europa.eu");
+
+    const coursePrompt = qaPrompt(
+      "Chapitre 1 : Introduction au droit numérique et régulation des algorithmes.",
+      "Quel lien avec l'AI Act ?",
+      [],
+      false,
+      { allowGeneralKnowledge: true, webSources: sources },
+    );
+    expect(coursePrompt).toContain("<web_sources>");
+    expect(coursePrompt).toContain("retrieved <web_sources>");
   });
 });

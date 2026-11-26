@@ -36,6 +36,7 @@ import { getWeekStartDate } from "../lib/weekHelper.js";
 import { synthesizeSpeech, sanitizeDialogueTurns, type DialogueTurn } from "../services/ttsProvider.js";
 import { invalidatePreferencesCache } from "../services/ai/userContext.js";
 import {
+  buildSearchQuery,
   generateAnnale,
   generateFromSelection,
   generateQaAnswer,
@@ -43,10 +44,13 @@ import {
   generateSuggestions,
   generateTool,
   isToolType,
+  isWebSearchConfigured,
   MIN_SOURCE_CHARS,
+  searchWeb,
   VALID_TOOL_TYPES,
   type AnnaleMode,
   type ToolType,
+  type WebSource,
 } from "../services/ai/index.js";
 import {
   annaleSessionInclude,
@@ -1495,6 +1499,14 @@ spheraRouter.post("/sessions/:id/threads/", async (req, res) => {
 });
 
 /**
+ * GET /chat/capabilities/
+ * Reports optional chat superpowers enabled on the server (e.g. Tavily web search).
+ */
+spheraRouter.get("/chat/capabilities/", async (_req, res) => {
+  ok(res, { webSearch: isWebSearchConfigured() });
+});
+
+/**
  * POST /threads/<threadId>/messages/
  * Sends a message in a chat thread. 100% FREE (0 quota consumed).
  */
@@ -1507,13 +1519,14 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
   });
   if (!thread) throw notFound("Fil de discussion introuvable.");
 
-  const { question, replaceFromTurnIndex, mode, contextSessionId, contextSubjectId } = z
+  const { question, replaceFromTurnIndex, mode, contextSessionId, contextSubjectId, webSearch } = z
     .object({
       question: z.string().trim().min(1),
       replaceFromTurnIndex: z.coerce.number().int().min(0).optional(),
       mode: z.enum(["tutor", "socratic", "exam", "express"]).optional(),
       contextSessionId: z.coerce.number().int().positive().nullable().optional(),
       contextSubjectId: z.coerce.number().int().positive().nullable().optional(),
+      webSearch: z.boolean().optional(),
     })
     .parse(req.body ?? {});
 
@@ -1606,19 +1619,32 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
     (req.body && (req.body as any).stream === true);
 
   if (!isStream) {
+    let webSources: WebSource[] = [];
+    if (webSearch && isWebSearchConfigured()) {
+      const searchRes = await searchWeb(buildSearchQuery(question, previousThreadHistory), {
+        maxResults: 5,
+      });
+      webSources = searchRes.sources;
+    }
+
     const answer = await generateQaAnswer(
       effectiveSourceText,
       question,
       me.id,
       previousThreadHistory,
-      { chatMode: mode, allowGeneralKnowledge },
+      { chatMode: mode, allowGeneralKnowledge, webSources },
     );
 
     await prisma.chatMessage.create({
       data: { threadId: thread.id, role: "user", content: question },
     });
     const assistantMsg = await prisma.chatMessage.create({
-      data: { threadId: thread.id, role: "assistant", content: answer },
+      data: {
+        threadId: thread.id,
+        role: "assistant",
+        content: answer,
+        ...(webSources.length > 0 ? { sources: webSources as unknown as Prisma.InputJsonValue } : {}),
+      },
     });
     await prisma.chatThread.update({
       where: { id: thread.id },
@@ -1651,8 +1677,25 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
   res.flushHeaders?.();
 
   let fullAnswer = "";
+  let webSources: WebSource[] = [];
   try {
-    if (effectiveSourceText.trim()) {
+    if (webSearch && isWebSearchConfigured()) {
+      const searchQuery = buildSearchQuery(question, previousThreadHistory);
+      res.write(`data: ${JSON.stringify({ status: "searching_web", query: searchQuery })}\n\n`);
+      const searchRes = await searchWeb(searchQuery, {
+        maxResults: 5,
+        signal: abortController.signal,
+      });
+      if (abortController.signal.aborted) {
+        res.end();
+        return;
+      }
+      webSources = searchRes.sources;
+      if (webSources.length > 0) {
+        res.write(`data: ${JSON.stringify({ sources: webSources })}\n\n`);
+      }
+      res.write(`data: ${JSON.stringify({ status: "generating" })}\n\n`);
+    } else if (effectiveSourceText.trim()) {
       res.write(`data: ${JSON.stringify({ status: "reading_course" })}\n\n`);
     } else {
       res.write(`data: ${JSON.stringify({ status: "thinking" })}\n\n`);
@@ -1664,7 +1707,7 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
       me.id,
       previousThreadHistory,
       abortController.signal,
-      { chatMode: mode, allowGeneralKnowledge },
+      { chatMode: mode, allowGeneralKnowledge, webSources },
     );
 
     for await (const token of stream) {
@@ -1673,7 +1716,12 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
     }
 
     const assistantMsg = await prisma.chatMessage.create({
-      data: { threadId: thread.id, role: "assistant", content: fullAnswer },
+      data: {
+        threadId: thread.id,
+        role: "assistant",
+        content: fullAnswer,
+        ...(webSources.length > 0 ? { sources: webSources as unknown as Prisma.InputJsonValue } : {}),
+      },
     });
     await prisma.chatThread.update({
       where: { id: thread.id },
@@ -1686,7 +1734,12 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
     if (abortController.signal.aborted) {
       if (fullAnswer.trim()) {
         await prisma.chatMessage.create({
-          data: { threadId: thread.id, role: "assistant", content: fullAnswer },
+          data: {
+            threadId: thread.id,
+            role: "assistant",
+            content: fullAnswer,
+            ...(webSources.length > 0 ? { sources: webSources as unknown as Prisma.InputJsonValue } : {}),
+          },
         }).catch(() => {});
       }
       res.end();
