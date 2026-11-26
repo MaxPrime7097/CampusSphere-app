@@ -13,6 +13,7 @@ import SessionDetail from './pages/SessionDetail';
 import AnnaleDetail from './pages/AnnaleDetail';
 import CreateSession from './pages/CreateSession';
 import ChatPage from './pages/ChatPage';
+import PlannerPage from './pages/PlannerPage';
 import Pricing from './pages/Pricing';
 import Blogs from './pages/Blogs';
 import BlogDetail from './pages/BlogDetail';
@@ -144,6 +145,8 @@ export default function App() {
           <Route element={<ProtectedRoute><SidebarLayout /></ProtectedRoute>}> 
             <Route path="/app" element={<Dashboard />} />
             <Route path="/dashboard" element={<Navigate to="/app" replace />} />
+            <Route path="/plan" element={<PlannerPage />} />
+            <Route path="/subjects" element={<Navigate to="/plan" replace />} />
             <Route path="/chat" element={<ChatPage />} />
             <Route path="/chat/:threadId" element={<ChatPage />} />
             <Route path="/create" element={<CreateSession />} />

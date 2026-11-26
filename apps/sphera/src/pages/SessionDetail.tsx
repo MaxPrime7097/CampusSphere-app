@@ -1,6 +1,6 @@
 import { parseSlugId, encodeHashId } from "../lib/hashids";
 import React, { useEffect, useState, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getSession, getAnnale, askQuestion, streamAskQuestion, deleteSession, deleteAnnale, shareSession, shareAnnale, updateSessionText, addToolToSession, createFromSelection, createArtefact, updateArtefact, deleteArtefact, regenerateFiche, getChatThreads, createChatThread, sendThreadMessage, deleteChatThread, type ArtefactItem, type ChatThreadItem, API_BASE, type ToolType } from '../services/spheraApi'
 import { StudyWorkspacePanel } from '../components/app/StudyWorkspacePanel'
@@ -26,6 +26,8 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
   const parsedId = parseSlugId(rawId);
   const id = parsedId ? String(parsedId) : rawId;
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const requestedTool = searchParams.get('tool') as ToolType | null
 
   const { data: sessionData, isLoading: queryLoading } = useSessionDetailQuery(id, type)
   const [session, setSession] = useState<any>(() => sessionData || (id ? getCached(`session_detail_${id}`) : null))
@@ -39,7 +41,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
       if (hash && typeof window !== "undefined" && window.history.replaceState) {
         const canonicalBase = `/${type === "annale" ? "annales" : "sessions"}/${hash}`;
         if (window.location.pathname !== canonicalBase) {
-          window.history.replaceState(null, "", canonicalBase);
+          window.history.replaceState(null, "", canonicalBase + window.location.search);
         }
       }
     }
@@ -1227,6 +1229,7 @@ export default function SessionDetail({ type = 'session' }: { type?: 'session' |
             }
           }}
           extractedText={session.extracted_text}
+          initialTool={requestedTool}
         />
       </div>
       {selectionToolbar && (

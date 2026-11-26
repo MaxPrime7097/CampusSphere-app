@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { Plus, SignOut as LogOut, FileText, ArrowSquareOut as ExternalLink, Lightning as Zap, NotePencil as FilePenLine, CaretLeft as ChevronLeft, CaretRight as ChevronRight, MagnifyingGlass as Search, X, List as Menu, Sliders, Question as HelpCircle, DotsThreeVertical as MoreVertical, BookOpen, Exam, ChatCircle } from "@phosphor-icons/react";
+import { Plus, SignOut as LogOut, FileText, ArrowSquareOut as ExternalLink, Lightning as Zap, NotePencil as FilePenLine, CaretLeft as ChevronLeft, CaretRight as ChevronRight, MagnifyingGlass as Search, X, List as Menu, Sliders, Question as HelpCircle, DotsThreeVertical as MoreVertical, BookOpen, Exam, ChatCircle, CalendarCheck } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next'
 import { useSpheraAuth } from '../../contexts/SpheraAuthContext'
 import { getMyQuizSessions, getSessions, getAnnales } from '../../services/spheraApi'
@@ -336,6 +336,18 @@ export function SidebarLayout() {
             <span>{t('sidebar.spheraLive')}</span>
           </Link>
           <Link
+            to="/plan"
+            onClick={() => setMobileDrawerOpen(false)}
+            className={`flex items-center gap-2.5 w-full px-3.5 py-2 rounded-lg border transition-all text-xs font-medium ${
+              location.pathname.startsWith('/plan')
+                ? 'border-sphera-green/50 bg-sphera-surface text-white'
+                : 'border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-white'
+            }`}
+          >
+            <CalendarCheck weight="duotone" className="w-4 h-4 shrink-0 text-sphera-green" />
+            <span>Mon Plan</span>
+          </Link>
+          <Link
             to="/chat"
             onClick={() => setMobileDrawerOpen(false)}
             className="flex items-center gap-2.5 w-full px-3.5 py-2 rounded-lg border border-sphera-border bg-sphera-surface hover:bg-sphera-surface-2 text-white transition-all text-xs font-medium"
@@ -554,6 +566,18 @@ export function SidebarLayout() {
               </Link>
 
               <Link
+                to="/plan"
+                className={`flex items-center justify-center gap-2 w-full px-3 py-1.5 rounded-lg border transition-all text-xs font-medium ${
+                  location.pathname.startsWith('/plan')
+                    ? 'border-sphera-green/50 bg-sphera-surface text-white'
+                    : 'border-sphera-border text-sphera-text-muted hover:text-white hover:bg-sphera-surface'
+                }`}
+              >
+                <CalendarCheck weight="duotone" className="w-3.5 h-3.5 shrink-0 text-sphera-green" />
+                <span>Mon Plan</span>
+              </Link>
+
+              <Link
                 to="/chat"
                 className={`flex items-center justify-center gap-2 w-full px-3 py-1.5 rounded-lg border transition-all text-xs font-medium ${
                   location.pathname.startsWith('/chat')
@@ -584,6 +608,18 @@ export function SidebarLayout() {
                 title={t('sidebar.generateSession')}
               >
                 <Plus className="w-5 h-5" />
+              </Link>
+
+              <Link
+                to="/plan"
+                className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-colors ${
+                  location.pathname.startsWith('/plan')
+                    ? 'border-sphera-green/50 bg-sphera-surface text-white'
+                    : 'border-sphera-border text-sphera-text-muted hover:text-white hover:bg-sphera-surface'
+                }`}
+                title="Mon Plan de Révision"
+              >
+                <CalendarCheck weight="duotone" className="w-4 h-4 text-sphera-green" />
               </Link>
 
               <Link

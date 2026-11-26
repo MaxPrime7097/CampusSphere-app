@@ -1,5 +1,20 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { getSessions, getAnnales, getMyQuizSessions, getQuota, getSession, getAnnale, getStandaloneChatThreads, type GenerationQuota } from '../services/spheraApi'
+import {
+  getSessions,
+  getAnnales,
+  getMyQuizSessions,
+  getQuota,
+  getSession,
+  getAnnale,
+  getStandaloneChatThreads,
+  getPlannerSubjects,
+  getPlannerToday,
+  getPlannerPlan,
+  type GenerationQuota,
+  type StudySubjectItem,
+  type PlannerTodayData,
+  type RevisionPlanData,
+} from '../services/spheraApi'
 import { getCached, setCached, getOngoingGenerations } from '../utils/sessionCache'
 import { queryClient } from '../lib/queryClient'
 
@@ -15,6 +30,9 @@ export const spheraKeys = {
   chatThreads: () => ['sphera', 'chat_threads'] as const,
   quota: () => ['sphera', 'quota'] as const,
   detail: (id: string | number, type: 'session' | 'annale' = 'session') => ['sphera', 'detail', String(id), type] as const,
+  plannerSubjects: () => ['sphera', 'planner', 'subjects'] as const,
+  plannerToday: () => ['sphera', 'planner', 'today'] as const,
+  plannerPlan: () => ['sphera', 'planner', 'plan'] as const,
 }
 
 // ─── Queries ──────────────────────────────────────────────────────────────
@@ -149,6 +167,48 @@ export function invalidateSpheraSessions() {
 
 export function invalidateSpheraQuota() {
   queryClient.invalidateQueries({ queryKey: spheraKeys.quota() })
+}
+
+export function usePlannerSubjectsQuery(enabled = true) {
+  return useQuery<StudySubjectItem[]>({
+    queryKey: spheraKeys.plannerSubjects(),
+    queryFn: async () => {
+      const res = await getPlannerSubjects()
+      return Array.isArray(res?.data) ? res.data : []
+    },
+    enabled,
+    staleTime: 60 * 1000,
+  })
+}
+
+export function usePlannerTodayQuery(enabled = true) {
+  return useQuery<PlannerTodayData>({
+    queryKey: spheraKeys.plannerToday(),
+    queryFn: async () => {
+      const res = await getPlannerToday()
+      return res.data
+    },
+    enabled,
+    staleTime: 30 * 1000,
+  })
+}
+
+export function usePlannerPlanQuery(enabled = true) {
+  return useQuery<RevisionPlanData | null>({
+    queryKey: spheraKeys.plannerPlan(),
+    queryFn: async () => {
+      const res = await getPlannerPlan()
+      return res?.data ?? null
+    },
+    enabled,
+    staleTime: 30 * 1000,
+  })
+}
+
+export function invalidateSpheraPlanner() {
+  queryClient.invalidateQueries({ queryKey: spheraKeys.plannerSubjects() })
+  queryClient.invalidateQueries({ queryKey: spheraKeys.plannerToday() })
+  queryClient.invalidateQueries({ queryKey: spheraKeys.plannerPlan() })
 }
 
 export function invalidateSessionDetail(id: string | number, type: 'session' | 'annale' = 'session') {
