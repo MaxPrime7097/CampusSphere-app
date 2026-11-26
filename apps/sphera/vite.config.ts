@@ -335,6 +335,23 @@ export default defineConfig({
     },
     dedupe: ['react', 'react-dom', 'react-i18next', 'i18next'],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('reactflow') || id.includes('@reactflow')) return 'vendor-reactflow';
+          if (id.includes('katex')) return 'vendor-katex';
+          if (id.includes('jspdf') || id.includes('html2canvas')) return 'vendor-pdf';
+          if (id.includes('@phosphor-icons')) return 'vendor-icons';
+          if (id.includes('@tanstack/react-query')) return 'vendor-query';
+          if (id.includes('i18next') || id.includes('react-i18next')) return 'vendor-i18n';
+          if (id.includes('react-router') || id.includes('react-dom') || id.includes('/react/')) return 'vendor-react';
+          return undefined;
+        },
+      },
+    },
+  },
   server: {
     port: 5174,
   },

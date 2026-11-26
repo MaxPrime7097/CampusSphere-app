@@ -145,4 +145,28 @@ describe("Sphera Revision Scheduler (V1.5)", () => {
     expect(dailyReminder?.title).toContain("2 séances");
     expect(dailyReminder?.message).toContain("35 min");
   });
+
+  it("adaptively boosts priority for struggling subjects and eases off mastered subjects", () => {
+    const struggling = computeSubjectPriority(
+      { examDate: "2026-12-10", weight: 3, masteryScore: 40 },
+      "2026-12-01",
+      2,
+      1,
+    );
+    const neutral = computeSubjectPriority(
+      { examDate: "2026-12-10", weight: 3, masteryScore: null },
+      "2026-12-01",
+      2,
+      1,
+    );
+    const mastered = computeSubjectPriority(
+      { examDate: "2026-12-10", weight: 3, masteryScore: 92 },
+      "2026-12-01",
+      2,
+      1,
+    );
+
+    expect(struggling).toBeGreaterThan(neutral);
+    expect(neutral).toBeGreaterThan(mastered);
+  });
 });

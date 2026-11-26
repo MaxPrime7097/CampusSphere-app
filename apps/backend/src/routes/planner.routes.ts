@@ -85,6 +85,30 @@ const linkSessionSchema = z.object({
   sessionType: z.enum(["session", "annale"]).optional(),
 });
 
+const studyProgressPatchSchema = z.object({
+  masteredChapters: z.record(z.string(), z.boolean()).optional(),
+  masteredMindmapNodes: z.record(z.string(), z.boolean()).optional(),
+  lastQuizScore: z.coerce.number().int().min(0).max(100).nullable().optional(),
+  incrementQuizAttempt: z.boolean().optional(),
+  flashcardsMastered: z.coerce.number().int().min(0).optional(),
+  flashcardsTotal: z.coerce.number().int().min(0).optional(),
+});
+
+function computeProgressScore(prog?: {
+  lastQuizScore: number | null;
+  flashcardsMastered: number;
+  flashcardsTotal: number;
+} | null): number | null {
+  if (!prog) return null;
+  const scores: number[] = [];
+  if (typeof prog.lastQuizScore === "number") scores.push(prog.lastQuizScore);
+  if (prog.flashcardsTotal > 0) {
+    scores.push(Math.round((prog.flashcardsMastered / prog.flashcardsTotal) * 100));
+  }
+  if (scores.length === 0) return null;
+  return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+}
+
 function parseIdParam(req: Request, param = "id"): number {
   const parsed = parseSlugId(req.params[param]);
   if (!parsed) throw badRequest("Identifiant invalide.");
@@ -157,45 +181,69 @@ async function loadSchedulerSubjects(
   ownerId: number,
   completedCountsBySubject?: Map<number, number>,
 ): Promise<SchedulerSubjectInput[]> {
-  const subjects = await prisma.studySubject.findMany({
-    where: { ownerId },
-    include: {
-      studySessions: {
-        select: {
-          id: true,
-          sourceFilename: true,
-          toolTypes: true,
-          ficheContent: true,
-          content: true,
-          resource: { select: { title: true } },
-          sphereFile: { select: { title: true } },
+  const [subjects, progresses] = await Promise.all([
+    prisma.studySubject.findMany({
+      where: { ownerId },
+      include: {
+        studySessions: {
+          select: {
+            id: true,
+            sourceFilename: true,
+            toolTypes: true,
+            ficheContent: true,
+            content: true,
+            resource: { select: { title: true } },
+            sphereFile: { select: { title: true } },
+          },
+          orderBy: { createdAt: "asc" },
         },
-        orderBy: { createdAt: "asc" },
       },
-    },
-    orderBy: [{ examDate: "asc" }, { weight: "desc" }, { createdAt: "asc" }],
-  });
-
-  return subjects.map((s) => ({
-    id: s.id,
-    name: s.name,
-    examDate: s.examDate,
-    weight: s.weight,
-    alreadyCompletedCount: completedCountsBySubject?.get(s.id) ?? 0,
-    sessions: s.studySessions.map((sess) => {
-      const title =
-        sess.resource?.title ||
-        sess.sphereFile?.title ||
-        sess.sourceFilename ||
-        `Cours #${sess.id}`;
-      return {
-        id: sess.id,
-        title,
-        toolTypes: sess.toolTypes.map((t) => t.toLowerCase()),
-        chapters: extractSessionChapters(sess.ficheContent, sess.content),
-      };
+      orderBy: [{ examDate: "asc" }, { weight: "desc" }, { createdAt: "asc" }],
     }),
-  }));
+    prisma.studyProgress.findMany({
+      where: { userId: ownerId },
+      select: {
+        sessionId: true,
+        lastQuizScore: true,
+        flashcardsMastered: true,
+        flashcardsTotal: true,
+      },
+    }),
+  ]);
+
+  const progressBySession = new Map(progresses.map((p) => [p.sessionId, p]));
+
+  return subjects.map((s) => {
+    const sessionScores = s.studySessions
+      .map((sess) => computeProgressScore(progressBySession.get(sess.id)))
+      .filter((v): v is number => v !== null);
+    const masteryScore =
+      sessionScores.length > 0
+        ? Math.round(sessionScores.reduce((a, b) => a + b, 0) / sessionScores.length)
+        : null;
+
+    return {
+      id: s.id,
+      name: s.name,
+      examDate: s.examDate,
+      weight: s.weight,
+      masteryScore,
+      alreadyCompletedCount: completedCountsBySubject?.get(s.id) ?? 0,
+      sessions: s.studySessions.map((sess) => {
+        const title =
+          sess.resource?.title ||
+          sess.sphereFile?.title ||
+          sess.sourceFilename ||
+          `Cours #${sess.id}`;
+        return {
+          id: sess.id,
+          title,
+          toolTypes: sess.toolTypes.map((t) => t.toLowerCase()),
+          chapters: extractSessionChapters(sess.ficheContent, sess.content),
+        };
+      }),
+    };
+  });
 }
 
 async function serializeActivePlan(planId: number, todayStr: string) {
@@ -273,7 +321,7 @@ plannerRouter.get("/subjects/", async (req, res) => {
   const me = currentUser(req);
   const todayStr = resolveClientToday(req.query.date);
 
-  const [subjects, activePlan] = await Promise.all([
+  const [subjects, activePlan, progresses] = await Promise.all([
     prisma.studySubject.findMany({
       where: { ownerId: me.id },
       include: {
@@ -295,7 +343,18 @@ plannerRouter.get("/subjects/", async (req, res) => {
       include: { tasks: { select: { subjectId: true, isDone: true } } },
       orderBy: { generatedAt: "desc" },
     }),
+    prisma.studyProgress.findMany({
+      where: { userId: me.id },
+      select: {
+        sessionId: true,
+        lastQuizScore: true,
+        flashcardsMastered: true,
+        flashcardsTotal: true,
+      },
+    }),
   ]);
+
+  const progressBySession = new Map(progresses.map((p) => [p.sessionId, p]));
 
   const progressBySubject = new Map<number, { done: number; total: number }>();
   for (const t of activePlan?.tasks ?? []) {
@@ -308,6 +367,14 @@ plannerRouter.get("/subjects/", async (req, res) => {
   const data = subjects.map((s) => {
     const prog = progressBySubject.get(s.id) ?? { done: 0, total: 0 };
     const daysUntilExam = s.examDate ? daysBetweenIso(todayStr, s.examDate) : null;
+    const sessionScores = s.studySessions
+      .map((sess) => computeProgressScore(progressBySession.get(sess.id)))
+      .filter((v): v is number => v !== null);
+    const masteryScore =
+      sessionScores.length > 0
+        ? Math.round(sessionScores.reduce((a, b) => a + b, 0) / sessionScores.length)
+        : null;
+
     return {
       id: s.id,
       name: s.name,
@@ -315,6 +382,7 @@ plannerRouter.get("/subjects/", async (req, res) => {
       daysUntilExam,
       weight: s.weight,
       color: s.color,
+      masteryScore,
       createdAt: s.createdAt.toISOString(),
       sessionsCount: s.studySessions.length,
       sessions: s.studySessions.map((sess) => ({
@@ -751,4 +819,114 @@ plannerRouter.patch("/tasks/:id/", async (req, res) => {
   });
 
   ok(res, serializeTask(updated));
+});
+
+// ── Cross-Device Study Progress Persistence ──────────────────────────────────
+
+plannerRouter.get("/progress/:id/", async (req, res) => {
+  const me = currentUser(req);
+  const sessionId = parseIdParam(req);
+
+  const row = await prisma.studyProgress.findUnique({
+    where: { userId_sessionId: { userId: me.id, sessionId } },
+  });
+
+  if (!row) {
+    ok(res, {
+      sessionId,
+      masteredChapters: {},
+      masteredMindmapNodes: {},
+      lastQuizScore: null,
+      quizAttempts: 0,
+      flashcardsMastered: 0,
+      flashcardsTotal: 0,
+    });
+    return;
+  }
+
+  ok(res, {
+    sessionId: row.sessionId,
+    masteredChapters: row.masteredChapters ?? {},
+    masteredMindmapNodes: row.masteredMindmapNodes ?? {},
+    lastQuizScore: row.lastQuizScore,
+    quizAttempts: row.quizAttempts,
+    flashcardsMastered: row.flashcardsMastered,
+    flashcardsTotal: row.flashcardsTotal,
+    updatedAt: row.updatedAt.toISOString(),
+  });
+});
+
+plannerRouter.patch("/progress/:id/", async (req, res) => {
+  const me = currentUser(req);
+  const sessionId = parseIdParam(req);
+  const input = studyProgressPatchSchema.parse(req.body ?? {});
+
+  // Verify session exists (owner or shared)
+  const session = await prisma.studySession.findUnique({
+    where: { id: sessionId },
+    select: { id: true, ownerId: true, isShared: true },
+  });
+  if (!session || (session.ownerId !== me.id && !session.isShared)) {
+    throw notFound("Session de cours introuvable.");
+  }
+
+  const existing = await prisma.studyProgress.findUnique({
+    where: { userId_sessionId: { userId: me.id, sessionId } },
+  });
+
+  const nextChapters =
+    input.masteredChapters !== undefined
+      ? input.masteredChapters
+      : ((existing?.masteredChapters as Record<string, boolean> | undefined) ?? {});
+
+  const nextMindmapNodes =
+    input.masteredMindmapNodes !== undefined
+      ? input.masteredMindmapNodes
+      : ((existing?.masteredMindmapNodes as Record<string, boolean> | undefined) ?? {});
+
+  const nextQuizScore =
+    input.lastQuizScore !== undefined ? input.lastQuizScore : (existing?.lastQuizScore ?? null);
+  const nextQuizAttempts =
+    (existing?.quizAttempts ?? 0) + (input.incrementQuizAttempt ? 1 : 0);
+  const nextFcMastered =
+    input.flashcardsMastered !== undefined
+      ? input.flashcardsMastered
+      : (existing?.flashcardsMastered ?? 0);
+  const nextFcTotal =
+    input.flashcardsTotal !== undefined
+      ? input.flashcardsTotal
+      : (existing?.flashcardsTotal ?? 0);
+
+  const saved = await prisma.studyProgress.upsert({
+    where: { userId_sessionId: { userId: me.id, sessionId } },
+    create: {
+      userId: me.id,
+      sessionId,
+      masteredChapters: nextChapters,
+      masteredMindmapNodes: nextMindmapNodes,
+      lastQuizScore: nextQuizScore,
+      quizAttempts: nextQuizAttempts,
+      flashcardsMastered: nextFcMastered,
+      flashcardsTotal: nextFcTotal,
+    },
+    update: {
+      masteredChapters: nextChapters,
+      masteredMindmapNodes: nextMindmapNodes,
+      lastQuizScore: nextQuizScore,
+      quizAttempts: nextQuizAttempts,
+      flashcardsMastered: nextFcMastered,
+      flashcardsTotal: nextFcTotal,
+    },
+  });
+
+  ok(res, {
+    sessionId: saved.sessionId,
+    masteredChapters: saved.masteredChapters ?? {},
+    masteredMindmapNodes: saved.masteredMindmapNodes ?? {},
+    lastQuizScore: saved.lastQuizScore,
+    quizAttempts: saved.quizAttempts,
+    flashcardsMastered: saved.flashcardsMastered,
+    flashcardsTotal: saved.flashcardsTotal,
+    updatedAt: saved.updatedAt.toISOString(),
+  });
 });
