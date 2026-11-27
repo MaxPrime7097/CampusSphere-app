@@ -1330,6 +1330,8 @@ model SpheraPreferences {
   quizTimeLimit     Int      @default(15) @map("quiz_time_limit") // seconds per question
   flashcardCount    Int?     @map("flashcard_count") // null = auto (system decides, between 10 and 30)
   theme             String   @default("sombre") // 'system', 'sombre', 'clair'
+  memoryEnabled     Boolean  @default(true) @map("memory_enabled")
+  learningNotes     Json     @default("[]") @map("learning_notes")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 

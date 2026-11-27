@@ -12,7 +12,14 @@ import { annalePrompt, qaPrompt, freeChatPrompt, suggestionsPrompt, toolPrompt, 
 import { AllProvidersFailedError, callWithFallback, streamWithFallback, TOKENS_ANNALE, TOKENS_DEFAULT, TOKENS_FICHE, TOKENS_FLASHCARDS, TOKENS_QUIZ, type VisionImageInput } from "./providers.js";
 export { isVisionConfigured, type VisionImageInput } from "./providers.js";
 export type { AttachedDocumentExcerpt } from "./prompts.js";
-import { buildContextPrefix, buildStyleInstructions, getUserAcademicContext, getUserPreferences } from "./userContext.js";
+import {
+  buildContextPrefix,
+  buildLearningMemoryPrefix,
+  buildStyleInstructions,
+  getUserAcademicContext,
+  getUserLearningMemory,
+  getUserPreferences,
+} from "./userContext.js";
 import { extractRelevantPassages, type QaEntry } from "./rag.js";
 export { type QaEntry } from "./rag.js";
 export {
@@ -82,13 +89,14 @@ function assertUsableSource(text: string, what = "Le texte extrait"): void {
 
 async function resolveContextPrefix(
   userId?: number,
-  options?: { ignoreLanguageOverride?: boolean },
+  options?: { ignoreLanguageOverride?: boolean; includeLearningMemory?: boolean },
 ): Promise<string> {
   if (!userId) return "";
   try {
-    const [context, prefs] = await Promise.all([
+    const [context, prefs, learningMemory] = await Promise.all([
       getUserAcademicContext(userId),
       getUserPreferences(userId),
+      options?.includeLearningMemory ? getUserLearningMemory(userId) : Promise.resolve(null),
     ]);
     const academicPrefix = buildContextPrefix(context);
     const effectivePrefs =
@@ -96,7 +104,8 @@ async function resolveContextPrefix(
         ? { ...prefs, defaultLanguage: "auto" }
         : prefs;
     const stylePrefix = buildStyleInstructions(effectivePrefs);
-    return academicPrefix + stylePrefix;
+    const memoryPrefix = buildLearningMemoryPrefix(learningMemory);
+    return academicPrefix + stylePrefix + memoryPrefix;
   } catch (err) {
     console.warn("[sphera-ai] Failed to load academic context or preferences:", err);
     return "";
@@ -199,6 +208,7 @@ export async function generateQaAnswer(
 ): Promise<string> {
   const prefix = await resolveContextPrefix(userId, {
     ignoreLanguageOverride: Boolean(options?.inlineMode),
+    includeLearningMemory: !options?.inlineMode,
   });
   const hasImages = Boolean(options?.images && options.images.length > 0);
 
@@ -264,6 +274,7 @@ export async function* streamQaAnswer(
 ): AsyncGenerator<string, { fullText: string }, void> {
   const prefix = await resolveContextPrefix(userId, {
     ignoreLanguageOverride: Boolean(options?.inlineMode),
+    includeLearningMemory: !options?.inlineMode,
   });
   const hasImages = Boolean(options?.images && options.images.length > 0);
 

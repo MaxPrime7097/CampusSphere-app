@@ -34,7 +34,11 @@ import { extractText, SUPPORTED_EXTENSIONS } from "../services/extraction.js";
 import { checkGenerationQuota, incrementGenerationQuota, WEEKLY_LIMIT } from "../middleware/generationQuota.js";
 import { getWeekStartDate } from "../lib/weekHelper.js";
 import { synthesizeSpeech, sanitizeDialogueTurns, type DialogueTurn } from "../services/ttsProvider.js";
-import { invalidatePreferencesCache } from "../services/ai/userContext.js";
+import {
+  getUserLearningMemory,
+  invalidatePreferencesCache,
+  sanitizeLearningNotes,
+} from "../services/ai/userContext.js";
 import {
   generateAnnale,
   generateFromSelection,
@@ -1510,6 +1514,50 @@ spheraRouter.get("/chat/capabilities/", async (_req, res) => {
     webSearch: isWebSearchConfigured(),
     vision: isVisionConfigured(),
   });
+});
+
+/**
+ * GET /chat/memory/
+ * Returns the student's live adaptive learning memory snapshot (upcoming exams,
+ * weak/strong courses from StudyProgress, today's tasks, and custom notes).
+ */
+spheraRouter.get("/chat/memory/", async (req, res) => {
+  const me = currentUser(req);
+  const snapshot = await getUserLearningMemory(me.id);
+  ok(res, snapshot);
+});
+
+/**
+ * PATCH /chat/memory/
+ * Toggles adaptive learning memory and/or updates the student's custom memory notes.
+ */
+spheraRouter.patch("/chat/memory/", async (req, res) => {
+  const me = currentUser(req);
+  const body = z
+    .object({
+      enabled: z.boolean().optional(),
+      learningNotes: z.array(z.string().trim().max(160)).max(12).optional(),
+    })
+    .parse(req.body ?? {});
+
+  const nextNotes = body.learningNotes !== undefined ? sanitizeLearningNotes(body.learningNotes) : undefined;
+
+  await prisma.spheraPreferences.upsert({
+    where: { userId: me.id },
+    create: {
+      userId: me.id,
+      memoryEnabled: body.enabled ?? true,
+      learningNotes: (nextNotes ?? []) as unknown as Prisma.InputJsonValue,
+    },
+    update: {
+      ...(body.enabled !== undefined ? { memoryEnabled: body.enabled } : {}),
+      ...(nextNotes !== undefined ? { learningNotes: nextNotes as unknown as Prisma.InputJsonValue } : {}),
+    },
+  });
+
+  invalidatePreferencesCache(me.id);
+  const refreshed = await getUserLearningMemory(me.id);
+  ok(res, refreshed);
 });
 
 /**
