@@ -19,6 +19,7 @@ import {
   todayIsoDate,
   type SchedulerSubjectInput,
 } from "../services/planner/revisionScheduler.js";
+import { invalidateLearningMemoryCache } from "../services/ai/userContext.js";
 
 export const plannerRouter: Router = Router();
 plannerRouter.use(requireAuth);
@@ -918,6 +919,8 @@ plannerRouter.patch("/progress/:id/", async (req, res) => {
       flashcardsTotal: nextFcTotal,
     },
   });
+
+  invalidateLearningMemoryCache(me.id);
 
   ok(res, {
     sessionId: saved.sessionId,

@@ -2,17 +2,20 @@ import React, { useState, useEffect } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import { LanguageSwitcher } from '@cs/i18n'
 import { useTranslation } from 'react-i18next'
-import { X, User, Sliders, Sparkle as Sparkles, Stack as Layers, ChartPie as PieChart, SunHorizon as SunMoon, ArrowSquareOut as ExternalLink, Check, Spinner as Loader2, Question as HelpCircle, Clock, ChatCircle as MessageSquare, Globe, Gauge, Info } from "@phosphor-icons/react";
+import { X, User, Sliders, Sparkle as Sparkles, Stack as Layers, ChartPie as PieChart, SunHorizon as SunMoon, ArrowSquareOut as ExternalLink, Check, Spinner as Loader2, Question as HelpCircle, Clock, ChatCircle as MessageSquare, Globe, Gauge, Info, Brain, Plus, CalendarBlank, WarningCircle, Trash } from "@phosphor-icons/react";
 import {
   getSpheraPreferences,
   updateSpheraPreferences,
   getSpheraProfile,
   getSpheraStats,
   getQuota,
+  getChatLearningMemory,
+  updateChatLearningMemory,
   type SpheraPreferencesData,
   type SpheraProfileData,
   type SpheraStatsData,
   type GenerationQuota,
+  type LearningMemorySnapshot,
 } from '../../services/spheraApi'
 import { applyTheme, getSavedTheme, type SpheraTheme } from '../../utils/theme'
 import { formatStudyYear, formatFaculty, formatUniversity } from '../../utils/profileMetadata'
@@ -74,6 +77,8 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
   const [profile, setProfile] = useState<SpheraProfileData | null>(null)
   const [stats, setStats] = useState<SpheraStatsData | null>(null)
   const [quota, setQuota] = useState<GenerationQuota | null>(null)
+  const [memory, setMemory] = useState<LearningMemorySnapshot | null>(null)
+  const [newMemoryNote, setNewMemoryNote] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
@@ -89,11 +94,12 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
   const loadData = async () => {
     setIsLoading(true)
     try {
-      const [prefsRes, profRes, statsRes, quotaRes] = await Promise.allSettled([
+      const [prefsRes, profRes, statsRes, quotaRes, memRes] = await Promise.allSettled([
         getSpheraPreferences(),
         getSpheraProfile(),
         getSpheraStats(),
         getQuota(),
+        getChatLearningMemory(),
       ])
 
       if (prefsRes.status === 'fulfilled' && prefsRes.value.data) {
@@ -111,11 +117,46 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
       if (quotaRes.status === 'fulfilled' && quotaRes.value.data) {
         setQuota(quotaRes.value.data)
       }
+      if (memRes.status === 'fulfilled' && memRes.value.data) {
+        setMemory(memRes.value.data)
+      }
     } catch (err) {
       console.warn('[sphera-settings] Error loading settings data:', err)
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleUpdateMemory = async (patch: { enabled?: boolean; learningNotes?: string[] }) => {
+    if (!memory) return
+    const prev = memory
+    setMemory({
+      ...memory,
+      ...(patch.enabled !== undefined ? { enabled: patch.enabled } : {}),
+      ...(patch.learningNotes !== undefined ? { learningNotes: patch.learningNotes } : {}),
+    })
+    setIsSaving(true)
+    setSaveSuccess(false)
+    try {
+      const res = await updateChatLearningMemory(patch)
+      if (res?.data) setMemory(res.data)
+      window.dispatchEvent(new CustomEvent('sphera:memory-updated'))
+      setSaveSuccess(true)
+      setTimeout(() => setSaveSuccess(false), 2500)
+    } catch (err) {
+      console.error('[sphera-settings] Failed to update learning memory:', err)
+      setMemory(prev)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleAddMemoryNote = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const trimmed = newMemoryNote.trim()
+    if (!trimmed || !memory || memory.learningNotes.length >= 10) return
+    setNewMemoryNote('')
+    await handleUpdateMemory({ learningNotes: [...memory.learningNotes, trimmed] })
   }
 
   const handleUpdatePreference = async (updates: Partial<SpheraPreferencesData>) => {
@@ -549,6 +590,150 @@ export const SpheraSettingsModal: React.FC<SpheraSettingsModalProps> = ({
                           )}
                         </div>
                       </div>
+                    </div>
+
+                    {/* Setting 4: Mémoire d'apprentissage adaptative */}
+                    <div className="p-5 rounded-xl border border-sphera-border bg-sphera-surface-2 space-y-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Brain weight="duotone" className="w-4 h-4 text-sphera-green shrink-0" />
+                            <h4 className="text-sm font-medium text-white">Mémoire d&apos;apprentissage adaptative</h4>
+                          </div>
+                          <p className="text-xs text-sphera-text-muted mt-0.5">
+                            Permet au Chat Sphera de s&apos;adapter automatiquement à tes prochains examens, tes cours fragiles et tes consignes personnelles.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={memory?.enabled ?? true}
+                          onClick={() => handleUpdateMemory({ enabled: !(memory?.enabled ?? true) })}
+                          disabled={!memory || isSaving}
+                          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer disabled:opacity-50 ${
+                            memory?.enabled !== false ? 'bg-sphera-green' : 'bg-sphera-border'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-black transition-transform ${
+                              memory?.enabled !== false ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                      </div>
+
+                      {memory && (
+                        <div className={`space-y-3.5 ${!memory.enabled ? 'opacity-50' : ''}`}>
+                          {/* Auto-synced workspace signals */}
+                          {(memory.upcomingExams.length > 0 || memory.weakCourses.length > 0 || memory.todayTasks.length > 0) && (
+                            <div className="p-3 rounded-lg bg-sphera-surface border border-sphera-border/70 space-y-2.5">
+                              <p className="text-[11px] font-semibold text-white/80">
+                                Synchronisé automatiquement depuis ton espace
+                              </p>
+
+                              {memory.upcomingExams.length > 0 && (
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <CalendarBlank className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                                  {memory.upcomingExams.map((exam) => (
+                                    <span
+                                      key={exam.id}
+                                      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-sphera-surface-2 border border-sphera-border text-[11px] text-white/90"
+                                    >
+                                      <span
+                                        className="w-2 h-2 rounded-full shrink-0"
+                                        style={{ backgroundColor: exam.color || '#22c55e' }}
+                                      />
+                                      <span>{exam.name}</span>
+                                      <span className="text-[10px] font-semibold text-cyan-300">
+                                        {exam.daysUntil === 0 ? 'Auj.' : `J-${exam.daysUntil}`}
+                                      </span>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+
+                              {memory.weakCourses.length > 0 && (
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <WarningCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                  {memory.weakCourses.map((c) => (
+                                    <span
+                                      key={c.sessionId}
+                                      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-sphera-surface-2 border border-sphera-border text-[11px] text-white/90"
+                                    >
+                                      <span className="truncate max-w-[180px]">{c.title}</span>
+                                      <span className="text-[10px] font-semibold text-amber-300">{c.score}%</span>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Custom persistent instructions / memory notes */}
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-medium text-white/90">
+                                Consignes mémorisées ({memory.learningNotes.length}/10)
+                              </span>
+                              {memory.learningNotes.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateMemory({ learningNotes: [] })}
+                                  disabled={isSaving}
+                                  className="inline-flex items-center gap-1 text-[11px] text-sphera-text-muted hover:text-red-400 transition-colors cursor-pointer"
+                                >
+                                  <Trash className="w-3 h-3" />
+                                  <span>Tout effacer</span>
+                                </button>
+                              )}
+                            </div>
+
+                            {memory.learningNotes.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                {memory.learningNotes.map((note, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sphera-surface border border-sphera-border text-xs text-white/90"
+                                  >
+                                    <span>{note}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleUpdateMemory({
+                                          learningNotes: memory.learningNotes.filter((_, i) => i !== idx),
+                                        })
+                                      }
+                                      className="text-sphera-text-muted hover:text-red-400 transition-colors cursor-pointer"
+                                      title="Supprimer cette consigne"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            <form onSubmit={handleAddMemoryNote} className="flex items-center gap-2 pt-0.5">
+                              <input
+                                type="text"
+                                value={newMemoryNote}
+                                onChange={(e) => setNewMemoryNote(e.target.value)}
+                                maxLength={140}
+                                placeholder="Ex : Utilise toujours des analogies visuelles, ne saute aucune étape en maths..."
+                                className="flex-1 px-3 py-2 rounded-lg bg-sphera-surface border border-sphera-border text-xs text-white placeholder-sphera-text-muted focus:outline-none focus:border-sphera-green"
+                              />
+                              <button
+                                type="submit"
+                                disabled={!newMemoryNote.trim() || isSaving || memory.learningNotes.length >= 10}
+                                className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-sphera-green text-black text-xs font-semibold hover:bg-green-400 disabled:opacity-40 transition-colors cursor-pointer shrink-0"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Ajouter</span>
+                              </button>
+                            </form>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

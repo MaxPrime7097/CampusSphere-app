@@ -12,21 +12,18 @@ import {
   Exam,
   UploadSimple,
   ClipboardText,
-  ArrowUp,
   Sparkle,
   ChatCircle,
-  Spinner as Loader2
 } from "@phosphor-icons/react";
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 import {
-  getSessions,
-  getAnnales,
   deleteSession,
   deleteAnnale,
   deleteChatThread,
   shareSession,
   shareAnnale,
-  createStandaloneChatThread
+  type ChatAttachment,
+  type ChatMode,
 } from '../services/spheraApi'
 import { setPendingUploadFile } from '../store/fileStore'
 import { QuotaIndicator } from '../components/app/QuotaIndicator'
@@ -34,6 +31,11 @@ import { PasteTextModal } from '../components/app/PasteTextModal'
 import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal'
 import { ShareModal } from '../components/app/ShareModal'
 import { TodayWidget } from '../components/planner/TodayWidget'
+import {
+  ChatComposer,
+  type ChatContextSelection,
+  type PendingChatAttachment,
+} from '../components/app/ChatComposer'
 import { useSessionsQuery, useAnnalesQuery, useChatThreadsQuery, invalidateSpheraSessions } from '../hooks/useSpheraQueries'
 import { encodeHashId } from '../lib/hashids'
 
@@ -48,6 +50,10 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null)
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false)
   const [chatPrompt, setChatPrompt] = useState('')
+  const [chatMode, setChatMode] = useState<ChatMode>('tutor')
+  const [chatContext, setChatContext] = useState<ChatContextSelection>(null)
+  const [chatWebSearch, setChatWebSearch] = useState(false)
+  const [chatAttachments, setChatAttachments] = useState<PendingChatAttachment[]>([])
   const [isStartingChat, setIsStartingChat] = useState(false)
   const [isDraggingFile, setIsDraggingFile] = useState(false)
 
@@ -184,13 +190,25 @@ export default function Dashboard() {
     }
   }
 
-  const handleChatSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault()
-    const trimmed = chatPrompt.trim()
-    if (!trimmed || isStartingChat) return
+  const handleChatSubmit = (payload: {
+    text: string
+    mode: ChatMode
+    context: ChatContextSelection
+    webSearch: boolean
+    attachments: ChatAttachment[]
+  }) => {
+    if ((!payload.text.trim() && payload.attachments.length === 0) || isStartingChat) return
     setIsStartingChat(true)
-    // Navigate immediately so ChatPage creates the thread in ~30ms and streams the first answer live via SSE
-    navigate('/chat', { state: { initialQuestion: trimmed } })
+    // Navigate immediately so ChatPage creates the thread and streams with all chosen options
+    navigate('/chat', {
+      state: {
+        initialQuestion: payload.text.trim(),
+        initialMode: payload.mode,
+        initialContext: payload.context,
+        initialWebSearch: payload.webSearch,
+        initialAttachments: payload.attachments,
+      },
+    })
   }
 
   return (
@@ -287,33 +305,26 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ─── Universal Chat Input Bar ────────────────────────── */}
-        <div className="max-w-2xl mx-auto mb-14 px-4 sm:px-0">
-          <form
+        {/* ─── Universal Chat Input Bar (Unified Option B Composer) ─── */}
+        <div className="max-w-2xl mx-auto mb-14 px-4 sm:px-0 relative z-20">
+          <ChatComposer
+            value={chatPrompt}
+            onChange={setChatPrompt}
             onSubmit={handleChatSubmit}
-            className="relative flex items-center gap-2 bg-sphera-surface-2 border border-sphera-border hover:border-sphera-border/90 focus-within:border-sphera-green/60 rounded-full p-2 pl-5 shadow-lg transition-all"
-          >
-            <input
-              type="text"
-              value={chatPrompt}
-              onChange={(e) => setChatPrompt(e.target.value)}
-              placeholder="Demande n'importe quoi..."
-              disabled={isStartingChat}
-              className="flex-1 bg-transparent border-none text-sm text-white placeholder-sphera-text-muted outline-none focus:ring-0 pr-2"
-            />
-            <button
-              type="submit"
-              disabled={!chatPrompt.trim() || isStartingChat}
-              className="w-9 h-9 rounded-full bg-sphera-green hover:bg-sphera-green-hover disabled:opacity-40 disabled:hover:bg-sphera-green text-black flex items-center justify-center shrink-0 shadow-md active:scale-95 transition-all cursor-pointer"
-              title="Poser la question à Sphera"
-            >
-              {isStartingChat ? (
-                <Loader2 className="w-4 h-4 animate-spin text-black" />
-              ) : (
-                <ArrowUp className="w-4 h-4 font-bold" />
-              )}
-            </button>
-          </form>
+            isSending={isStartingChat}
+            mode={chatMode}
+            onModeChange={setChatMode}
+            context={chatContext}
+            onContextChange={setChatContext}
+            webSearch={chatWebSearch}
+            onWebSearchChange={setChatWebSearch}
+            pendingAttachments={chatAttachments}
+            onPendingAttachmentsChange={setChatAttachments}
+            onNotify={(msg, type) => {
+              if (type === 'error') setError(msg)
+            }}
+            menuPlacement="bottom"
+          />
         </div>
 
         {/* Paste Text Modal */}

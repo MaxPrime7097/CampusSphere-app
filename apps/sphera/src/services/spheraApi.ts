@@ -772,6 +772,55 @@ export async function getChatCapabilities() {
   );
 }
 
+export interface LearningMemorySnapshot {
+  enabled: boolean;
+  learningNotes: string[];
+  upcomingExams: Array<{
+    id: number;
+    name: string;
+    color: string;
+    examDate: string;
+    daysUntil: number;
+    weight: number;
+  }>;
+  weakCourses: Array<{
+    sessionId: number;
+    title: string;
+    score: number;
+    subjectName: string | null;
+  }>;
+  strongCourses: Array<{
+    sessionId: number;
+    title: string;
+    score: number;
+  }>;
+  todayTasks: Array<{
+    id: number;
+    label: string;
+    actionType: string;
+    subjectName: string | null;
+    isOverdue: boolean;
+  }>;
+}
+
+export async function getChatLearningMemory() {
+  return apiFetch<{ success: boolean; data: LearningMemorySnapshot }>('api/sphera/chat/memory/', {
+    method: 'GET',
+    requireAuth: true,
+  });
+}
+
+export async function updateChatLearningMemory(patch: {
+  enabled?: boolean;
+  learningNotes?: string[];
+}) {
+  return apiFetch<{ success: boolean; data: LearningMemorySnapshot }>('api/sphera/chat/memory/', {
+    method: 'PATCH',
+    body: patch,
+    requireAuth: true,
+  });
+}
+
 export async function uploadChatAttachment(file: File) {
   const formData = new FormData();
   formData.append('file', file);
