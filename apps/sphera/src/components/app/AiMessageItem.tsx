@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react'
-import { Copy, Check, ThumbsUp, ThumbsDown, PencilSimple, ArrowCounterClockwise as RotateCcw, NotePencil, CaretDown, CaretUp, Globe, ArrowSquareOut, Sparkle, MagnifyingGlass, BookOpen } from "@phosphor-icons/react";
+import { Copy, Check, ThumbsUp, ThumbsDown, PencilSimple, ArrowCounterClockwise as RotateCcw, NotePencil, CaretDown, CaretUp, Globe, ArrowSquareOut, Sparkle, MagnifyingGlass, BookOpen, Image as ImageIcon, FilePdf, X } from "@phosphor-icons/react";
 import { useTranslation } from 'react-i18next'
 import { MarkdownRenderer } from './MarkdownRenderer'
-import type { WebSource } from '../../services/spheraApi'
+import { resolveMediaUrl, type ChatAttachment, type WebSource } from '../../services/spheraApi'
 
 interface AiMessageItemProps {
   question: string
   answer: string
   index?: number
   sources?: WebSource[]
+  attachments?: ChatAttachment[]
   status?: string | null
   searchQuery?: string | null
   hasCourseContext?: boolean
@@ -28,6 +29,12 @@ const THINKING_STEPS_FREE = [
 const THINKING_STEPS_COURSE = [
   'Lecture de ton cours…',
   'Analyse des passages clés…',
+  'Rédaction de la réponse…',
+]
+
+const THINKING_STEPS_VISION = [
+  'Analyse de l’image…',
+  'Lecture des équations et schémas…',
   'Rédaction de la réponse…',
 ]
 
@@ -96,7 +103,7 @@ function normalizeStudentSuggestion(raw: string): string {
   return s
 }
 
-export function AiMessageItem({ question, answer, index, sources, status, searchQuery, hasCourseContext, onEdit, onRegenerate, onCreateNote, onSelectSuggestion, disabled }: AiMessageItemProps) {
+export function AiMessageItem({ question, answer, index, sources, attachments, status, searchQuery, hasCourseContext, onEdit, onRegenerate, onCreateNote, onSelectSuggestion, disabled }: AiMessageItemProps) {
   const { t } = useTranslation('study')
   const [copied, setCopied] = useState(false)
   const [noteSaved, setNoteSaved] = useState(false)
@@ -106,6 +113,7 @@ export function AiMessageItem({ question, answer, index, sources, status, search
   const [isQuestionExpanded, setIsQuestionExpanded] = useState(false)
   const [thinkingStepIdx, setThinkingStepIdx] = useState(0)
   const [sourcesExpanded, setSourcesExpanded] = useState(true)
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; name: string } | null>(null)
 
   const isLoading = answer === '...'
 
@@ -173,9 +181,24 @@ export function AiMessageItem({ question, answer, index, sources, status, search
     }
   }
 
-  const isCourseThinking = status === 'reading_course' || Boolean(hasCourseContext)
-  const thinkingSteps = isCourseThinking ? THINKING_STEPS_COURSE : THINKING_STEPS_FREE
+  const isVisionThinking =
+    status === 'analyzing_image' || Boolean(attachments && attachments.some((a) => a.type === 'image'))
+  const isCourseThinking = !isVisionThinking && (status === 'reading_course' || Boolean(hasCourseContext))
+  const thinkingSteps = isVisionThinking
+    ? THINKING_STEPS_VISION
+    : isCourseThinking
+      ? THINKING_STEPS_COURSE
+      : THINKING_STEPS_FREE
   const currentThinkingLabel = thinkingSteps[thinkingStepIdx % thinkingSteps.length]
+
+  useEffect(() => {
+    if (!lightboxImage) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxImage(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [lightboxImage])
 
   return (
     <div className="flex flex-col gap-5 py-4 border-b border-sphera-border/30 last:border-b-0 animate-in fade-in duration-300">
@@ -247,7 +270,44 @@ export function AiMessageItem({ question, answer, index, sources, status, search
                 <PencilSimple className="w-3.5 h-3.5" />
               </button>
             )}
-            <div className="px-4 py-2.5 rounded-2xl rounded-tr-xs bg-sphera-surface-2 border border-sphera-border/70 text-white text-sm leading-relaxed shadow-sm">
+            <div className="px-4 py-2.5 rounded-2xl rounded-tr-xs bg-sphera-surface-2 border border-sphera-border/70 text-white text-sm leading-relaxed shadow-sm space-y-2">
+              {attachments && attachments.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {attachments.map((att, aIdx) => {
+                    const resolvedUrl = resolveMediaUrl(att.url)
+                    if (att.type === 'image') {
+                      return (
+                        <button
+                          key={`${att.storageKey}-${aIdx}`}
+                          type="button"
+                          onClick={() => setLightboxImage({ url: resolvedUrl, name: att.name })}
+                          title={`Agrandir ${att.name}`}
+                          className="group/img relative overflow-hidden rounded-xl border border-sphera-border/80 hover:border-sphera-green/60 bg-sphera-bg transition-all cursor-zoom-in"
+                        >
+                          <img
+                            src={resolvedUrl}
+                            alt={att.name}
+                            loading="lazy"
+                            className="max-h-44 max-w-[220px] object-cover block group-hover/img:scale-[1.02] transition-transform"
+                          />
+                        </button>
+                      )
+                    }
+                    return (
+                      <a
+                        key={`${att.storageKey}-${aIdx}`}
+                        href={resolvedUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-sphera-surface border border-sphera-border/80 hover:border-sphera-green/50 text-xs text-white/90 hover:text-white transition-colors max-w-[240px]"
+                      >
+                        <FilePdf weight="duotone" className="w-4 h-4 text-rose-400 shrink-0" />
+                        <span className="truncate font-medium">{att.name}</span>
+                      </a>
+                    )
+                  })}
+                </div>
+              )}
               <p className={`whitespace-pre-wrap break-words ${isLongQuestion && !isQuestionExpanded ? 'line-clamp-4' : ''}`}>
                 {question}
               </p>
@@ -332,7 +392,9 @@ export function AiMessageItem({ question, answer, index, sources, status, search
             <div className="my-2 flex items-center gap-2.5 py-1 px-0.5 animate-in fade-in duration-200">
               <span className="relative flex h-5 w-5 items-center justify-center shrink-0">
                 <span className="absolute inline-flex h-full w-full rounded-full bg-sphera-green/20 animate-ping [animation-duration:2.2s]" />
-                {isCourseThinking ? (
+                {isVisionThinking ? (
+                  <ImageIcon weight="duotone" className="relative w-4 h-4 text-sphera-green" />
+                ) : isCourseThinking ? (
                   <BookOpen weight="duotone" className="relative w-4 h-4 text-sphera-green" />
                 ) : (
                   <Sparkle weight="duotone" className="relative w-4 h-4 text-sphera-green" />
@@ -538,6 +600,29 @@ export function AiMessageItem({ question, answer, index, sources, status, search
           </div>
         )}
       </div>
+
+      {/* Full-screen Image Lightbox */}
+      {lightboxImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setLightboxImage(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxImage(null)}
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+            aria-label="Fermer l'aperçu"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <img
+            src={lightboxImage.url}
+            alt={lightboxImage.name}
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[88vh] max-w-[92vw] rounded-2xl border border-white/15 shadow-2xl object-contain"
+          />
+        </div>
+      )}
     </div>
   )
 }

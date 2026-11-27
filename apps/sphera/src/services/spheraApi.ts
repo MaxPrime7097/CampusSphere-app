@@ -23,6 +23,12 @@ const getApiBase = () => {
 };
 export const API_BASE = getApiBase();
 
+export function resolveMediaUrl(url: string): string {
+  if (!url) return '';
+  if (/^https?:\/\//i.test(url) || url.startsWith('data:') || url.startsWith('blob:')) return url;
+  return `${API_BASE.replace(/\/$/, '')}/${url.replace(/^\//, '')}`;
+}
+
 // ─── Auth helpers ───────────────────────────────────────────────
 export function getToken(): string | null {
   try { return localStorage.getItem('sphera_access') } catch { return null }
@@ -749,11 +755,31 @@ export async function sendThreadMessage(threadId: number | string, question: str
 
 export type ChatMode = 'tutor' | 'socratic' | 'exam' | 'express';
 
+export interface ChatAttachment {
+  type: 'image' | 'pdf';
+  name: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  storageKey: string;
+  hasText?: boolean;
+}
+
 export async function getChatCapabilities() {
-  return apiFetch<{ success: boolean; data: { webSearch: boolean } }>(
+  return apiFetch<{ success: boolean; data: { webSearch: boolean; vision: boolean } }>(
     'api/sphera/chat/capabilities/',
     { requireAuth: true },
   );
+}
+
+export async function uploadChatAttachment(file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return apiFetch<{ success: boolean; data: ChatAttachment }>('api/sphera/chat/attachments/', {
+    method: 'POST',
+    body: formData,
+    requireAuth: true,
+  });
 }
 
 export async function streamThreadMessage(
@@ -767,6 +793,7 @@ export async function streamThreadMessage(
     contextSessionId?: number | null;
     contextSubjectId?: number | null;
     webSearch?: boolean;
+    attachments?: ChatAttachment[];
     onStatus?: (status: string, query?: string) => void;
     onSources?: (sources: WebSource[]) => void;
   },
@@ -782,6 +809,9 @@ export async function streamThreadMessage(
       ...(options?.contextSessionId ? { contextSessionId: options.contextSessionId } : {}),
       ...(options?.contextSubjectId ? { contextSubjectId: options.contextSubjectId } : {}),
       ...(options?.webSearch ? { webSearch: true } : {}),
+      ...(options?.attachments && options.attachments.length > 0
+        ? { attachments: options.attachments }
+        : {}),
     },
     onToken,
     onStatus: options?.onStatus,

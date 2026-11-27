@@ -20,6 +20,7 @@ export const MAX_SIZES = {
   sphereFile: 250 * 1024 * 1024,
   banner: 10 * 1024 * 1024,
   conversationAvatar: 5 * 1024 * 1024,
+  chatAttachment: 12 * 1024 * 1024,
   other: 10 * 1024 * 1024,
 } as const;
 
@@ -76,6 +77,7 @@ const ALLOWED: Record<UploadKind, string[] | null> = {
   cover: IMAGE_TYPES,
   banner: IMAGE_TYPES,
   conversationAvatar: IMAGE_TYPES,
+  chatAttachment: [...IMAGE_TYPES, "application/pdf"],
   post: POST_MIME_TYPES,
   resource: RESOURCE_MIME_TYPES,
   sphereFile: null,

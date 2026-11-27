@@ -38,6 +38,41 @@ export interface CallMeta {
   userId?: number;
 }
 
+export interface VisionImageInput {
+  mimeType: string;
+  base64: string;
+  name?: string;
+}
+
+function buildOpenAiUserContent(
+  prompt: string,
+  images?: VisionImageInput[],
+): string | Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } }> {
+  if (!images || images.length === 0) return prompt;
+  return [
+    { type: "text", text: prompt },
+    ...images.map((img) => ({
+      type: "image_url" as const,
+      image_url: { url: `data:${img.mimeType};base64,${img.base64}` },
+    })),
+  ];
+}
+
+function buildGeminiParts(
+  prompt: string,
+  images?: VisionImageInput[],
+): Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> {
+  const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [
+    { text: prompt },
+  ];
+  if (images && images.length > 0) {
+    for (const img of images) {
+      parts.push({ inlineData: { mimeType: img.mimeType, data: img.base64 } });
+    }
+  }
+  return parts;
+}
+
 export interface ProviderAttempt {
   name: string;
   error: string;
@@ -215,13 +250,14 @@ export async function callMantleModel(
   inputPrice: number,
   outputPrice: number,
   meta?: CallMeta,
+  images?: VisionImageInput[],
 ): Promise<string> {
   const endpoint = env.ai.bedrockMantle.endpoint.replace(/\/+$/, "");
   const url = `${endpoint}/chat/completions`;
 
   const payload = {
     model: modelId,
-    messages: [{ role: "user", content: prompt }],
+    messages: [{ role: "user", content: buildOpenAiUserContent(prompt, images) }],
     max_tokens: maxTokens,
     temperature: 0,
   };
@@ -430,13 +466,14 @@ export async function* streamMantleModel(
   outputPrice: number,
   meta?: CallMeta,
   signal?: AbortSignal,
+  images?: VisionImageInput[],
 ): AsyncGenerator<string, { fullText: string }, void> {
   const endpoint = env.ai.bedrockMantle.endpoint.replace(/\/+$/, "");
   const url = `${endpoint}/chat/completions`;
 
   const payload = {
     model: modelId,
-    messages: [{ role: "user", content: prompt }],
+    messages: [{ role: "user", content: buildOpenAiUserContent(prompt, images) }],
     max_tokens: maxTokens,
     temperature: 0,
     stream: true,
@@ -492,17 +529,19 @@ export async function* streamMantleModel(
   return { fullText };
 }
 
-/** Stream Groq models. */
+/** Stream Groq models (supports both text and vision via GROQ_VISION_MODEL_ID). */
 export async function* streamGroq(
   prompt: string,
   maxTokens: number,
   meta?: CallMeta,
   signal?: AbortSignal,
+  images?: VisionImageInput[],
 ): AsyncGenerator<string, { fullText: string }, void> {
   const apiKey = env.ai.groqApiKey;
   if (!apiKey) throw new Error("GROQ_API_KEY non configurée");
 
-  const modelId = "openai/gpt-oss-120b";
+  const hasImages = Boolean(images && images.length > 0);
+  const modelId = hasImages ? env.ai.groqVisionModelId : "openai/gpt-oss-120b";
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   if (signal) {
@@ -519,7 +558,7 @@ export async function* streamGroq(
         max_tokens: maxTokens,
         temperature: 0,
         stream: true,
-        messages: [{ role: "user", content: prompt }],
+        messages: [{ role: "user", content: buildOpenAiUserContent(prompt, images) }],
       }),
       signal: controller.signal,
     });
@@ -532,7 +571,7 @@ export async function* streamGroq(
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`HTTP ${response.status} Groq: ${errorText.slice(0, 300)}`);
+    throw new Error(`HTTP ${response.status} Groq (${modelId}): ${errorText.slice(0, 300)}`);
   }
 
   let fullText = "";
@@ -541,19 +580,20 @@ export async function* streamGroq(
     yield token;
   }
 
-  const inputTokens = Math.ceil(prompt.length / 4);
+  const inputTokens = Math.ceil(prompt.length / 4) + (hasImages ? (images?.length ?? 0) * 1200 : 0);
   const outputTokens = Math.ceil(fullText.length / 4);
-  recordUsageLog("groq", modelId, meta, inputTokens, outputTokens, 0);
+  recordUsageLog(hasImages ? "groq-vision" : "groq", modelId, meta, inputTokens, outputTokens, 0);
 
   return { fullText };
 }
 
-/** Stream Gemini models. */
+/** Stream Gemini models (supports both text and vision). */
 export async function* streamGemini(
   prompt: string,
   maxTokens: number,
   meta?: CallMeta,
   signal?: AbortSignal,
+  images?: VisionImageInput[],
 ): AsyncGenerator<string, { fullText: string }, void> {
   const apiKey = env.ai.geminiApiKey;
   if (!apiKey) throw new Error("GEMINI_API_KEY non configurée");
@@ -573,7 +613,7 @@ export async function* streamGemini(
         method: "POST",
         headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
+          contents: [{ parts: buildGeminiParts(prompt, images) }],
           generationConfig: { maxOutputTokens: maxTokens, temperature: 0 },
         }),
         signal: controller.signal,
@@ -816,7 +856,12 @@ async function callBedrockDeepSeek(prompt: string, maxTokens: number, meta?: Cal
   return text;
 }
 
-async function callGemini(prompt: string, maxTokens: number, meta?: CallMeta): Promise<string> {
+async function callGemini(
+  prompt: string,
+  maxTokens: number,
+  meta?: CallMeta,
+  images?: VisionImageInput[],
+): Promise<string> {
   const apiKey = env.ai.geminiApiKey;
   if (!apiKey) throw new Error("GEMINI_API_KEY non configurée");
 
@@ -827,7 +872,7 @@ async function callGemini(prompt: string, maxTokens: number, meta?: CallMeta): P
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
+        contents: [{ parts: buildGeminiParts(prompt, images) }],
         generationConfig: { maxOutputTokens: maxTokens, temperature: 0 },
       }),
     },
@@ -847,11 +892,17 @@ async function callGemini(prompt: string, maxTokens: number, meta?: CallMeta): P
   return text;
 }
 
-async function callGroq(prompt: string, maxTokens: number, meta?: CallMeta): Promise<string> {
+async function callGroq(
+  prompt: string,
+  maxTokens: number,
+  meta?: CallMeta,
+  images?: VisionImageInput[],
+): Promise<string> {
   const apiKey = env.ai.groqApiKey;
   if (!apiKey) throw new Error("GROQ_API_KEY non configurée");
 
-  const modelId = "openai/gpt-oss-120b";
+  const hasImages = Boolean(images && images.length > 0);
+  const modelId = hasImages ? env.ai.groqVisionModelId : "openai/gpt-oss-120b";
   const data = (await postJson("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
@@ -859,7 +910,7 @@ async function callGroq(prompt: string, maxTokens: number, meta?: CallMeta): Pro
       model: modelId,
       max_tokens: maxTokens,
       temperature: 0,
-      messages: [{ role: "user", content: prompt }],
+      messages: [{ role: "user", content: buildOpenAiUserContent(prompt, images) }],
     }),
   })) as {
     choices?: Array<{ message?: { content?: string } }>;
@@ -867,12 +918,12 @@ async function callGroq(prompt: string, maxTokens: number, meta?: CallMeta): Pro
   };
 
   const text = data.choices?.[0]?.message?.content;
-  if (!text) throw new Error("Réponse Groq vide");
+  if (!text) throw new Error(`Réponse Groq (${modelId}) vide`);
 
   const inputTokens = data.usage?.prompt_tokens ?? Math.ceil(prompt.length / 4);
   const outputTokens = data.usage?.completion_tokens ?? Math.ceil(text.length / 4);
 
-  recordUsageLog("groq", modelId, meta, inputTokens, outputTokens, 0);
+  recordUsageLog(hasImages ? "groq-vision" : "groq", modelId, meta, inputTokens, outputTokens, 0);
   return text;
 }
 
@@ -899,6 +950,7 @@ export const BEDROCK_PROVIDERS_FOR_BUDGET = [
   "bedrock-mantle-deepseek",
   "bedrock-mantle-minimax",
   "bedrock-mantle-claude",
+  "bedrock-mantle-vision",
 ] as const;
 
 /** Check if Bedrock/Mantle budget limit has been reached across all Bedrock models, with 60s in-memory caching. */
@@ -1020,11 +1072,59 @@ export function buildProviderChain(toolType: string | undefined, isBudgetExceede
   return chain;
 }
 
+/**
+ * Vision provider chain (when images are attached):
+ *   1. Bedrock Mantle Vision (BEDROCK_MANTLE_VISION_MODEL_ID, e.g. google.gemma-3-27b-it)
+ *   2. Groq Vision (GROQ_VISION_MODEL_ID, e.g. meta-llama/llama-4-scout-17b-16e-instruct)
+ *   3. Gemini 2.5 Flash (last-resort fallback)
+ */
+export function buildVisionProviderChain(
+  isBudgetExceeded: boolean,
+  images: VisionImageInput[],
+): Provider[] {
+  const chain: Provider[] = [];
+  const hasMantleConfig = Boolean(
+    (env.ai.bedrock.accessKeyId && env.ai.bedrock.secretAccessKey) || env.ai.bedrockMantle.apiKey,
+  );
+  const allowMantle = hasMantleConfig && !isBudgetExceeded && Boolean(env.ai.bedrockMantle.visionModelId);
+
+  if (allowMantle) {
+    chain.push({
+      name: "bedrock-mantle-vision",
+      call: (p, t, m) =>
+        callMantleModel(
+          "bedrock-mantle-vision",
+          env.ai.bedrockMantle.visionModelId,
+          p,
+          t,
+          env.ai.bedrockMantle.visionInputPrice,
+          env.ai.bedrockMantle.visionOutputPrice,
+          m,
+          images,
+        ),
+    });
+  }
+  if (env.ai.groqApiKey && env.ai.groqVisionModelId) {
+    chain.push({
+      name: "groq-vision",
+      call: (p, t, m) => callGroq(p, t, m, images),
+    });
+  }
+  if (env.ai.geminiApiKey) {
+    chain.push({
+      name: "gemini-2.5-flash",
+      call: (p, t, m) => callGemini(p, t, m, images),
+    });
+  }
+  return chain;
+}
+
 /** Try each provider in order; return the first raw completion that succeeds. */
 export async function callWithFallback(
   prompt: string,
   maxTokens = TOKENS_DEFAULT,
   meta?: CallMeta,
+  images?: VisionImageInput[],
 ): Promise<string> {
   const attempts: ProviderAttempt[] = [];
 
@@ -1046,7 +1146,10 @@ export async function callWithFallback(
     }
   }
 
-  const providers = buildProviderChain(meta?.toolType, isBudgetExceeded);
+  const hasImages = Boolean(images && images.length > 0);
+  const providers = hasImages
+    ? buildVisionProviderChain(isBudgetExceeded, images!)
+    : buildProviderChain(meta?.toolType, isBudgetExceeded);
 
   for (const provider of providers) {
     try {
@@ -1123,12 +1226,61 @@ export function buildStreamProviderChain(toolType: string | undefined, isBudgetE
   return chain;
 }
 
+/**
+ * Vision streaming provider chain:
+ *   1. Bedrock Mantle Vision (BEDROCK_MANTLE_VISION_MODEL_ID, e.g. google.gemma-3-27b-it)
+ *   2. Groq Vision (GROQ_VISION_MODEL_ID, e.g. meta-llama/llama-4-scout-17b-16e-instruct)
+ *   3. Gemini 2.5 Flash (last-resort fallback)
+ */
+export function buildVisionStreamProviderChain(
+  isBudgetExceeded: boolean,
+  images: VisionImageInput[],
+): StreamProvider[] {
+  const chain: StreamProvider[] = [];
+  const hasMantleConfig = Boolean(
+    (env.ai.bedrock.accessKeyId && env.ai.bedrock.secretAccessKey) || env.ai.bedrockMantle.apiKey,
+  );
+  const allowMantle = hasMantleConfig && !isBudgetExceeded && Boolean(env.ai.bedrockMantle.visionModelId);
+
+  if (allowMantle) {
+    chain.push({
+      name: "bedrock-mantle-vision",
+      stream: (p, t, m, s) =>
+        streamMantleModel(
+          "bedrock-mantle-vision",
+          env.ai.bedrockMantle.visionModelId,
+          p,
+          t,
+          env.ai.bedrockMantle.visionInputPrice,
+          env.ai.bedrockMantle.visionOutputPrice,
+          m,
+          s,
+          images,
+        ),
+    });
+  }
+  if (env.ai.groqApiKey && env.ai.groqVisionModelId) {
+    chain.push({
+      name: "groq-vision",
+      stream: (p, t, m, s) => streamGroq(p, t, m, s, images),
+    });
+  }
+  if (env.ai.geminiApiKey) {
+    chain.push({
+      name: "gemini-2.5-flash",
+      stream: (p, t, m, s) => streamGemini(p, t, m, s, images),
+    });
+  }
+  return chain;
+}
+
 /** Try each streaming provider in order; streams chunks as they arrive. */
 export async function* streamWithFallback(
   prompt: string,
   maxTokens = TOKENS_DEFAULT,
   meta?: CallMeta,
   signal?: AbortSignal,
+  images?: VisionImageInput[],
 ): AsyncGenerator<string, { fullText: string }, void> {
   const attempts: ProviderAttempt[] = [];
 
@@ -1148,7 +1300,10 @@ export async function* streamWithFallback(
     } catch {}
   }
 
-  const providers = buildStreamProviderChain(meta?.toolType, isBudgetExceeded);
+  const hasImages = Boolean(images && images.length > 0);
+  const providers = hasImages
+    ? buildVisionStreamProviderChain(isBudgetExceeded, images!)
+    : buildStreamProviderChain(meta?.toolType, isBudgetExceeded);
 
   for (const provider of providers) {
     let hasEmitted = false;
@@ -1186,6 +1341,15 @@ export const anyProviderConfigured = (): boolean =>
       env.ai.bedrockMantle.apiKey ||
       env.ai.geminiApiKey ||
       env.ai.groqApiKey,
+  );
+
+/** True when at least one vision-capable provider (Mantle Vision, Groq Vision, or Gemini) is configured. */
+export const isVisionConfigured = (): boolean =>
+  Boolean(
+    (((env.ai.bedrock.accessKeyId && env.ai.bedrock.secretAccessKey) || env.ai.bedrockMantle.apiKey) &&
+      env.ai.bedrockMantle.visionModelId) ||
+      (env.ai.groqApiKey && env.ai.groqVisionModelId) ||
+      env.ai.geminiApiKey,
   );
 
 // Retain legacy Runtime references for fallback / transition

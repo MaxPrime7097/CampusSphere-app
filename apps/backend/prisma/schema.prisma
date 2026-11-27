@@ -1102,14 +1102,15 @@ model ChatThread {
 }
 
 model ChatMessage {
-  id        Int        @id @default(autoincrement())
-  threadId  Int        @map("thread_id")
-  role      String     // 'user' | 'assistant'
-  content   String     @db.Text
-  sources   Json?
-  createdAt DateTime   @default(now()) @map("created_at")
+  id          Int        @id @default(autoincrement())
+  threadId    Int        @map("thread_id")
+  role        String     // 'user' | 'assistant'
+  content     String     @db.Text
+  sources     Json?
+  attachments Json?
+  createdAt   DateTime   @default(now()) @map("created_at")
 
-  thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  thread      ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
 
   @@index([threadId, createdAt])
   @@map("sphera_chat_messages")

@@ -102,6 +102,7 @@ export const env = {
     anthropicApiKey: process.env.ANTHROPIC_API_KEY || null,
     geminiApiKey: process.env.GEMINI_API_KEY || null,
     groqApiKey: process.env.GROQ_API_KEY || null,
+    groqVisionModelId: process.env.GROQ_VISION_MODEL_ID || "meta-llama/llama-4-scout-17b-16e-instruct",
     tavilyApiKey: process.env.TAVILY_API_KEY || "",
     bedrock: {
       accessKeyId: process.env.BEDROCK_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID || "",
@@ -121,6 +122,7 @@ export const env = {
       deepseekModelId: process.env.BEDROCK_MANTLE_DEEPSEEK_MODEL_ID || "deepseek.v3.2",
       minimaxModelId: process.env.BEDROCK_MANTLE_MINIMAX_MODEL_ID || "minimax.minimax-m2.5",
       claudeModelId: process.env.BEDROCK_MANTLE_CLAUDE_MODEL_ID || "anthropic.claude-haiku-4-5",
+      visionModelId: process.env.BEDROCK_MANTLE_VISION_MODEL_ID || "google.gemma-3-27b-it",
       primaryStructured: (process.env.BEDROCK_MANTLE_PRIMARY_STRUCTURED || "deepseek").toLowerCase(),
       deepseekInputPrice: Number(process.env.BEDROCK_MANTLE_DEEPSEEK_INPUT_PRICE || "0.62") / 1_000_000,
       deepseekOutputPrice: Number(process.env.BEDROCK_MANTLE_DEEPSEEK_OUTPUT_PRICE || "1.85") / 1_000_000,
@@ -128,6 +130,8 @@ export const env = {
       minimaxOutputPrice: Number(process.env.BEDROCK_MANTLE_MINIMAX_OUTPUT_PRICE || "1.20") / 1_000_000,
       claudeInputPrice: Number(process.env.BEDROCK_MANTLE_CLAUDE_INPUT_PRICE || "1.00") / 1_000_000,
       claudeOutputPrice: Number(process.env.BEDROCK_MANTLE_CLAUDE_OUTPUT_PRICE || "5.00") / 1_000_000,
+      visionInputPrice: Number(process.env.BEDROCK_MANTLE_VISION_INPUT_PRICE || "0.23") / 1_000_000,
+      visionOutputPrice: Number(process.env.BEDROCK_MANTLE_VISION_OUTPUT_PRICE || "0.38") / 1_000_000,
     },
     azureSpeech: {
       key: process.env.AZURE_SPEECH_KEY || "",

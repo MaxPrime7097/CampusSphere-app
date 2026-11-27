@@ -43,13 +43,16 @@ import {
   generateSuggestions,
   generateTool,
   isToolType,
+  isVisionConfigured,
   isWebSearchConfigured,
   MIN_SOURCE_CHARS,
   planWebSearch,
   searchWeb,
   VALID_TOOL_TYPES,
   type AnnaleMode,
+  type AttachedDocumentExcerpt,
   type ToolType,
+  type VisionImageInput,
   type WebSource,
 } from "../services/ai/index.js";
 import {
@@ -1500,10 +1503,66 @@ spheraRouter.post("/sessions/:id/threads/", async (req, res) => {
 
 /**
  * GET /chat/capabilities/
- * Reports optional chat superpowers enabled on the server (e.g. Tavily web search).
+ * Reports optional chat superpowers enabled on the server (web search & multimodal vision).
  */
 spheraRouter.get("/chat/capabilities/", async (_req, res) => {
-  ok(res, { webSearch: isWebSearchConfigured() });
+  ok(res, {
+    webSearch: isWebSearchConfigured(),
+    vision: isVisionConfigured(),
+  });
+});
+
+/**
+ * POST /chat/attachments/
+ * Uploads an image or PDF attachment for Sphera Chat into organized object storage
+ * (`sphera/chat/u-<userId>/<date>/<uuid>.<ext>`).
+ */
+spheraRouter.post("/chat/attachments/", singleUpload("file", "chatAttachment"), async (req, res) => {
+  const me = currentUser(req);
+  const file = req.file;
+  if (!file) throw badRequest("Aucun fichier reçu.");
+
+  const isPdf = file.mimetype === "application/pdf" || /\.pdf$/i.test(file.originalname);
+  const isImage = file.mimetype.startsWith("image/");
+  if (!isPdf && !isImage) {
+    throw badRequest("Format non supporté. Utilise une image (JPG, PNG, WEBP) ou un PDF.");
+  }
+
+  let hasText: boolean | undefined;
+  if (isPdf) {
+    try {
+      const extractedText = await extractText(file.buffer, file.originalname);
+      hasText = Boolean(extractedText && extractedText.trim().length >= 30);
+    } catch {
+      hasText = false;
+    }
+  }
+
+  const stored = await storage.put({
+    buffer: file.buffer,
+    originalName: file.originalname || (isPdf ? "document.pdf" : "image.png"),
+    contentType: file.mimetype,
+    prefix: `sphera/chat/u-${me.id}`,
+  });
+
+  created(res, {
+    type: isPdf ? "pdf" : "image",
+    name: file.originalname || (isPdf ? "document.pdf" : "image.png"),
+    mimeType: file.mimetype,
+    size: stored.size,
+    url: stored.url,
+    storageKey: stored.key,
+    ...(hasText !== undefined ? { hasText } : {}),
+  });
+});
+
+const chatAttachmentSchema = z.object({
+  type: z.enum(["image", "pdf"]),
+  name: z.string().trim().min(1).max(200),
+  mimeType: z.string().trim().min(1).max(120),
+  size: z.coerce.number().int().min(0).max(15 * 1024 * 1024),
+  url: z.string().trim().min(1).max(2048),
+  storageKey: z.string().trim().min(1).max(512),
 });
 
 /**
@@ -1519,16 +1578,66 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
   });
   if (!thread) throw notFound("Fil de discussion introuvable.");
 
-  const { question, replaceFromTurnIndex, mode, contextSessionId, contextSubjectId, webSearch } = z
+  const parsedBody = z
     .object({
-      question: z.string().trim().min(1),
+      question: z.string().trim().optional().default(""),
       replaceFromTurnIndex: z.coerce.number().int().min(0).optional(),
       mode: z.enum(["tutor", "socratic", "exam", "express"]).optional(),
       contextSessionId: z.coerce.number().int().positive().nullable().optional(),
       contextSubjectId: z.coerce.number().int().positive().nullable().optional(),
       webSearch: z.boolean().optional(),
+      attachments: z.array(chatAttachmentSchema).max(3).optional(),
     })
     .parse(req.body ?? {});
+
+  const { replaceFromTurnIndex, mode, contextSessionId, contextSubjectId, webSearch } = parsedBody;
+  const rawAttachments = parsedBody.attachments ?? [];
+
+  if (!parsedBody.question && rawAttachments.length === 0) {
+    throw badRequest("Saisis une question ou joins une image / un PDF.");
+  }
+
+  const hasImageAttachment = rawAttachments.some((a) => a.type === "image");
+  const question =
+    parsedBody.question ||
+    (hasImageAttachment
+      ? "Analyse cette image et explique-la moi étape par étape."
+      : "Analyse ce document PDF et résume les points essentiels.");
+
+  // Resolve uploaded attachments securely (strict per-user prefix check to prevent IDOR)
+  const expectedPrefix = `sphera/chat/u-${me.id}/`;
+  const visionImages: VisionImageInput[] = [];
+  const attachedDocuments: AttachedDocumentExcerpt[] = [];
+  const persistedAttachments: Array<z.infer<typeof chatAttachmentSchema>> = [];
+
+  for (const att of rawAttachments) {
+    if (!att.storageKey.startsWith(expectedPrefix) || att.storageKey.includes("..")) {
+      throw forbidden("Pièce jointe non autorisée.");
+    }
+    try {
+      const buffer = await storage.get(att.storageKey);
+      if (att.type === "image") {
+        visionImages.push({
+          mimeType: att.mimeType,
+          base64: buffer.toString("base64"),
+          name: att.name,
+        });
+      } else if (att.type === "pdf") {
+        const extractedText = await extractText(buffer, att.name);
+        if (extractedText && extractedText.trim().length > 0) {
+          attachedDocuments.push({ name: att.name, text: extractedText });
+        } else {
+          attachedDocuments.push({
+            name: att.name,
+            text: "(Ce PDF ne contient pas de texte extractible — il s'agit probablement d'un scan image.)",
+          });
+        }
+      }
+      persistedAttachments.push(att);
+    } catch (err: any) {
+      console.warn(`[sphera-chat] Failed to load attachment ${att.storageKey}:`, err?.message || err);
+    }
+  }
 
   // Resolve effective source text:
   // - In-session thread: uses that session's extractedText strictly.
@@ -1619,14 +1728,17 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
     (req.body && (req.body as any).stream === true);
 
   const isStandaloneThread = !(thread.session.extractedText || "").trim();
-  const canConsiderWebSearch = isWebSearchConfigured() && (Boolean(webSearch) || isStandaloneThread);
+  // Avoid triggering auto web search when the student just uploaded an exercise photo/PDF unless forced
+  const hasAttachments = persistedAttachments.length > 0;
+  const canConsiderWebSearch =
+    isWebSearchConfigured() && (Boolean(webSearch) || (isStandaloneThread && !hasAttachments));
 
   if (!isStream) {
     let webSources: WebSource[] = [];
     if (canConsiderWebSearch) {
       const plan = await planWebSearch(question, previousThreadHistory, {
         forceWebSearch: Boolean(webSearch),
-        hasCourseContext: Boolean(effectiveSourceText.trim()),
+        hasCourseContext: Boolean(effectiveSourceText.trim() || attachedDocuments.length > 0),
         userId: me.id,
       });
       if (plan.shouldSearch && plan.query) {
@@ -1640,11 +1752,24 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
       question,
       me.id,
       previousThreadHistory,
-      { chatMode: mode, allowGeneralKnowledge, webSources },
+      {
+        chatMode: mode,
+        allowGeneralKnowledge,
+        webSources,
+        images: visionImages,
+        attachedDocuments,
+      },
     );
 
     await prisma.chatMessage.create({
-      data: { threadId: thread.id, role: "user", content: question },
+      data: {
+        threadId: thread.id,
+        role: "user",
+        content: question,
+        ...(persistedAttachments.length > 0
+          ? { attachments: persistedAttachments as unknown as Prisma.InputJsonValue }
+          : {}),
+      },
     });
     const assistantMsg = await prisma.chatMessage.create({
       data: {
@@ -1670,7 +1795,14 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
 
   // 1. Immediately persist user message & touch thread updatedAt so it bubbles to top
   await prisma.chatMessage.create({
-    data: { threadId: thread.id, role: "user", content: question },
+    data: {
+      threadId: thread.id,
+      role: "user",
+      content: question,
+      ...(persistedAttachments.length > 0
+        ? { attachments: persistedAttachments as unknown as Prisma.InputJsonValue }
+        : {}),
+    },
   });
   await prisma.chatThread.update({
     where: { id: thread.id },
@@ -1687,10 +1819,12 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
   let fullAnswer = "";
   let webSources: WebSource[] = [];
   try {
-    // Emit an immediate initial status before fast search planning
-    if (webSearch && isWebSearchConfigured()) {
+    // Emit an immediate initial status before fast search planning / generation
+    if (visionImages.length > 0) {
+      res.write(`data: ${JSON.stringify({ status: "analyzing_image" })}\n\n`);
+    } else if (webSearch && isWebSearchConfigured()) {
       res.write(`data: ${JSON.stringify({ status: "searching_web" })}\n\n`);
-    } else if (effectiveSourceText.trim()) {
+    } else if (effectiveSourceText.trim() || attachedDocuments.length > 0) {
       res.write(`data: ${JSON.stringify({ status: "reading_course" })}\n\n`);
     } else {
       res.write(`data: ${JSON.stringify({ status: "thinking" })}\n\n`);
@@ -1699,7 +1833,7 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
     if (canConsiderWebSearch) {
       const plan = await planWebSearch(question, previousThreadHistory, {
         forceWebSearch: Boolean(webSearch),
-        hasCourseContext: Boolean(effectiveSourceText.trim()),
+        hasCourseContext: Boolean(effectiveSourceText.trim() || attachedDocuments.length > 0),
         userId: me.id,
       });
       if (abortController.signal.aborted) {
@@ -1730,7 +1864,13 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
       me.id,
       previousThreadHistory,
       abortController.signal,
-      { chatMode: mode, allowGeneralKnowledge, webSources },
+      {
+        chatMode: mode,
+        allowGeneralKnowledge,
+        webSources,
+        images: visionImages,
+        attachedDocuments,
+      },
     );
 
     for await (const token of stream) {
@@ -1776,17 +1916,32 @@ spheraRouter.post("/threads/:threadId/messages/", async (req, res) => {
 
 /**
  * DELETE /threads/<threadId>/
- * Deletes a chat thread and all its messages.
+ * Deletes a chat thread, all its messages, and cleans up any stored attachment objects.
  */
 spheraRouter.delete("/threads/:threadId/", async (req, res) => {
   const me = currentUser(req);
   const threadId = idParam(req, "threadId");
   const thread = await prisma.chatThread.findFirst({
     where: { id: threadId, ownerId: me.id },
+    include: { messages: { select: { attachments: true } } },
   });
   if (!thread) throw notFound("Fil de discussion introuvable.");
 
+  const keysToDelete: string[] = [];
+  for (const msg of thread.messages) {
+    if (Array.isArray(msg.attachments)) {
+      for (const att of msg.attachments as Array<{ storageKey?: unknown }>) {
+        if (typeof att?.storageKey === "string" && att.storageKey.startsWith(`sphera/chat/u-${me.id}/`)) {
+          keysToDelete.push(att.storageKey);
+        }
+      }
+    }
+  }
+
   await prisma.chatThread.delete({ where: { id: thread.id } });
+  if (keysToDelete.length > 0) {
+    void Promise.allSettled(keysToDelete.map((k) => storage.delete(k)));
+  }
   ok(res, null, "Fil de discussion supprimé.");
 });
 
