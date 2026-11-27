@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams, useLocation, Link } from 'react-router-dom'
 import {
-  ChatCircle,
   Plus,
   ArrowLeft,
-  ArrowUp,
   ArrowDown,
   Trash,
   PencilSimple,
@@ -16,22 +14,13 @@ import {
   GraduationCap,
   List as Menu,
   Spinner as Loader2,
-  Square,
-  Lightning,
-  Compass,
-  Exam,
-  Paperclip,
-  MagnifyingGlass,
-  Globe,
   Image as ImageIcon,
-  FilePdf,
 } from '@phosphor-icons/react'
 import { useTranslation } from 'react-i18next'
 import { useSpheraAuth } from '../contexts/SpheraAuthContext'
 import {
   getStandaloneChatThread,
   createStandaloneChatThread,
-  getChatCapabilities,
   uploadChatAttachment,
   streamThreadMessage,
   deleteChatThread,
@@ -44,70 +33,17 @@ import {
 } from '../services/spheraApi'
 import { AiMessageItem } from '../components/app/AiMessageItem'
 import { DeleteConfirmModal } from '../components/app/DeleteConfirmModal'
-import { encodeHashId, parseSlugId } from '../lib/hashids'
+import { LearningMemoryPopover } from '../components/app/LearningMemoryPopover'
 import {
-  invalidateSpheraSessions,
-  useSessionsQuery,
-  usePlannerSubjectsQuery,
-} from '../hooks/useSpheraQueries'
-
-type ChatContextSelection =
-  | { type: 'session'; id: number; label: string }
-  | { type: 'subject'; id: number; label: string; color: string }
-  | null
-
-interface PendingAttachment {
-  tempId: string
-  name: string
-  type: 'image' | 'pdf'
-  previewUrl?: string
-  uploading: boolean
-  uploaded?: ChatAttachment
-  error?: string
-}
-
-const MAX_CHAT_ATTACHMENTS = 3
-const MAX_ATTACHMENT_BYTES = 12 * 1024 * 1024
-
-/** Downscale very large photos (> 1.2 MB or > 1800px) on the client so uploads & vision stay fast & sharp. */
-async function compressImageIfNeeded(file: File): Promise<File> {
-  if (!file.type.startsWith('image/') || file.type === 'image/gif') return file
-  if (file.size <= 1.2 * 1024 * 1024) return file
-  try {
-    const bitmap = await createImageBitmap(file)
-    const maxDim = 1800
-    const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height))
-    const width = Math.max(1, Math.round(bitmap.width * scale))
-    const height = Math.max(1, Math.round(bitmap.height * scale))
-    const canvas = document.createElement('canvas')
-    canvas.width = width
-    canvas.height = height
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return file
-    ctx.drawImage(bitmap, 0, 0, width, height)
-    bitmap.close?.()
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, 'image/jpeg', 0.86),
-    )
-    if (!blob || blob.size >= file.size) return file
-    const cleanName = file.name.replace(/\.[^.]+$/, '') + '.jpg'
-    return new File([blob], cleanName, { type: 'image/jpeg' })
-  } catch {
-    return file
-  }
-}
-
-const CHAT_MODES: Array<{
-  id: ChatMode
-  label: string
-  description: string
-  icon: typeof Sparkle
-}> = [
-  { id: 'tutor', label: 'Tuteur', description: 'Explications claires avec exemples et analogies', icon: Sparkle },
-  { id: 'socratic', label: 'Socrate', description: 'Te guide étape par étape par questions sans donner la réponse directe', icon: Compass },
-  { id: 'exam', label: 'Examen', description: 'Te pose des questions pièges type partiel et note tes réponses', icon: Exam },
-  { id: 'express', label: 'Express', description: 'Réponses ultra-concises en points clés essentiels', icon: Lightning },
-]
+  ChatComposer,
+  compressImageIfNeeded,
+  MAX_ATTACHMENT_BYTES,
+  MAX_CHAT_ATTACHMENTS,
+  type ChatContextSelection,
+  type PendingChatAttachment,
+} from '../components/app/ChatComposer'
+import { encodeHashId, parseSlugId } from '../lib/hashids'
+import { invalidateSpheraSessions } from '../hooks/useSpheraQueries'
 
 const STARTER_SUGGESTIONS = [
   {
@@ -162,61 +98,14 @@ export default function ChatPage() {
   const [isSending, setIsSending] = useState(false)
 
   // Pending image / PDF attachments (file picker, Ctrl+V paste, drag & drop)
-  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([])
+  const [pendingAttachments, setPendingAttachments] = useState<PendingChatAttachment[]>([])
   const [isDraggingFiles, setIsDraggingFiles] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const dragDepthRef = useRef(0)
 
   // Pedagogical chat mode, Web Search toggle & optional course/subject context (defaults to free general chat!)
   const [chatMode, setChatMode] = useState<ChatMode>('tutor')
   const [webSearchEnabled, setWebSearchEnabled] = useState(false)
-  const [webSearchAvailable, setWebSearchAvailable] = useState<boolean | null>(null)
   const [attachedContext, setAttachedContext] = useState<ChatContextSelection>(null)
-
-  useEffect(() => {
-    let mounted = true
-    getChatCapabilities()
-      .then((res) => {
-        if (mounted && typeof res?.data?.webSearch === 'boolean') {
-          setWebSearchAvailable(res.data.webSearch)
-        }
-      })
-      .catch(() => {})
-    return () => {
-      mounted = false
-    }
-  }, [])
-  const [contextMenuOpen, setContextMenuOpen] = useState(false)
-  const [contextSearch, setContextSearch] = useState('')
-  const contextMenuRef = useRef<HTMLDivElement>(null)
-
-  const { data: rawSessions = [] } = useSessionsQuery()
-  const { data: plannerSubjects = [] } = usePlannerSubjectsQuery()
-
-  const availableCourses = useMemo(() => {
-    return (rawSessions || [])
-      .filter(
-        (s: any) =>
-          s.source_filename !== 'Discussion libre' &&
-          s.source_filename !== '__sphera_standalone_chat__' &&
-          s.sourceFilename !== '__sphera_standalone_chat__',
-      )
-      .map((s: any) => ({
-        id: Number(s.id),
-        title: s.resource_title || s.source_filename || `Cours #${s.id}`,
-      }))
-  }, [rawSessions])
-
-  useEffect(() => {
-    if (!contextMenuOpen) return
-    const handleOutside = (e: MouseEvent) => {
-      if (contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
-        setContextMenuOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleOutside)
-    return () => document.removeEventListener('mousedown', handleOutside)
-  }, [contextMenuOpen])
 
   // Rename, Delete Modal & Toast feedback state
   const [isEditingTitle, setIsEditingTitle] = useState(false)
@@ -316,12 +205,28 @@ export default function ChatPage() {
     }
   }, [isLoadingMessages, messages.length])
 
-  // ─── 2. Handle initialQuestion from Dashboard ────────────────
+  // ─── 2. Handle initial launch from Dashboard unified composer ─
   useEffect(() => {
-    const initialQ = (location.state as any)?.initialQuestion
-    if (initialQ && typeof initialQ === 'string' && initialQ.trim()) {
+    const state = (location.state as {
+      initialQuestion?: string
+      initialMode?: ChatMode
+      initialContext?: ChatContextSelection
+      initialWebSearch?: boolean
+      initialAttachments?: ChatAttachment[]
+    } | null)
+    const initialQ = typeof state?.initialQuestion === 'string' ? state.initialQuestion.trim() : ''
+    const initialAtts = Array.isArray(state?.initialAttachments) ? state.initialAttachments : []
+
+    if (initialQ || initialAtts.length > 0) {
+      if (state?.initialMode) setChatMode(state.initialMode)
+      if (state?.initialContext !== undefined) setAttachedContext(state.initialContext)
+      if (typeof state?.initialWebSearch === 'boolean') setWebSearchEnabled(state.initialWebSearch)
       navigate(location.pathname, { replace: true, state: {} })
-      handleStartNewChatWithQuestion(initialQ.trim())
+      handleStartNewChatWithQuestion(initialQ, initialAtts, {
+        mode: state?.initialMode,
+        context: state?.initialContext,
+        webSearch: state?.initialWebSearch,
+      })
     }
   }, [location.state])
 
@@ -444,54 +349,44 @@ export default function ChatPage() {
     }
   }
 
-  const handleRemovePendingAttachment = (tempId: string) => {
-    setPendingAttachments((prev) => {
-      const target = prev.find((p) => p.tempId === tempId)
-      if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl)
-      return prev.filter((p) => p.tempId !== tempId)
-    })
-  }
-
-  const handlePasteInComposer = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const items = e.clipboardData?.items
-    if (!items) return
-    const pastedFiles: File[] = []
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i]
-      if (item.kind === 'file') {
-        const f = item.getAsFile()
-        if (f && (f.type.startsWith('image/') || f.type === 'application/pdf')) {
-          pastedFiles.push(f)
-        }
-      }
-    }
-    if (pastedFiles.length > 0) {
-      e.preventDefault()
-      void handleAddFiles(pastedFiles)
-    }
-  }
-
   const isUploadingAttachments = pendingAttachments.some((a) => a.uploading)
-  const readyAttachments = useMemo(
-    () => pendingAttachments.map((a) => a.uploaded).filter((a): a is ChatAttachment => Boolean(a)),
-    [pendingAttachments],
-  )
 
   // ─── 4. Send Message / Create Thread ─────────────────────────
   const buildStreamOptions = (extra?: {
     replaceFromTurnIndex?: number
     attachments?: ChatAttachment[]
+    modeOverride?: ChatMode
+    contextOverride?: ChatContextSelection
+    webSearchOverride?: boolean
     onStatus?: (status: string, query?: string) => void
     onSources?: (sources: WebSource[]) => void
-  }) => ({
-    ...extra,
-    mode: chatMode,
-    contextSessionId: attachedContext?.type === 'session' ? attachedContext.id : null,
-    contextSubjectId: attachedContext?.type === 'subject' ? attachedContext.id : null,
-    webSearch: webSearchEnabled,
-  })
+  }) => {
+    const effectiveMode = extra?.modeOverride ?? chatMode
+    const effectiveContext =
+      extra?.contextOverride !== undefined ? extra.contextOverride : attachedContext
+    const effectiveWebSearch =
+      extra?.webSearchOverride !== undefined ? extra.webSearchOverride : webSearchEnabled
+    return {
+      replaceFromTurnIndex: extra?.replaceFromTurnIndex,
+      attachments: extra?.attachments,
+      onStatus: extra?.onStatus,
+      onSources: extra?.onSources,
+      mode: effectiveMode,
+      contextSessionId: effectiveContext?.type === 'session' ? effectiveContext.id : null,
+      contextSubjectId: effectiveContext?.type === 'subject' ? effectiveContext.id : null,
+      webSearch: effectiveWebSearch,
+    }
+  }
 
-  const handleStartNewChatWithQuestion = async (questionText: string, attachmentsToSend: ChatAttachment[] = []) => {
+  const handleStartNewChatWithQuestion = async (
+    questionText: string,
+    attachmentsToSend: ChatAttachment[] = [],
+    overrides?: {
+      mode?: ChatMode
+      context?: ChatContextSelection
+      webSearch?: boolean
+    },
+  ) => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
       abortControllerRef.current = null
@@ -501,6 +396,10 @@ export default function ChatPage() {
 
     isInitialThreadLoadRef.current = false
     setIsSending(true)
+    const effectiveWebSearch =
+      overrides?.webSearch !== undefined ? overrides.webSearch : webSearchEnabled
+    const effectiveContext =
+      overrides?.context !== undefined ? overrides.context : attachedContext
     const hasImages = attachmentsToSend.some((a) => a.type === 'image')
     const displayQuestion =
       questionText ||
@@ -509,9 +408,9 @@ export default function ChatPage() {
         : 'Analyse ce document PDF et résume les points essentiels.')
     const initialStatus = hasImages
       ? 'analyzing_image'
-      : webSearchEnabled
+      : effectiveWebSearch
         ? 'searching_web'
-        : attachedContext
+        : effectiveContext
           ? 'reading_course'
           : 'thinking'
 
@@ -557,6 +456,9 @@ export default function ChatPage() {
           controller.signal,
           buildStreamOptions({
             attachments: attachmentsToSend,
+            modeOverride: overrides?.mode,
+            contextOverride: overrides?.context,
+            webSearchOverride: overrides?.webSearch,
             onStatus: (status, query) => {
               setMessages((prev) => {
                 if (!prev[0]) return prev
@@ -719,9 +621,14 @@ export default function ChatPage() {
     }
   }
 
-  const handleSendMessage = (e?: React.FormEvent) => {
-    if (e) e.preventDefault()
-    handleSendMessageWithText(inputMessage, readyAttachments)
+  const handleComposerSubmit = ({
+    text,
+    attachments,
+  }: {
+    text: string
+    attachments: ChatAttachment[]
+  }) => {
+    handleSendMessageWithText(text, attachments)
   }
 
   // Handle Edit & Regenerate (rewinds thread cleanly from `index` in both UI and DB — zero duplicates!)
@@ -891,22 +798,6 @@ export default function ChatPage() {
     }
   }
 
-  // Auto-resize textarea
-  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputMessage(e.target.value)
-    e.target.style.height = 'auto'
-    e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      if (!isSending) {
-        handleSendMessage()
-      }
-    }
-  }
-
   return (
     <div
       className="flex flex-col h-full w-full bg-sphera-bg overflow-hidden relative font-sans"
@@ -1042,6 +933,10 @@ export default function ChatPage() {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <LearningMemoryPopover
+            onAskCoaching={(prompt) => handleSendMessageWithText(prompt)}
+            onFeedback={showToast}
+          />
           <button
             type="button"
             onClick={handleCreateNewThread}
@@ -1150,351 +1045,28 @@ export default function ChatPage() {
             </div>
           )}
 
-          {/* Compact Mode, Web Search & Optional Course/Subject Context Bar */}
-          <div className="flex items-center justify-between gap-2 mb-2 px-1">
-            <div className="flex items-center gap-1.5 shrink-0">
-              {/* Optional Context Picker (Free Chat by default!) */}
-              <div ref={contextMenuRef} className="relative shrink-0">
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setContextMenuOpen((prev) => !prev)
-                      setContextSearch('')
-                    }}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all cursor-pointer ${
-                      attachedContext
-                        ? 'bg-sphera-green/12 border-sphera-green/40 text-white'
-                        : 'bg-sphera-surface/80 border-sphera-border/70 text-sphera-text-muted hover:text-white hover:border-sphera-border'
-                    }`}
-                    title={
-                      attachedContext
-                        ? `Contexte actif : ${attachedContext.label}`
-                        : 'Optionnel : relier un cours ou une matière à cette discussion'
-                    }
-                  >
-                    {attachedContext?.type === 'subject' ? (
-                      <span
-                        className="w-2 h-2 rounded-full shrink-0"
-                        style={{ backgroundColor: attachedContext.color || '#22c55e' }}
-                      />
-                    ) : attachedContext?.type === 'session' ? (
-                      <BookOpen weight="duotone" className="w-3.5 h-3.5 text-sphera-green shrink-0" />
-                    ) : (
-                      <Paperclip className="w-3.5 h-3.5 shrink-0" />
-                    )}
-                    <span className="truncate max-w-[115px] sm:max-w-[165px]">
-                      {attachedContext ? attachedContext.label : 'Discussion libre'}
-                    </span>
-                  </button>
-                  {attachedContext && (
-                    <button
-                      type="button"
-                      onClick={() => setAttachedContext(null)}
-                      className="p-1 rounded-full text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors cursor-pointer"
-                      title="Revenir en discussion libre (sans cours)"
-                      aria-label="Retirer le contexte"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-
-                {contextMenuOpen && (
-                <div className="absolute bottom-full left-0 mb-2 w-72 rounded-2xl border border-sphera-border bg-sphera-surface-2 shadow-2xl p-2.5 space-y-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-150">
-                  <div className="flex items-center justify-between px-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-sphera-text-muted">
-                      Contexte de la discussion
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setContextMenuOpen(false)}
-                      className="text-sphera-text-muted hover:text-white cursor-pointer"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  {(availableCourses.length + plannerSubjects.length > 5) && (
-                    <div className="relative">
-                      <MagnifyingGlass className="w-3.5 h-3.5 text-sphera-text-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        value={contextSearch}
-                        onChange={(e) => setContextSearch(e.target.value)}
-                        placeholder="Rechercher un cours ou une matière..."
-                        className="w-full pl-8 pr-2.5 py-1.5 rounded-lg bg-sphera-surface border border-sphera-border text-xs text-white placeholder-sphera-text-muted focus:outline-none focus:border-sphera-green"
-                      />
-                    </div>
-                  )}
-
-                  <div className="max-h-56 overflow-y-auto space-y-1 custom-scrollbar">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAttachedContext(null)
-                        setContextMenuOpen(false)
-                      }}
-                      className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
-                        !attachedContext
-                          ? 'bg-sphera-green/15 text-white font-semibold'
-                          : 'text-white/80 hover:bg-sphera-surface'
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        <ChatCircle weight="duotone" className="w-3.5 h-3.5 text-sphera-green shrink-0" />
-                        <span>Discussion libre (hors cours)</span>
-                      </span>
-                      {!attachedContext && <Check className="w-3.5 h-3.5 text-sphera-green shrink-0" />}
-                    </button>
-
-                    {plannerSubjects.length > 0 && (
-                      <>
-                        <div className="px-2 pt-1.5 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-sphera-text-muted">
-                          Mes matières
-                        </div>
-                        {plannerSubjects
-                          .filter((s) => !contextSearch.trim() || s.name.toLowerCase().includes(contextSearch.toLowerCase()))
-                          .map((s) => {
-                            const isSelected = attachedContext?.type === 'subject' && attachedContext.id === s.id
-                            return (
-                              <button
-                                key={`subj-${s.id}`}
-                                type="button"
-                                onClick={() => {
-                                  setAttachedContext({ type: 'subject', id: s.id, label: s.name, color: s.color })
-                                  setContextMenuOpen(false)
-                                }}
-                                className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
-                                  isSelected
-                                    ? 'bg-sphera-green/15 text-white font-semibold'
-                                    : 'text-white/85 hover:bg-sphera-surface'
-                                }`}
-                              >
-                                <span className="flex items-center gap-2 min-w-0">
-                                  <span
-                                    className="w-2 h-2 rounded-full shrink-0"
-                                    style={{ backgroundColor: s.color || '#22c55e' }}
-                                  />
-                                  <span className="truncate">{s.name}</span>
-                                </span>
-                                {isSelected && <Check className="w-3.5 h-3.5 text-sphera-green shrink-0" />}
-                              </button>
-                            )
-                          })}
-                      </>
-                    )}
-
-                    {availableCourses.length > 0 && (
-                      <>
-                        <div className="px-2 pt-1.5 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-sphera-text-muted">
-                          Mes cours
-                        </div>
-                        {availableCourses
-                          .filter((c) => !contextSearch.trim() || c.title.toLowerCase().includes(contextSearch.toLowerCase()))
-                          .slice(0, 15)
-                          .map((c) => {
-                            const isSelected = attachedContext?.type === 'session' && attachedContext.id === c.id
-                            return (
-                              <button
-                                key={`sess-${c.id}`}
-                                type="button"
-                                onClick={() => {
-                                  setAttachedContext({ type: 'session', id: c.id, label: c.title })
-                                  setContextMenuOpen(false)
-                                }}
-                                className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
-                                  isSelected
-                                    ? 'bg-sphera-green/15 text-white font-semibold'
-                                    : 'text-white/85 hover:bg-sphera-surface'
-                                }`}
-                              >
-                                <span className="flex items-center gap-2 min-w-0">
-                                  <BookOpen className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                                  <span className="truncate">{c.title}</span>
-                                </span>
-                                {isSelected && <Check className="w-3.5 h-3.5 text-sphera-green shrink-0" />}
-                              </button>
-                            )
-                          })}
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
-              </div>
-
-              {/* Web Search Toggle Pill (Tavily Grounding) */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (webSearchAvailable === false && !webSearchEnabled) {
-                    showToast('Recherche Web indisponible : configure TAVILY_API_KEY côté serveur.', 'error')
-                    return
-                  }
-                  setWebSearchEnabled((prev) => !prev)
-                }}
-                title={
-                  webSearchAvailable === false
-                    ? 'Recherche Web non configurée sur le serveur (TAVILY_API_KEY manquante)'
-                    : webSearchEnabled
-                      ? 'Recherche Web forcée sur chaque message (clique pour repasser en mode Auto)'
-                      : 'Recherche Web automatique active — clique pour forcer la recherche Web'
-                }
-                aria-pressed={webSearchEnabled}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all cursor-pointer shrink-0 ${
-                  webSearchEnabled
-                    ? 'bg-sky-500/15 border-sky-400/50 text-sky-300 shadow-[0_0_12px_rgba(56,189,248,0.18)]'
-                    : webSearchAvailable === false
-                      ? 'bg-sphera-surface/40 border-sphera-border/40 text-sphera-text-muted/60 hover:text-sphera-text-muted'
-                      : 'bg-sphera-surface/80 border-sphera-border/70 text-sphera-text-muted hover:text-white hover:border-sphera-border'
-                }`}
-              >
-                <Globe weight={webSearchEnabled ? 'duotone' : 'regular'} className="w-3.5 h-3.5 shrink-0" />
-                <span>Web</span>
-              </button>
-            </div>
-
-            {/* Pedagogical Mode Pills */}
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-              {CHAT_MODES.map((m) => {
-                const Icon = m.icon
-                const isActive = chatMode === m.id
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => setChatMode(m.id)}
-                    title={m.description}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all whitespace-nowrap cursor-pointer ${
-                      isActive
-                        ? 'bg-sphera-surface border-sphera-green/50 text-sphera-green font-semibold'
-                        : 'bg-transparent border-transparent text-sphera-text-muted hover:text-white hover:bg-sphera-surface/60'
-                    }`}
-                  >
-                    <Icon weight={isActive ? 'fill' : 'regular'} className="w-3 h-3 shrink-0" />
-                    <span>{m.label}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Pending Image / PDF Attachments Preview Strip */}
-          {pendingAttachments.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 mb-2 px-1 animate-in fade-in slide-in-from-bottom-1 duration-150">
-              {pendingAttachments.map((att) => (
-                <div
-                  key={att.tempId}
-                  className="relative group/att flex items-center gap-2 rounded-xl border border-sphera-border bg-sphera-surface-2/95 p-1.5 pr-2.5 shadow-md"
-                >
-                  {att.type === 'image' && att.previewUrl ? (
-                    <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-sphera-bg shrink-0">
-                      <img src={att.previewUrl} alt={att.name} className="w-full h-full object-cover" />
-                      {att.uploading && (
-                        <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
-                          <Loader2 className="w-4 h-4 text-sphera-green animate-spin" />
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="w-8 h-8 rounded-lg bg-rose-500/12 border border-rose-400/25 flex items-center justify-center shrink-0">
-                      {att.uploading ? (
-                        <Loader2 className="w-4 h-4 text-rose-400 animate-spin" />
-                      ) : (
-                        <FilePdf weight="duotone" className="w-4 h-4 text-rose-400" />
-                      )}
-                    </div>
-                  )}
-                  <div className="min-w-0 max-w-[140px]">
-                    <p className="text-[11px] font-medium text-white truncate">{att.name}</p>
-                    <p className="text-[10px] text-sphera-text-muted">
-                      {att.uploading ? 'Envoi…' : att.type === 'pdf' ? 'PDF prêt' : 'Image prête'}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRemovePendingAttachment(att.tempId)}
-                    title="Retirer cette pièce jointe"
-                    aria-label="Retirer cette pièce jointe"
-                    className="p-1 rounded-full text-sphera-text-muted hover:text-white hover:bg-sphera-surface transition-colors cursor-pointer"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept="image/png,image/jpeg,image/webp,image/gif,application/pdf"
-            className="hidden"
-            onChange={(e) => {
-              if (e.target.files?.length) {
-                void handleAddFiles(e.target.files)
-                e.target.value = ''
-              }
-            }}
+          {/* Unified Option B Composer (+ Menu: Files, @ Context, Web + Single Mode Pill) */}
+          <ChatComposer
+            value={inputMessage}
+            onChange={setInputMessage}
+            onSubmit={handleComposerSubmit}
+            onStop={handleStopChat}
+            isSending={isSending}
+            mode={chatMode}
+            onModeChange={setChatMode}
+            context={attachedContext}
+            onContextChange={setAttachedContext}
+            webSearch={webSearchEnabled}
+            onWebSearchChange={setWebSearchEnabled}
+            pendingAttachments={pendingAttachments}
+            onPendingAttachmentsChange={setPendingAttachments}
+            onNotify={showToast}
+            menuPlacement="top"
+            textareaRef={textareaRef}
           />
 
-          <form
-            onSubmit={handleSendMessage}
-            className="relative flex items-center gap-2 bg-sphera-surface-2/95 hover:bg-sphera-surface-2 border border-sphera-border hover:border-sphera-border/90 focus-within:border-sphera-green/60 rounded-full p-1.5 pl-2 sm:pl-2.5 shadow-2xl backdrop-blur-xl transition-all"
-          >
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isSending || pendingAttachments.length >= MAX_CHAT_ATTACHMENTS}
-              title="Joindre une photo d'exercice, un schéma ou un PDF (ou colle avec Ctrl+V)"
-              aria-label="Joindre une image ou un PDF"
-              className="w-8 h-8 rounded-full text-sphera-text-muted hover:text-white hover:bg-sphera-surface disabled:opacity-40 flex items-center justify-center shrink-0 transition-colors cursor-pointer"
-            >
-              <ImageIcon className="w-4 h-4" />
-            </button>
-
-            <textarea
-              ref={textareaRef}
-              value={inputMessage}
-              onChange={handleTextareaChange}
-              onKeyDown={handleKeyDown}
-              onPaste={handlePasteInComposer}
-              rows={1}
-              placeholder={
-                pendingAttachments.length > 0
-                  ? 'Pose une question sur ta pièce jointe (ou envoie directement)...'
-                  : "Demande n'importe quoi, ou colle une photo d'exercice (Ctrl+V)..."
-              }
-              className="flex-1 bg-transparent border-0 text-xs sm:text-sm text-white placeholder-sphera-text-muted outline-none focus:ring-0 resize-none max-h-32 py-1.5 leading-relaxed"
-            />
-
-            {isSending ? (
-              <button
-                type="button"
-                onClick={handleStopChat}
-                title="Arrêter la réponse"
-                aria-label="Arrêter la réponse"
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-sphera-green hover:bg-green-400 text-black flex items-center justify-center shrink-0 transition-all shadow-[0_0_15px_rgba(34,197,94,0.3)] animate-in fade-in cursor-pointer"
-              >
-                <Square className="w-3.5 h-3.5 fill-current" />
-              </button>
-            ) : (
-              <button
-                type="submit"
-                disabled={(!inputMessage.trim() && readyAttachments.length === 0) || isUploadingAttachments}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-sphera-green hover:bg-green-400 disabled:opacity-40 text-black flex items-center justify-center shrink-0 transition-transform active:scale-95 shadow-md shadow-sphera-green/20 cursor-pointer"
-                title="Envoyer la question"
-                aria-label="Envoyer la question"
-              >
-                <ArrowUp className="w-4 h-4 font-bold" />
-              </button>
-            )}
-          </form>
-
           <p className="text-center text-[11px] text-sphera-text-muted/80 mt-1.5 block">
-            Sphera peut faire des erreurs. Vérifie les informations avec tes cours.
+            Sphera peut faire des erreurs. Pense à vérifier les informations importantes.
           </p>
         </div>
       </footer>
