@@ -378,3 +378,19 @@ describe("web search grounding (Tavily)", () => {
     expect(coursePrompt).toContain("retrieved <web_sources>");
   });
 });
+
+describe("multimodal chat prompts (vision & PDF attachments)", () => {
+  it("injects vision analysis rules and attached PDF excerpts cleanly", () => {
+    const prompt = freeChatPrompt("Résous cet exercice étape par étape", [], {
+      hasImages: true,
+      attachedDocuments: [
+        { name: "td_algebre.pdf", text: "Exercice 1 : Calculer le déterminant de la matrice A." },
+      ],
+    });
+    expect(prompt).toContain("VISION / IMAGE ANALYSIS INSTRUCTIONS");
+    expect(prompt).toContain("LaTeX");
+    expect(prompt).toContain("<attached_documents>");
+    expect(prompt).toContain("td_algebre.pdf");
+    expect(prompt).toContain("déterminant de la matrice A");
+  });
+});

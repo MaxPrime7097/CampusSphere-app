@@ -8,8 +8,10 @@
 
 import { badRequest, serviceUnavailable } from "../../lib/errors.js";
 import { parseJsonWithFallback, UnparseableModelOutputError } from "./json.js";
-import { annalePrompt, qaPrompt, freeChatPrompt, suggestionsPrompt, toolPrompt, quizFromSelectionPrompt, flashcardFromSelectionPrompt, type AnnaleMode, type ChatMode, type ToolType } from "./prompts.js";
-import { AllProvidersFailedError, callWithFallback, streamWithFallback, TOKENS_ANNALE, TOKENS_DEFAULT, TOKENS_FICHE, TOKENS_FLASHCARDS, TOKENS_QUIZ } from "./providers.js";
+import { annalePrompt, qaPrompt, freeChatPrompt, suggestionsPrompt, toolPrompt, quizFromSelectionPrompt, flashcardFromSelectionPrompt, type AnnaleMode, type AttachedDocumentExcerpt, type ChatMode, type ToolType } from "./prompts.js";
+import { AllProvidersFailedError, callWithFallback, streamWithFallback, TOKENS_ANNALE, TOKENS_DEFAULT, TOKENS_FICHE, TOKENS_FLASHCARDS, TOKENS_QUIZ, type VisionImageInput } from "./providers.js";
+export { isVisionConfigured, type VisionImageInput } from "./providers.js";
+export type { AttachedDocumentExcerpt } from "./prompts.js";
 import { buildContextPrefix, buildStyleInstructions, getUserAcademicContext, getUserPreferences } from "./userContext.js";
 import { extractRelevantPassages, type QaEntry } from "./rag.js";
 export { type QaEntry } from "./rag.js";
@@ -191,11 +193,14 @@ export async function generateQaAnswer(
     chatMode?: ChatMode;
     allowGeneralKnowledge?: boolean;
     webSources?: WebSource[];
+    images?: VisionImageInput[];
+    attachedDocuments?: AttachedDocumentExcerpt[];
   },
 ): Promise<string> {
   const prefix = await resolveContextPrefix(userId, {
     ignoreLanguageOverride: Boolean(options?.inlineMode),
   });
+  const hasImages = Boolean(options?.images && options.images.length > 0);
 
   // If no source text is provided (Free / General Academic Chat mode)
   if (!sourceText || sourceText.trim().length < MIN_SOURCE_CHARS) {
@@ -204,10 +209,12 @@ export async function generateQaAnswer(
       freeChatPrompt(question, history, {
         chatMode: options?.chatMode,
         webSources: options?.webSources,
+        hasImages,
+        attachedDocuments: options?.attachedDocuments,
       });
     try {
       return (
-        await callWithFallback(prompt, TOKENS_DEFAULT, { toolType: "qa", userId })
+        await callWithFallback(prompt, TOKENS_DEFAULT, { toolType: "qa", userId }, options?.images)
       ).trim();
     } catch (error) {
       throw asApiError(error);
@@ -224,10 +231,12 @@ export async function generateQaAnswer(
       chatMode: options?.chatMode,
       allowGeneralKnowledge: Boolean(options?.allowGeneralKnowledge),
       webSources: options?.webSources,
+      hasImages,
+      attachedDocuments: options?.attachedDocuments,
     });
   try {
     return (
-      await callWithFallback(prompt, TOKENS_DEFAULT, { toolType: "qa", userId })
+      await callWithFallback(prompt, TOKENS_DEFAULT, { toolType: "qa", userId }, options?.images)
     ).trim();
   } catch (error) {
     throw asApiError(error);
@@ -249,11 +258,14 @@ export async function* streamQaAnswer(
     chatMode?: ChatMode;
     allowGeneralKnowledge?: boolean;
     webSources?: WebSource[];
+    images?: VisionImageInput[];
+    attachedDocuments?: AttachedDocumentExcerpt[];
   },
 ): AsyncGenerator<string, { fullText: string }, void> {
   const prefix = await resolveContextPrefix(userId, {
     ignoreLanguageOverride: Boolean(options?.inlineMode),
   });
+  const hasImages = Boolean(options?.images && options.images.length > 0);
 
   // If no source text is provided (Free / General Academic Chat mode)
   if (!sourceText || sourceText.trim().length < MIN_SOURCE_CHARS) {
@@ -262,9 +274,17 @@ export async function* streamQaAnswer(
       freeChatPrompt(question, history, {
         chatMode: options?.chatMode,
         webSources: options?.webSources,
+        hasImages,
+        attachedDocuments: options?.attachedDocuments,
       });
     try {
-      return yield* streamWithFallback(prompt, TOKENS_DEFAULT, { toolType: "qa", userId }, signal);
+      return yield* streamWithFallback(
+        prompt,
+        TOKENS_DEFAULT,
+        { toolType: "qa", userId },
+        signal,
+        options?.images,
+      );
     } catch (error) {
       throw asApiError(error);
     }
@@ -280,9 +300,17 @@ export async function* streamQaAnswer(
       chatMode: options?.chatMode,
       allowGeneralKnowledge: Boolean(options?.allowGeneralKnowledge),
       webSources: options?.webSources,
+      hasImages,
+      attachedDocuments: options?.attachedDocuments,
     });
   try {
-    return yield* streamWithFallback(prompt, TOKENS_DEFAULT, { toolType: "qa", userId }, signal);
+    return yield* streamWithFallback(
+      prompt,
+      TOKENS_DEFAULT,
+      { toolType: "qa", userId },
+      signal,
+      options?.images,
+    );
   } catch (error) {
     throw asApiError(error);
   }
